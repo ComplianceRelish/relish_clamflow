@@ -4,7 +4,7 @@ import requests
 import uuid
 from datetime import datetime
 import base64
-from utils import require_role, get_api_url
+from utils import require_role, get_api_base_url
 
 # Require Staff Lead or Admin access
 require_role(["Staff Lead", "Admin"])
@@ -22,7 +22,7 @@ st.markdown("**Staff Lead**: Mobile onboarding at field locations | **Admin**: O
 user_role = st.session_state.get('current_role', 'Staff Lead')
 
 # API Base URL
-API_BASE = get_api_url()
+API_BASE = get_api_base_url()
 
 def get_current_location():
     """Simulate GPS location capture"""
