@@ -1,0 +1,63 @@
+# ClamFlow Cloud Deployment Requirements
+# =====================================
+
+# Core Framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+python-multipart==0.0.6
+
+# Database
+sqlalchemy==2.0.23
+psycopg2-binary==2.9.9
+alembic==1.13.0
+
+# Dashboard
+streamlit==1.28.2
+plotly==5.17.0
+pandas==2.1.4
+numpy==1.24.4
+
+# Authentication & Security
+python-jwt==4.0.0
+passlib[bcrypt]==1.7.4
+python-jose[cryptography]==3.3.0
+
+# QR Code Generation
+qrcode[pil]==7.4.2
+pillow==10.1.0
+
+# Environment Management
+python-dotenv==1.0.0
+
+# HTTP Client
+httpx==0.25.2
+requests==2.31.0
+
+# Development Tools
+pytest==7.4.3
+pytest-asyncio==0.21.1
+black==23.11.0
+flake8==6.1.0
+
+# Cloud Deployment
+gunicorn==21.2.0
+psutil==5.9.6
+
+# Data Validation
+email-validator==2.1.0
+phonenumbers==8.13.26
+
+# Date/Time
+python-dateutil==2.8.2
+pytz==2023.3
+
+# File Handling
+openpyxl==3.1.2
+xlsxwriter==3.1.9
+
+# Logging
+structlog==23.2.0
+
+# Monitoring (Optional)
+sentry-sdk[fastapi]==1.38.0

@@ -1,0 +1,270 @@
+name: 🚀 Deploy ClamFlow to Vercel
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+        - production
+        - preview
+
+env:
+  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+  DATABASE_URL: ${{ secrets.DATABASE_URL }}
+  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+jobs:
+  lint-and-test:
+    name: 🔍 Code Quality & Testing
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout Code
+      uses: actions/checkout@v4
+      
+    - name: 🐍 Set up Python 3.9
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        cache: 'pip'
+        
+    - name: 📦 Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install flake8 black pytest
+        
+    - name: 🔧 Code Formatting Check
+      run: |
+        black --check --diff clamflow/
+        
+    - name: 🔍 Lint with Flake8
+      run: |
+        flake8 clamflow/ --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 clamflow/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        
+    - name: 🧪 Run Tests
+      run: |
+        python -m pytest -v --tb=short
+      env:
+        DATABASE_URL: sqlite:///./test_clamflow.db
+        
+  database-migration:
+    name: 🗄️ Database Migration
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: 📥 Checkout Code
+      uses: actions/checkout@v4
+      
+    - name: 🐍 Set up Python 3.9
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        cache: 'pip'
+        
+    - name: 📦 Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: 🔍 Database Health Check
+      run: |
+        python -c "
+        from clamflow.database import check_database_connection, get_database_info
+        import json
+        print('Database Info:', json.dumps(get_database_info(), indent=2))
+        if check_database_connection():
+          print('✅ Database connection successful')
+        else:
+          print('❌ Database connection failed')
+          exit(1)
+        "
+      env:
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        
+    - name: 🏗️ Run Database Migrations
+      run: |
+        python -c "
+        from clamflow.models import Base
+        from clamflow.database import engine
+        print('🔄 Creating database tables...')
+        Base.metadata.create_all(bind=engine)
+        print('✅ Database migration completed successfully')
+        "
+      env:
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+  deploy-production:
+    name: 🚀 Deploy to Vercel Production
+    runs-on: ubuntu-latest
+    needs: [lint-and-test, database-migration]
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    
+    steps:
+    - name: 📥 Checkout Code
+      uses: actions/checkout@v4
+      
+    - name: 📦 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: 🔧 Install Vercel CLI
+      run: npm install --global vercel@latest
+      
+    - name: 🎯 Pull Vercel Environment Information
+      run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+      
+    - name: 🏗️ Build Project Artifacts
+      run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+      
+    - name: 🚀 Deploy to Vercel Production
+      run: |
+        DEPLOYMENT_URL=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
+        echo "🌐 Production URL: $DEPLOYMENT_URL"
+        echo "DEPLOYMENT_URL=$DEPLOYMENT_URL" >> $GITHUB_ENV
+        
+    - name: ✅ Post-Deployment Health Check
+      run: |
+        sleep 30  # Wait for deployment to be ready
+        curl -f "${{ env.DEPLOYMENT_URL }}/api/health" || exit 1
+        echo "✅ Production deployment health check passed"
+        
+    - name: 📊 Deployment Summary
+      run: |
+        echo "## 🎉 ClamFlow Production Deployment Complete!" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📊 Deployment Details" >> $GITHUB_STEP_SUMMARY
+        echo "- **Environment**: Production" >> $GITHUB_STEP_SUMMARY
+        echo "- **URL**: ${{ env.DEPLOYMENT_URL }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **API Docs**: ${{ env.DEPLOYMENT_URL }}/api/docs" >> $GITHUB_STEP_SUMMARY
+        echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### ✅ Features Deployed" >> $GITHUB_STEP_SUMMARY
+        echo "- 🔐 Admin dual onboarding capabilities" >> $GITHUB_STEP_SUMMARY
+        echo "- 📱 Mobile-first onboarding system" >> $GITHUB_STEP_SUMMARY
+        echo "- 🔄 Sequential approval workflow" >> $GITHUB_STEP_SUMMARY
+        echo "- 📦 QR code generation and tracking" >> $GITHUB_STEP_SUMMARY
+        echo "- 🗄️ Supabase PostgreSQL integration" >> $GITHUB_STEP_SUMMARY
+
+  deploy-preview:
+    name: 🔍 Deploy Preview
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'preview')
+    environment: preview
+    
+    steps:
+    - name: 📥 Checkout Code
+      uses: actions/checkout@v4
+      
+    - name: 📦 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: 🔧 Install Vercel CLI
+      run: npm install --global vercel@latest
+      
+    - name: 🎯 Pull Vercel Environment Information
+      run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+      
+    - name: 🏗️ Build Project Artifacts
+      run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+      
+    - name: 🔍 Deploy Preview
+      run: |
+        PREVIEW_URL=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
+        echo "🔍 Preview URL: $PREVIEW_URL"
+        echo "PREVIEW_URL=$PREVIEW_URL" >> $GITHUB_ENV
+        
+    - name: 📝 Comment on PR (if applicable)
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: `## 🔍 ClamFlow Preview Deployment Ready!
+            
+            ### 📊 Preview Details
+            - **Preview URL**: ${{ env.PREVIEW_URL }}
+            - **API Docs**: ${{ env.PREVIEW_URL }}/api/docs
+            - **Commit**: ${{ github.sha }}
+            
+            ### 🧪 Test Features
+            - [ ] Admin dual onboarding system
+            - [ ] Mobile onboarding interface
+            - [ ] QR code generation
+            - [ ] Sequential approval workflow
+            - [ ] Database connectivity
+            
+            ---
+            *This preview will be automatically updated on new commits to this PR.*`
+          })
+
+  security-scan:
+    name: 🔒 Security Scan
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: 📥 Checkout Code
+      uses: actions/checkout@v4
+      
+    - name: 🔍 Run Security Scan
+      uses: github/super-linter/slim@v5
+      env:
+        DEFAULT_BRANCH: main
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        VALIDATE_PYTHON_BLACK: true
+        VALIDATE_PYTHON_FLAKE8: true
+        VALIDATE_PYTHON_PYLINT: false
+        VALIDATE_DOCKERFILE: false
+        VALIDATE_YAML: true
+        VALIDATE_JSON: true
+        
+    - name: 🛡️ Dependency Security Check
+      run: |
+        pip install safety
+        safety check --json || true
+
+  notification:
+    name: 📢 Deployment Notification
+    runs-on: ubuntu-latest
+    needs: [deploy-production]
+    if: always() && github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: 📢 Success Notification
+      if: needs.deploy-production.result == 'success'
+      run: |
+        echo "🎉 ClamFlow successfully deployed to production!"
+        echo "✅ All systems operational"
+        
+    - name: 🚨 Failure Notification
+      if: needs.deploy-production.result == 'failure'
+      run: |
+        echo "❌ ClamFlow deployment failed"
+        echo "🔧 Check logs and retry deployment"
+        exit 1

@@ -1,0 +1,10 @@
+{
+  "root": [
+    "clamflow"
+  ],
+  "extraPaths": [
+    "clamflow"
+  ],
+  "pythonVersion": "3.11",
+  "typeCheckingMode": "basic"
+}
