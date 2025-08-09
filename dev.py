@@ -3,21 +3,18 @@
 ClamFlow Local Development Server
 =================================
 
-This script starts the ClamFlow application in development mode.
-Runs both FastAPI backend and Streamlit dashboard concurrently.
+This script starts the ClamFlow FastAPI backend in development mode.
+Frontend should be run separately (Next.js, React, etc.)
 """
 
 import os
 import sys
 import subprocess
-import time
-import signal
 from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor
 
 def start_fastapi():
     """Start FastAPI development server."""
-    print("🚀 Starting FastAPI backend...")
+    print("🚀 Starting ClamFlow FastAPI backend...")
     try:
         # Change to project directory
         os.chdir(Path(__file__).parent)
@@ -35,58 +32,21 @@ def start_fastapi():
     except Exception as e:
         print(f"❌ FastAPI server error: {e}")
 
-def start_streamlit():
-    """Start Streamlit dashboard."""
-    print("🎨 Starting Streamlit dashboard...")
-    try:
-        # Change to project directory
-        os.chdir(Path(__file__).parent)
-        
-        # Wait a moment for FastAPI to start
-        time.sleep(3)
-        
-        # Start Streamlit
-        subprocess.run([
-            sys.executable, "-m", "streamlit", "run", 
-            "clamflow/dashboard/🏠_Home.py",
-            "--server.port", "8501",
-            "--server.address", "127.0.0.1"
-        ], check=True)
-    except KeyboardInterrupt:
-        print("🛑 Streamlit server stopped")
-    except Exception as e:
-        print(f"❌ Streamlit server error: {e}")
-
 def main():
-    """Main development server orchestration."""
+    """Main development server."""
     print("🌊 ClamFlow Development Server")
     print("=" * 40)
-    print("Starting both FastAPI backend and Streamlit dashboard...")
+    print("Starting FastAPI backend...")
     print("\n📊 Access Points:")
-    print("- Dashboard: http://localhost:8501")
     print("- API Docs: http://localhost:8000/docs")
-    print("- Admin Panel: http://localhost:8501/Onboarding (Admin login)")
-    print("\nPress Ctrl+C to stop all servers\n")
+    print("- API Base: http://localhost:8000/api")
+    print("- Health Check: http://localhost:8000/health")
+    print("\n💡 Frontend:")
+    print("- Run your Next.js/React frontend separately")
+    print("- Configure API base URL to: http://localhost:8000")
+    print("\nPress Ctrl+C to stop server\n")
     
-    # Handle Ctrl+C gracefully
-    def signal_handler(sig, frame):
-        print("\n🛑 Shutting down servers...")
-        sys.exit(0)
-    
-    signal.signal(signal.SIGINT, signal_handler)
-    
-    # Start both servers concurrently
-    with ThreadPoolExecutor(max_workers=2) as executor:
-        # Submit both tasks
-        fastapi_future = executor.submit(start_fastapi)
-        streamlit_future = executor.submit(start_streamlit)
-        
-        try:
-            # Wait for both to complete (they won't unless there's an error)
-            fastapi_future.result()
-            streamlit_future.result()
-        except KeyboardInterrupt:
-            print("🛑 Development servers stopped")
+    start_fastapi()
 
 if __name__ == "__main__":
     main()
