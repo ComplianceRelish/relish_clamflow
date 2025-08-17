@@ -8,12 +8,5 @@
     "pages/api/**/*.ts": {
       "runtime": "nodejs18.x"
     }
-  },
-  "env": {
-    "NEXT_PUBLIC_SUPABASE_URL": "@clamflow-supabase-url",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@clamflow-supabase-anon-key",
-    "NEXT_PUBLIC_API_URL": "@clamflow-api-url",
-    "NEXTAUTH_URL": "@clamflow-nextauth-url",
-    "NEXTAUTH_SECRET": "@clamflow-nextauth-secret"
   }
 }
