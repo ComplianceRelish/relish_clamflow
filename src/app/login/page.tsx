@@ -34,7 +34,7 @@ export default function LoginPage() {
         <div>
           <div className="mx-auto h-24 w-24 flex items-center justify-center">
             <Image
-              src="/logo-relish.png"
+              src="/logo_relish.png"
               alt="Relish Logo"
               width={96}
               height={96}
