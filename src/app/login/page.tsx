@@ -2,27 +2,80 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
 import Image from 'next/image';
 
+// API Configuration for ClamFlow Backend
+const API_CONFIG = {
+  baseURL: 'https://clamflowbackend-production.up.railway.app',
+  timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json'
+  }
+};
+
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { signIn } = useAuth();
+  const [showFaceAuth, setShowFaceAuth] = useState(false);
   const router = useRouter();
+
+  // Backend JWT Authentication
+  const loginWithCredentials = async (username: string, password: string) => {
+    try {
+      const response = await fetch(`${API_CONFIG.baseURL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          username,
+          password
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Login failed');
+      }
+      
+      const data = await response.json();
+      
+      // Store JWT token for future API calls
+      localStorage.setItem('jwt_token', data.access_token);
+      localStorage.setItem('user_role', data.user?.role || '');
+      
+      return {
+        success: true,
+        token: data.access_token,
+        tokenType: data.token_type,
+        user: data.user
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Login failed'
+      };
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
-
+    
     try {
-      await signIn(email, password);
-      router.push('/');
+      const result = await loginWithCredentials(username, password);
+      
+      if (result.success) {
+        // Successful login - redirect to dashboard
+        router.push('/dashboard');
+      } else {
+        setError(result.error || 'Invalid credentials');
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError('Login failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -53,19 +106,19 @@ export default function LoginPage() {
           <div className="card">
             <div className="space-y-4">
               <div>
-                <label htmlFor="email" className="sr-only">
-                  Email address
+                <label htmlFor="username" className="sr-only">
+                  Username
                 </label>
                 <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
+                  id="username"
+                  name="username"
+                  type="text"
+                  autoComplete="username"
                   required
                   className="relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-relish-purple focus:border-relish-purple sm:text-sm"
-                  placeholder="Email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Username (e.g., SA_Motty for Super Admin)"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                 />
               </div>
               <div>
@@ -100,6 +153,24 @@ export default function LoginPage() {
               >
                 {loading ? 'Signing in...' : 'Sign in'}
               </button>
+            </div>
+
+            {/* Face Recognition Option */}
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={() => setShowFaceAuth(!showFaceAuth)}
+                className="w-full text-sm text-relish-purple hover:text-relish-purple-dark font-medium"
+              >
+                {showFaceAuth ? 'Use Username/Password Instead' : 'Use Face Recognition Instead'}
+              </button>
+            </div>
+
+            {/* Super Admin Hint */}
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded">
+              <p className="text-xs text-blue-600">
+                <strong>Super Admin:</strong> Username: SA_Motty
+              </p>
             </div>
           </div>
         </form>
