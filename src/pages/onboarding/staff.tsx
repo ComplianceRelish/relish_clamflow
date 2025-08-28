@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '../../context/AuthContext';
 import { onboardingAPI } from '@/lib/api-client';
 import Image from 'next/image';
 
@@ -19,19 +19,19 @@ interface StaffOnboardingData {
 }
 
 export default function StaffOnboardingPage() {
-  const { userProfile, userRole } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
   
   // ⭐ EXACT ROLE-BASED ACCESS CONTROL FROM BACKEND
   useEffect(() => {
     const authorizedRoles = ['Super Admin', 'Admin', 'Production Lead', 'Staff Lead'];
     
-    if (!userRole || !authorizedRoles.includes(userRole)) {
+    if (!user?.role || !authorizedRoles.includes(user.role)) {
       alert('Access Denied: Only Super Admin, Admin, Production Lead, or Staff Lead can onboard staff.');
       router.push('/dashboard');
       return;
     }
-  }, [userRole, router]);
+  }, [user?.role, router]);
 
   const [formData, setFormData] = useState<StaffOnboardingData>({
     first_name: '',
@@ -134,7 +134,7 @@ export default function StaffOnboardingPage() {
           <h2 className="text-2xl font-bold text-gray-800">Staff Onboarding</h2>
           <p className="text-gray-600">Add new team member to ClamFlow system</p>
           <div className="mt-2 text-sm text-gray-500">
-            Submitted by: {userProfile?.full_name || userProfile?.username} ({userRole})
+            Submitted by: {user?.full_name || user?.username} ({user?.role})
           </div>
         </div>
 

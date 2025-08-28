@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '../../context/AuthContext';
 
 interface HeaderProps {
   pageTitle: string;
@@ -10,7 +10,7 @@ interface HeaderProps {
 }
 
 export default function Header({ pageTitle, pageSubtitle }: HeaderProps) {
-  const { user, userProfile, signOut } = useAuth();
+  const { user, logout } = useAuth();
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
@@ -49,22 +49,22 @@ export default function Header({ pageTitle, pageSubtitle }: HeaderProps) {
             <div className="flex items-center space-x-4">
               <div className="text-right">
                 <p className="text-sm font-medium text-gray-900">
-                  {userProfile?.full_name || user.email}
+                  {user.full_name || user.username}
                 </p>
-                {userProfile?.role && (
+                {user.role && (
                   <p className="text-xs text-gray-600 capitalize">
-                    {userProfile.role.replace('_', ' ')}
+                    {user.role}
                   </p>
                 )}
               </div>
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center border border-emerald-200">
                   <span className="text-emerald-700 font-medium text-sm">
-                    {(userProfile?.full_name || user.email || '').charAt(0).toUpperCase()}
+                    {(user.full_name || user.username || '').charAt(0).toUpperCase()}
                   </span>
                 </div>
                 <button
-                  onClick={signOut}
+                  onClick={logout}
                   className="text-sm text-gray-600 hover:text-gray-900 px-3 py-1 rounded-md hover:bg-gray-100 transition-colors border border-transparent hover:border-gray-200"
                 >
                   Sign Out

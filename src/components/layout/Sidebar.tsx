@@ -2,11 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '../../context/AuthContext';
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { userProfile } = useAuth();
+  const { user } = useAuth();
 
   const menuItems = [
     { href: '/dashboard', label: 'Dashboard', icon: '📊', roles: ['all'] },
@@ -22,7 +22,7 @@ export default function Sidebar() {
 
   const filteredItems = menuItems.filter(item => 
     item.roles.includes('all') || 
-    (userProfile?.role && item.roles.includes(userProfile.role))
+    (user?.role && item.roles.includes(user.role.toLowerCase().replace(' ', '_')))
   );
 
   return (
