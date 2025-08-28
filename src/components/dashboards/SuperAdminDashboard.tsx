@@ -65,8 +65,8 @@ const SuperAdminDashboard: React.FC = () => {
     if (user) {
       fetchDashboardData();
       
-      // Set up auto-refresh every 30 seconds
-      const interval = setInterval(fetchDashboardData, 30000);
+      // Set up auto-refresh every 5 minutes (reduced from 30 seconds)
+      const interval = setInterval(fetchDashboardData, 5 * 60 * 1000);
       return () => clearInterval(interval);
     }
   }, [user]);

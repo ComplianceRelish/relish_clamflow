@@ -57,8 +57,8 @@ const SystemHealth: React.FC = () => {
   useEffect(() => {
     fetchSystemHealth();
     
-    // Auto-refresh every 10 seconds
-    const interval = setInterval(fetchSystemHealth, 10000);
+    // Auto-refresh every 2 minutes (reduced from 10 seconds)
+    const interval = setInterval(fetchSystemHealth, 2 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
