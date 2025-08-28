@@ -1,180 +1,192 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import { useAuth } from '../../context/AuthContext';
+import { Card } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
+import { FormField } from '../../components/ui/FormField';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 
-// API Configuration for ClamFlow Backend
-const API_CONFIG = {
-  baseURL: 'https://clamflowbackend-production.up.railway.app',
-  timeout: 30000,
-  headers: {
-    'Content-Type': 'application/json'
-  }
-};
+interface LoginState {
+  username: string;
+  password: string;
+  loading: boolean;
+  error: string | null;
+}
 
-export default function LoginPage() {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [showFaceAuth, setShowFaceAuth] = useState(false);
+const LoginPage: React.FC = () => {
+  const { login, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
+  
+  const [state, setState] = useState<LoginState>({
+    username: '',
+    password: '',
+    loading: false,
+    error: null,
+  });
 
-  // Backend JWT Authentication
-  const loginWithCredentials = async (username: string, password: string) => {
-    try {
-      const response = await fetch(`${API_CONFIG.baseURL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          username,
-          password
-        })
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || 'Login failed');
-      }
-      
-      const data = await response.json();
-      
-      // Store JWT token for future API calls
-      localStorage.setItem('jwt_token', data.access_token);
-      localStorage.setItem('user_role', data.user?.role || '');
-      
-      return {
-        success: true,
-        token: data.access_token,
-        tokenType: data.token_type,
-        user: data.user
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Login failed'
-      };
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      router.push('/dashboard');
     }
-  };
+  }, [isAuthenticated, isLoading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
     
+    if (!state.username || !state.password) {
+      setState(prev => ({ ...prev, error: 'Please enter both username and password' }));
+      return;
+    }
+
+    setState(prev => ({ ...prev, loading: true, error: null }));
+
     try {
-      const result = await loginWithCredentials(username, password);
+      const success = await login(state.username, state.password);
       
-      if (result.success) {
-        // Successful login - redirect to dashboard
-        router.push('/dashboard');
-      } else {
-        setError(result.error || 'Invalid credentials');
+      if (!success) {
+        setState(prev => ({
+          ...prev,
+          loading: false,
+          error: 'Invalid username or password',
+        }));
       }
-    } catch (err) {
-      setError('Login failed. Please try again.');
-    } finally {
-      setLoading(false);
+      // If successful, the AuthContext will handle the redirect
+    } catch (error) {
+      console.error('Login error:', error);
+      setState(prev => ({
+        ...prev,
+        loading: false,
+        error: 'Login failed. Please try again.',
+      }));
     }
   };
 
+  const handleInputChange = (field: keyof LoginState, value: string) => {
+    setState(prev => ({
+      ...prev,
+      [field]: value,
+      error: null, // Clear error when user starts typing
+    }));
+  };
+
+  // Show loading spinner while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <LoadingSpinner size="lg" className="text-relish-purple" />
+      </div>
+    );
+  }
+
+  // Don't render login form if already authenticated
+  if (isAuthenticated) {
+    return null;
+  }
+
   return (
-    <div className="min-h-screen bg-logo flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
-        <div>
-          <div className="mx-auto h-24 w-24 flex items-center justify-center">
-            <Image
-              src="/logo_relish.png"
-              alt="Relish Logo"
-              width={96}
-              height={96}
-              className="rounded-lg"
-              priority
-            />
+        {/* Header */}
+        <div className="text-center">
+          <div className="flex justify-center">
+            <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-4">
+              <span className="text-white text-2xl font-bold">🦪</span>
+            </div>
           </div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            ClamFlow
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Quality • Productivity • Assured
-          </p>
+          <h2 className="text-3xl font-extrabold text-gray-900">ClamFlow</h2>
+          <p className="mt-2 text-sm text-gray-600">Quality • Productivity • Assured</p>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="card">
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="username" className="sr-only">
-                  Username
-                </label>
-                <input
-                  id="username"
-                  name="username"
-                  type="text"
-                  autoComplete="username"
-                  required
-                  className="relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-relish-purple focus:border-relish-purple sm:text-sm"
-                  placeholder="Username (e.g., SA_Motty for Super Admin)"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                />
-              </div>
-              <div>
-                <label htmlFor="password" className="sr-only">
-                  Password
-                </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  className="relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-relish-purple focus:border-relish-purple sm:text-sm"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
+
+        {/* Login Form */}
+        <Card className="p-8">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <FormField
+                label="Username"
+                type="text"
+                value={state.username}
+                onChange={(e) => handleInputChange('username', e.target.value)}
+                placeholder="Enter your username"
+                required
+                disabled={state.loading}
+                className="text-lg"
+              />
             </div>
 
-            {error && (
-              <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-                {error}
+            <div>
+              <FormField
+                label="Password"
+                type="password"
+                value={state.password}
+                onChange={(e) => handleInputChange('password', e.target.value)}
+                placeholder="Enter your password"
+                required
+                disabled={state.loading}
+                className="text-lg"
+              />
+            </div>
+
+            {/* Error Message */}
+            {state.error && (
+              <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                <p className="text-sm text-red-600">{state.error}</p>
               </div>
             )}
 
-            <div className="mt-6">
-              <button
+            {/* Submit Button */}
+            <div>
+              <Button
                 type="submit"
-                disabled={loading}
-                className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={state.loading || !state.username || !state.password}
+                className="w-full py-3 text-lg"
               >
-                {loading ? 'Signing in...' : 'Sign in'}
-              </button>
+                {state.loading ? (
+                  <div className="flex items-center justify-center">
+                    <LoadingSpinner size="sm" className="mr-2" />
+                    Signing in...
+                  </div>
+                ) : (
+                  'Sign In'
+                )}
+              </Button>
             </div>
 
             {/* Face Recognition Option */}
-            <div className="mt-4">
+            <div className="text-center">
               <button
                 type="button"
-                onClick={() => setShowFaceAuth(!showFaceAuth)}
-                className="w-full text-sm text-relish-purple hover:text-relish-purple-dark font-medium"
+                className="text-sm text-blue-600 hover:text-blue-500 disabled:opacity-50"
+                disabled={state.loading}
+                onClick={() => {
+                  // Future: Implement face recognition
+                  alert('Face Recognition will be available soon!');
+                }}
               >
-                {showFaceAuth ? 'Use Username/Password Instead' : 'Use Face Recognition Instead'}
+                🔍 Use Face Recognition Instead
               </button>
             </div>
+          </form>
 
-            {/* Super Admin Hint */}
-            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded">
-              <p className="text-xs text-blue-600">
-                <strong>Super Admin:</strong> Username: SA_Motty
-              </p>
-            </div>
+          {/* Demo Credentials */}
+          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
+            <p className="text-xs text-blue-800 font-medium">Super Admin Demo:</p>
+            <p className="text-xs text-blue-600">Username: SA_Motty</p>
+            <p className="text-xs text-blue-600">Password: Phes0061</p>
           </div>
-        </form>
+        </Card>
+
+        {/* Footer */}
+        <div className="text-center">
+          <p className="text-xs text-gray-500">
+            Powered by ClamFlow Enterprise Platform
+          </p>
+        </div>
       </div>
     </div>
   );
-}
+};
+
+export default LoginPage;

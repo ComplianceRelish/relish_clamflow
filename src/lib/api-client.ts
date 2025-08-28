@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios'
 import { supabase } from './supabase'
-import { APIResponse } from '../types/api'
+import { ApiResponse } from '../types/api'
 
 // Request configuration interface
 interface RequestConfig {
@@ -248,7 +248,7 @@ class APIClient {
     endpoint: string,
     data?: any,
     config?: RequestConfig
-  ): Promise<APIResponse<T>> {
+  ): Promise<ApiResponse<T>> {
     try {
       const response = await this.client.request({
         method,
@@ -272,27 +272,27 @@ class APIClient {
   }
 
   // Generic GET method
-  async get<T = any>(endpoint: string, config?: RequestConfig): Promise<APIResponse<T>> {
+  async get<T = any>(endpoint: string, config?: RequestConfig): Promise<ApiResponse<T>> {
     return this.request<T>('GET', endpoint, undefined, config)
   }
 
   // Generic POST method
-  async post<T = any>(endpoint: string, data?: any, config?: RequestConfig): Promise<APIResponse<T>> {
+  async post<T = any>(endpoint: string, data?: any, config?: RequestConfig): Promise<ApiResponse<T>> {
     return this.request<T>('POST', endpoint, data, config)
   }
 
   // Generic PUT method
-  async put<T = any>(endpoint: string, data?: any, config?: RequestConfig): Promise<APIResponse<T>> {
+  async put<T = any>(endpoint: string, data?: any, config?: RequestConfig): Promise<ApiResponse<T>> {
     return this.request<T>('PUT', endpoint, data, config)
   }
 
   // Generic DELETE method
-  async delete<T = any>(endpoint: string, config?: RequestConfig): Promise<APIResponse<T>> {
+  async delete<T = any>(endpoint: string, config?: RequestConfig): Promise<ApiResponse<T>> {
     return this.request<T>('DELETE', endpoint, undefined, config)
   }
 
   // Generic PATCH method
-  async patch<T = any>(endpoint: string, data?: any, config?: RequestConfig): Promise<APIResponse<T>> {
+  async patch<T = any>(endpoint: string, data?: any, config?: RequestConfig): Promise<ApiResponse<T>> {
     return this.request<T>('PATCH', endpoint, data, config)
   }
 }

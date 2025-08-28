@@ -1,13 +1,46 @@
-// ClamFlow API Client for Backend Integration
-// Based on Frontend Integration Guide
+// ClamFlow Backend API Client - Production Ready
+import { User } from '../types/auth';
 
-const API_CONFIG = {
-  baseURL: 'https://clamflowbackend-production.up.railway.app',
-  timeout: 30000,
-  headers: {
-    'Content-Type': 'application/json'
-  }
-};
+// Types
+interface ApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
+}
+
+interface LoginResponse {
+  access_token: string;
+  token_type: string;
+  user: User;
+}
+
+interface DashboardMetrics {
+  totalUsers: number;
+  activeUsers: number;
+  totalLots: number;
+  pendingApprovals: number;
+  systemHealth: 'healthy' | 'warning' | 'critical';
+  lastUpdated: string;
+}
+
+interface SystemHealthData {
+  status: 'healthy' | 'warning' | 'critical';
+  uptime: string;
+  database: {
+    status: 'connected' | 'disconnected';
+    response_time: number;
+  };
+  services: {
+    authentication: boolean;
+    api: boolean;
+    database: boolean;
+    hardware: boolean;
+  };
+}
+
+// API Configuration
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://clamflowbackend-production.up.railway.app';
 
 // User Roles as defined in backend
 export const ROLES = {
@@ -33,73 +66,90 @@ export const ROLE_HIERARCHY = {
   [ROLES.SECURITY_GUARD]: 8
 };
 
-class ClamFlowAPIClient {
+class ClamFlowAPI {
   private baseURL: string;
-  private timeout: number;
+  private token: string | null = null;
 
-  constructor() {
-    this.baseURL = API_CONFIG.baseURL;
-    this.timeout = API_CONFIG.timeout;
-  }
-
-  // Get JWT token from localStorage
-  private getToken(): string | null {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('jwt_token');
-    }
-    return null;
-  }
-
-  // Get current user role
-  getCurrentUserRole(): string | null {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('user_role');
-    }
-    return null;
-  }
-
-  // Generic HTTP request method
-  private async request<T>(
-    endpoint: string, 
-    options: RequestInit = {}
-  ): Promise<T> {
-    const token = this.getToken();
+  constructor(baseURL: string = API_BASE_URL) {
+    this.baseURL = baseURL;
     
-    const config: RequestInit = {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token && { Authorization: `Bearer ${token}` }),
-        ...options.headers,
-      },
+    // Initialize token from localStorage if available
+    if (typeof window !== 'undefined') {
+      this.token = localStorage.getItem('clamflow_token');
+    }
+  }
+
+  // Set authentication token
+  setToken(token: string | null) {
+    this.token = token;
+  }
+
+  // Get authentication headers
+  private getHeaders(): HeadersInit {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
     };
 
-    const response = await fetch(`${this.baseURL}${endpoint}`, config);
-    
-    if (!response.ok) {
-      if (response.status === 401) {
-        // Unauthorized - redirect to login
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('jwt_token');
-          localStorage.removeItem('user_role');
-          window.location.href = '/login';
-        }
-      }
-      
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
+    if (this.token) {
+      headers['Authorization'] = `Bearer ${this.token}`;
     }
 
-    return response.json();
+    return headers;
+  }
+
+  // Generic API request method
+  private async request<T>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<ApiResponse<T>> {
+    try {
+      const url = `${this.baseURL}${endpoint}`;
+      const config: RequestInit = {
+        ...options,
+        headers: {
+          ...this.getHeaders(),
+          ...options.headers,
+        },
+      };
+
+      const response = await fetch(url, config);
+      
+      if (!response.ok) {
+        // Handle 401 Unauthorized
+        if (response.status === 401) {
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('clamflow_token');
+            localStorage.removeItem('clamflow_user');
+            window.location.href = '/login';
+          }
+        }
+
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      return {
+        success: true,
+        data,
+      };
+    } catch (error) {
+      console.error(`API request failed for ${endpoint}:`, error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred',
+      };
+    }
   }
 
   // GET request
-  async get<T>(endpoint: string): Promise<T> {
+  async get<T>(endpoint: string): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { method: 'GET' });
   }
 
   // POST request
-  async post<T>(endpoint: string, data?: any): Promise<T> {
+  async post<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
       method: 'POST',
       body: data ? JSON.stringify(data) : undefined,
@@ -107,7 +157,7 @@ class ClamFlowAPIClient {
   }
 
   // PUT request
-  async put<T>(endpoint: string, data?: any): Promise<T> {
+  async put<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
       method: 'PUT',
       body: data ? JSON.stringify(data) : undefined,
@@ -115,75 +165,150 @@ class ClamFlowAPIClient {
   }
 
   // DELETE request
-  async delete<T>(endpoint: string): Promise<T> {
+  async delete<T>(endpoint: string): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { method: 'DELETE' });
   }
 
-  // Authentication Methods
-  async login(username: string, password: string) {
-    const response = await fetch(`${this.baseURL}/auth/login`, {
+  // Authentication API
+  async login(username: string, password: string): Promise<ApiResponse<LoginResponse>> {
+    return this.request<LoginResponse>('/auth/login', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password })
+      body: JSON.stringify({ username, password }),
     });
+  }
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || 'Login failed');
-    }
-
-    const data = await response.json();
-    
-    // Store tokens
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('jwt_token', data.access_token);
-      localStorage.setItem('user_role', data.user?.role || '');
-    }
-
-    return data;
+  async refreshToken(): Promise<ApiResponse<{ access_token: string }>> {
+    return this.request<{ access_token: string }>('/auth/refresh', {
+      method: 'POST',
+    });
   }
 
   // Face Recognition Authentication
-  async loginWithFace(imageFile: File) {
+  async loginWithFace(imageFile: File): Promise<ApiResponse<LoginResponse>> {
     const formData = new FormData();
     formData.append('file', imageFile);
     
-    const response = await fetch(`${this.baseURL}/authenticate_by_face`, {
+    try {
+      const response = await fetch(`${this.baseURL}/authenticate_by_face`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          ...(this.token && { Authorization: `Bearer ${this.token}` }),
+        },
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Face authentication failed');
+      }
+      
+      const data = await response.json();
+      return { success: true, data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Face authentication failed',
+      };
+    }
+  }
+
+  // User Management API
+  async getCurrentUser(): Promise<ApiResponse<User>> {
+    return this.request<User>('/user/profile');
+  }
+
+  async getAllUsers(): Promise<ApiResponse<User[]>> {
+    return this.request<User[]>('/users/');
+  }
+
+  async createUser(userData: Partial<User>): Promise<ApiResponse<User>> {
+    return this.request<User>('/users/', {
       method: 'POST',
-      body: formData
+      body: JSON.stringify(userData),
     });
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || 'Face authentication failed');
-    }
-    
-    const data = await response.json();
-    
-    // Store tokens
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('jwt_token', data.access_token);
-      localStorage.setItem('user_role', data.user?.role || '');
-    }
-    
-    return data;
   }
 
-  // Logout
-  logout() {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('jwt_token');
-      localStorage.removeItem('user_role');
-    }
+  async updateUser(userId: string, userData: Partial<User>): Promise<ApiResponse<User>> {
+    return this.request<User>(`/users/${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify(userData),
+    });
   }
 
-  // User Profile
-  async getUserProfile() {
-    return this.get('/user/profile');
+  async deleteUser(userId: string): Promise<ApiResponse<void>> {
+    return this.request<void>(`/users/${userId}`, {
+      method: 'DELETE',
+    });
   }
 
-  // Data Access Methods
-  async getSuppliers(filters: any = {}) {
+  // Dashboard API
+  async getDashboardMetrics(): Promise<ApiResponse<DashboardMetrics>> {
+    return this.request<DashboardMetrics>('/dashboard/metrics');
+  }
+
+  async getSystemHealth(): Promise<ApiResponse<SystemHealthData>> {
+    return this.request<SystemHealthData>('/health');
+  }
+
+  // Forms API
+  async getPPCForms(): Promise<ApiResponse<any[]>> {
+    return this.request<any[]>('/ppc/forms');
+  }
+
+  async getFPForms(): Promise<ApiResponse<any[]>> {
+    return this.request<any[]>('/fp/forms');
+  }
+
+  async getWeightNotes(): Promise<ApiResponse<any[]>> {
+    return this.request<any[]>('/weight-notes/');
+  }
+
+  async getDepurationForms(): Promise<ApiResponse<any[]>> {
+    return this.request<any[]>('/depuration/forms');
+  }
+
+  async createWeightNote(formData: any): Promise<ApiResponse<any>> {
+    return this.post('/form/weight-note', formData);
+  }
+
+  async approveWeightNote(noteId: string): Promise<ApiResponse<any>> {
+    return this.put(`/form/weight-note/${noteId}/approve`);
+  }
+
+  async createPPCForm(formData: any): Promise<ApiResponse<any>> {
+    return this.post('/form/ppc', formData);
+  }
+
+  async approvePPCForm(formId: string): Promise<ApiResponse<any>> {
+    return this.put(`/form/ppc/${formId}/approve`);
+  }
+
+  async createFPForm(formData: any): Promise<ApiResponse<any>> {
+    return this.post('/form/fp', formData);
+  }
+
+  async approveFPForm(formId: string): Promise<ApiResponse<any>> {
+    return this.put(`/form/fp/${formId}/approve`);
+  }
+
+  // Lots API
+  async getLots(): Promise<ApiResponse<any[]>> {
+    return this.request<any[]>('/lots/');
+  }
+
+  async createLot(lotData: any): Promise<ApiResponse<any>> {
+    return this.request<any>('/lots/', {
+      method: 'POST',
+      body: JSON.stringify(lotData),
+    });
+  }
+
+  // Staff Management API
+  async getStaff(): Promise<ApiResponse<any[]>> {
+    return this.request<any[]>('/staff/');
+  }
+
+  async getSuppliers(filters: any = {}): Promise<ApiResponse<any[]>> {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== undefined && value !== '') {
@@ -192,52 +317,19 @@ class ClamFlowAPIClient {
     });
     
     const queryString = params.toString();
-    return this.get(`/data/suppliers${queryString ? `?${queryString}` : ''}`);
+    return this.request<any[]>(`/suppliers/${queryString ? `?${queryString}` : ''}`);
   }
 
-  async getStaff() {
-    return this.get('/data/staff');
-  }
-
-  async getVendors() {
-    return this.get('/data/vendors');
-  }
-
-  async getLots() {
-    return this.get('/data/lots');
-  }
-
-  // Form Methods
-  async createWeightNote(formData: any) {
-    return this.post('/form/weight-note', formData);
-  }
-
-  async approveWeightNote(noteId: string) {
-    return this.put(`/form/weight-note/${noteId}/approve`);
-  }
-
-  async createPPCForm(formData: any) {
-    return this.post('/form/ppc', formData);
-  }
-
-  async approvePPCForm(formId: string) {
-    return this.put(`/form/ppc/${formId}/approve`);
-  }
-
-  async createFPForm(formData: any) {
-    return this.post('/form/fp', formData);
-  }
-
-  async approveFPForm(formId: string) {
-    return this.put(`/form/fp/${formId}/approve`);
+  async getVendors(): Promise<ApiResponse<any[]>> {
+    return this.request<any[]>('/vendors/');
   }
 
   // Staff Lead Methods
-  async getStaffList() {
+  async getStaffList(): Promise<ApiResponse<any[]>> {
     return this.get('/staff-lead/staff-list');
   }
 
-  async getAttendanceOverview(filters: any = {}) {
+  async getAttendanceOverview(filters: any = {}): Promise<ApiResponse<any[]>> {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== undefined && value !== '') {
@@ -249,7 +341,7 @@ class ClamFlowAPIClient {
     return this.get(`/staff-lead/attendance-overview${queryString ? `?${queryString}` : ''}`);
   }
 
-  async getVendorList(filters: any = {}) {
+  async getVendorList(filters: any = {}): Promise<ApiResponse<any[]>> {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== undefined && value !== '') {
@@ -262,21 +354,21 @@ class ClamFlowAPIClient {
   }
 
   // Security & Gate Control
-  async logGateEntry(rfidTags: string[]) {
+  async logGateEntry(rfidTags: string[]): Promise<ApiResponse<any>> {
     return this.post('/secure/gate/entry', { 
       rfid_tags: rfidTags,
       timestamp: new Date().toISOString()
     });
   }
 
-  async logGateExit(rfidTags: string[]) {
+  async logGateExit(rfidTags: string[]): Promise<ApiResponse<any>> {
     return this.post('/secure/gate/exit', { 
       rfid_tags: rfidTags,
       timestamp: new Date().toISOString()
     });
   }
 
-  async recordAttendance(employeeId: string, method: 'face' | 'qr') {
+  async recordAttendance(employeeId: string, method: 'face' | 'qr'): Promise<ApiResponse<any>> {
     return this.post('/secure/attendance', {
       employee_id: employeeId,
       method,
@@ -285,46 +377,61 @@ class ClamFlowAPIClient {
   }
 
   // Onboarding Methods
-  async submitStaffOnboarding(staffData: any) {
+  async submitStaffOnboarding(staffData: any): Promise<ApiResponse<any>> {
     return this.post('/onboarding/staff', staffData);
   }
 
-  async submitSupplierOnboarding(supplierData: any) {
+  async submitSupplierOnboarding(supplierData: any): Promise<ApiResponse<any>> {
     return this.post('/onboarding/supplier', supplierData);
   }
 
-  async submitVendorOnboarding(vendorData: any) {
+  async submitVendorOnboarding(vendorData: any): Promise<ApiResponse<any>> {
     return this.post('/onboarding/vendor', vendorData);
   }
 
-  async approveOnboarding(id: string) {
+  async approveOnboarding(id: string): Promise<ApiResponse<any>> {
     return this.put(`/onboarding/${id}/approve`);
   }
 
+  // Hardware API
+  async getDeviceRegistry(): Promise<ApiResponse<any[]>> {
+    return this.request<any[]>('/hardware/devices');
+  }
+
+  async testHardware(deviceType: string): Promise<ApiResponse<any>> {
+    return this.request<any>('/hardware/test', {
+      method: 'POST',
+      body: JSON.stringify({ device_type: deviceType }),
+    });
+  }
+
+  // Notifications API
+  async getNotifications(): Promise<ApiResponse<any[]>> {
+    return this.request<any[]>('/notifications/');
+  }
+
+  async markNotificationRead(notificationId: string): Promise<ApiResponse<void>> {
+    return this.request<void>(`/notifications/${notificationId}/read`, {
+      method: 'PUT',
+    });
+  }
+
+  // Audit Trail API
+  async getAuditLogs(): Promise<ApiResponse<any[]>> {
+    return this.request<any[]>('/audit/logs');
+  }
+
   // Super Admin Methods
-  async getAdmins() {
+  async getAdmins(): Promise<ApiResponse<any[]>> {
     return this.get('/super-admin/admins');
   }
 
-  async createAdmin(adminData: any) {
+  async createAdmin(adminData: any): Promise<ApiResponse<any>> {
     return this.post('/super-admin/admins', adminData);
   }
 
-  async updateAdminPermissions(userId: string, permissions: any) {
+  async updateAdminPermissions(userId: string, permissions: any): Promise<ApiResponse<any>> {
     return this.put(`/super-admin/permissions/${userId}`, permissions);
-  }
-
-  async getAuditLogs() {
-    return this.get('/super-admin/audit-logs');
-  }
-
-  // Utility Methods
-  async getNotifications() {
-    return this.get('/notifications');
-  }
-
-  async getHealthStatus() {
-    return this.get('/health');
   }
 }
 
@@ -355,6 +462,15 @@ export function canAccessModule(userRole: string, module: string): boolean {
   return hasPermission(userRole, modulePermissions[module] || []);
 }
 
-// Create singleton instance
-export const apiClient = new ClamFlowAPIClient();
-export default apiClient;
+// Create and export API instance
+export const clamflowAPI = new ClamFlowAPI();
+
+// Export types for use in components
+export type {
+  ApiResponse,
+  LoginResponse,
+  DashboardMetrics,
+  SystemHealthData,
+};
+
+export default clamflowAPI;

@@ -1,87 +1,53 @@
-// Basic type check test for ClamFlow types
-import {
-  // Core types
-  BaseEntity,
-  Status,
-  ProcessingStatus,
-  Location,
-  Plant,
-  ContactInfo,
-  
-  // Form types
-  WeightNoteFormData,
-  PPCFormData,
-  FPFormData,
-  
-  // API types
-  APIResponse,
-  
-  // Auth types
-  User,
-  UserRole,
-  
-  // Label types
-  LabelTemplate,
-  QRCodeData,
-  
-  // RFID types
-  RFIDTag,
-  
-  // Inventory types
-  Product,
-  InventoryItem
-} from '../types'
+// Type checking tests for ClamFlow Frontend
 
-// Type checking function to ensure all imports work
-export function typeCheck() {
-  console.log('✅ All ClamFlow types imported successfully!')
-  
-  // Sample type usage
-  const user: User = {
-    id: 'test-id',
-    username: 'testuser',
-    email: 'test@clamflow.com',
-    first_name: 'Test',
-    last_name: 'User',
-    full_name: 'Test User',
-    role: 'qa_technician',
-    plant_id: 'plant_001',
-    department: 'Quality Assurance',
-    status: 'active',
-    is_first_login: false,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  }
+import { User, UserRole } from '../types';
+import { ApiResponse } from '../types/api';
 
-  const plant: Plant = {
-    id: 'plant_001',
-    name: 'Main Processing Plant',
-    code: 'MPP',
-    location: {
-      latitude: -36.8485,
-      longitude: 174.7633,
-      city: 'Auckland',
-      country: 'New Zealand'
-    },
-    status: 'active',
-    capacity: 10000,
-    plant_type: 'processing',
-    certifications: ['HACCP', 'ISO22000'],
-    contact_info: {
-      email: 'plant@clamflow.com',
-      phone: '+64-9-123-4567'
-    },
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  }
+// Test User type
+const testUser: User = {
+  id: '1',
+  username: 'test_user',
+  full_name: 'Test User',
+  role: 'Production Staff', // Fixed: Use valid role
+  station: 'Station 1',
+  is_active: true,
+  last_login: '2023-01-01T00:00:00Z',
+  created_at: '2023-01-01T00:00:00Z',
+  updated_at: '2023-01-01T00:00:00Z',
+  password_reset_required: false,
+  login_attempts: 0,
+};
 
-  const api_response: APIResponse<string> = {
-    success: true,
-    data: 'test-data',
-    message: 'Success'
-  }
+// Test UserRole type
+const testRole: UserRole = 'QC Staff'; // Fixed: Use valid role
 
-  return { user, plant, api_response }
+// Test ApiResponse type
+const testApiResponse: ApiResponse<User> = {
+  success: true,
+  data: testUser,
+};
+
+// Test all valid roles
+const validRoles: UserRole[] = [
+  'Super Admin',
+  'Admin',
+  'Production Lead',
+  'QC Lead',
+  'Staff Lead',
+  'QC Staff',
+  'Production Staff',
+  'Security Guard'
+];
+
+// Test role validation function
+function isValidRole(role: string): role is UserRole {
+  return validRoles.includes(role as UserRole);
 }
 
-export default typeCheck
+// Example usage
+const sampleRole = 'QC Staff';
+if (isValidRole(sampleRole)) {
+  console.log(`${sampleRole} is a valid role`);
+}
+
+console.log('Type checking passed!');
