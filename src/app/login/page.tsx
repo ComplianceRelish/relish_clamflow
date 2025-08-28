@@ -91,14 +91,12 @@ const LoginPage: React.FC = () => {
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
-          <div className="flex justify-center">
-            <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-4 shadow-lg border border-gray-200">
-              <img 
-                src="/logo-relish.png" 
-                alt="Relish Logo" 
-                className="w-18 h-18 object-contain"
-              />
-            </div>
+          <div className="flex justify-center mb-4">
+            <img 
+              src="/logo-relish.png" 
+              alt="Relish Logo" 
+              className="w-24 h-24 object-contain"
+            />
           </div>
           <h2 className="text-3xl font-extrabold text-gray-900">ClamFlow</h2>
           <p className="mt-2 text-sm text-gray-600">Quality • Productivity • Assured</p>
