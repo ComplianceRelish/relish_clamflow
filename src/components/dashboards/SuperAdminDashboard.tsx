@@ -113,7 +113,7 @@ const SuperAdminDashboard: React.FC = () => {
 
     switch (activeModal) {
       case 'user-management':
-        return <UserManagementPanel onClose={closeModal} />;
+        return <UserManagementPanel title="User Management" onClose={closeModal} />;
       
       case 'admin-permissions':
         return (
