@@ -106,7 +106,7 @@ const SuperAdminDashboard: React.FC = () => {
                 <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
                   <span className="text-white text-sm font-bold">CF</span>
                 </div>
-                <h1 className="text-2xl font-bold text-gray-900">ClamFlow</h1>
+                                <h1 className="text-2xl font-bold text-gray-900">ClamFlow</h1>
               </div>
               <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
                 Super Admin
