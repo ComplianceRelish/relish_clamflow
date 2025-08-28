@@ -92,11 +92,11 @@ const LoginPage: React.FC = () => {
         {/* Header */}
         <div className="text-center">
           <div className="flex justify-center">
-            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 shadow-lg border border-gray-200">
+            <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-4 shadow-lg border border-gray-200">
               <img 
                 src="/logo-relish.png" 
                 alt="Relish Logo" 
-                className="w-12 h-12 object-contain"
+                className="w-18 h-18 object-contain"
               />
             </div>
           </div>
@@ -173,13 +173,6 @@ const LoginPage: React.FC = () => {
               </button>
             </div>
           </form>
-
-          {/* Demo Credentials */}
-          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
-            <p className="text-xs text-blue-800 font-medium">Super Admin Demo:</p>
-            <p className="text-xs text-blue-600">Username: SA_Motty</p>
-            <p className="text-xs text-blue-600">Password: Phes0061</p>
-          </div>
         </Card>
 
         {/* Footer */}
