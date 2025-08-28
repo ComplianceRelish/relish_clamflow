@@ -203,7 +203,7 @@ const SuperAdminDashboard: React.FC = () => {
               <div className="flex-shrink-0">
                 <img
                   className="h-8 w-8"
-                  src="https://relishcuisines.com/wp-content/uploads/2024/09/cropped-relish-favicon-32x32.png"
+                  src="/logo_relish.png"
                   alt="Relish"
                 />
               </div>
