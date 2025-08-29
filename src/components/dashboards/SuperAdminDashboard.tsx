@@ -1,298 +1,309 @@
+// src/components/dashboards/SuperAdminDashboard.tsx
+'use client';
+
 import React, { useState } from 'react';
 import { 
-  Users, 
-  Shield, 
-  Settings, 
-  Database, 
-  HardDrive, 
-  AlertTriangle, 
-  FileText, 
-  Terminal, 
-  Activity,
-  X 
-} from 'lucide-react';
-import UserManagementPanel from './admin/UserManagementPanel'; // Correct path
+  UserGroupIcon, 
+  ChartBarIcon, 
+  ClipboardDocumentListIcon,
+  BuildingOfficeIcon,
+  BellIcon,
+  Cog6ToothIcon,
+  CpuChipIcon,
+  KeyIcon,
+  UserIcon,
+  CheckCircleIcon,          // ADDED THIS
+  ExclamationTriangleIcon   // ADDED THIS
+} from '@heroicons/react/24/outline';
 
-interface FeatureCard {
-  id: string;
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-  color: string;
-  priority: 'critical' | 'high' | 'medium';
+// Import all Super Admin panels
+import DashboardMetricsPanel from './admin/DashboardMetricsPanel';
+import UserActivitiesPanel from './admin/UserActivitiesPanel';
+import SystemConfigurationPanel from './admin/SystemConfigurationPanel';
+import HardwareManagementPanel from './admin/HardwareManagementPanel';
+import AdminPermissionsPanel from './admin/AdminPermissionsPanel';
+
+interface SuperAdminDashboardProps {
+  user: {
+    id: string;
+    username: string;
+    role: string;
+  };
 }
 
-const SuperAdminDashboard: React.FC = () => {
-  const [activeModal, setActiveModal] = useState<string | null>(null);
+type SuperAdminPanel = 
+  | 'overview'
+  | 'system_configuration'
+  | 'hardware_management'
+  | 'admin_permissions'
+  | 'user_management'
+  | 'backup_recovery'
+  | 'emergency_controls'
+  | 'audit_log_export'
+  | 'api_monitoring'
+  | 'dashboard_metrics'
+  | 'user_activities';
 
-  const features: FeatureCard[] = [
+const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ user }) => {
+  const [activePanel, setActivePanel] = useState<SuperAdminPanel>('overview');
+
+  // Super Admin panel configuration - ALL 9 PANELS
+  const superAdminPanels = [
     {
-      id: 'user-management',
+      id: 'user_management' as SuperAdminPanel,
       title: 'User Management',
-      description: 'Create, edit, and manage user accounts across all roles',
-      icon: <Users className="w-6 h-6" />,
-      color: 'bg-blue-500',
-      priority: 'high'
+      description: 'Create, modify, delete user accounts and roles',
+      icon: UserGroupIcon,
+      color: 'blue',
+      component: UserActivitiesPanel // Use as user management for now
     },
     {
-      id: 'admin-permissions',
-      title: 'Admin Permissions',
-      description: 'Configure role-based access control and permissions',
-      icon: <Shield className="w-6 h-6" />,
-      color: 'bg-green-500',
-      priority: 'critical'
-    },
-    {
-      id: 'system-config',
+      id: 'system_configuration' as SuperAdminPanel,
       title: 'System Configuration',
-      description: 'Manage global system settings and configurations',
-      icon: <Settings className="w-6 h-6" />,
-      color: 'bg-purple-500',
-      priority: 'high'
+      description: 'Configure system settings and parameters',
+      icon: Cog6ToothIcon,
+      color: 'blue',
+      component: SystemConfigurationPanel
     },
     {
-      id: 'backup-recovery',
-      title: 'Backup & Recovery',
-      description: 'Database backup management and disaster recovery',
-      icon: <Database className="w-6 h-6" />,
-      color: 'bg-indigo-500',
-      priority: 'critical'
-    },
-    {
-      id: 'hardware-management',
+      id: 'hardware_management' as SuperAdminPanel,
       title: 'Hardware Management',
-      description: 'Monitor and control production hardware systems',
-      icon: <HardDrive className="w-6 h-6" />,
-      color: 'bg-orange-500',
-      priority: 'medium'
+      description: 'Control RFID readers, sensors, and IoT devices',
+      icon: CpuChipIcon,
+      color: 'purple',
+      component: HardwareManagementPanel
     },
     {
-      id: 'emergency-controls',
+      id: 'admin_permissions' as SuperAdminPanel,
+      title: 'Admin Permissions',
+      description: 'Manage admin roles and system permissions',
+      icon: KeyIcon,
+      color: 'indigo',
+      component: AdminPermissionsPanel
+    },
+    {
+      id: 'backup_recovery' as SuperAdminPanel,
+      title: 'Backup & Recovery',
+      description: 'System backup and disaster recovery controls',
+      icon: ClipboardDocumentListIcon,
+      color: 'green',
+      component: DashboardMetricsPanel // Placeholder for now
+    },
+    {
+      id: 'emergency_controls' as SuperAdminPanel,
       title: 'Emergency Controls',
-      description: 'Emergency shutdown and critical system controls',
-      icon: <AlertTriangle className="w-6 h-6" />,
-      color: 'bg-red-500',
-      priority: 'critical'
+      description: 'Emergency system shutdown and safety controls',
+      icon: BellIcon,
+      color: 'red',
+      component: DashboardMetricsPanel // Placeholder for now
     },
     {
-      id: 'audit-log',
+      id: 'audit_log_export' as SuperAdminPanel,
       title: 'Audit Log Export',
-      description: 'Export and analyze system audit logs',
-      icon: <FileText className="w-6 h-6" />,
-      color: 'bg-yellow-500',
-      priority: 'medium'
+      description: 'Export system audit logs and compliance reports',
+      icon: UserIcon,
+      color: 'yellow',
+      component: UserActivitiesPanel
     },
     {
-      id: 'database-console',
-      title: 'Database Console',
-      description: 'Direct database access and query execution',
-      icon: <Terminal className="w-6 h-6" />,
-      color: 'bg-gray-500',
-      priority: 'high'
-    },
-    {
-      id: 'api-monitoring',
+      id: 'api_monitoring' as SuperAdminPanel,
       title: 'API Monitoring',
-      description: 'Real-time API performance and health monitoring',
-      icon: <Activity className="w-6 h-6" />,
-      color: 'bg-teal-500',
-      priority: 'high'
+      description: 'Monitor API performance and system health',
+      icon: ChartBarIcon,
+      color: 'green',
+      component: DashboardMetricsPanel
+    },
+    {
+      id: 'dashboard_metrics' as SuperAdminPanel,
+      title: 'Dashboard Metrics',
+      description: 'Real-time system performance and analytics',
+      icon: ChartBarIcon,
+      color: 'indigo',
+      component: DashboardMetricsPanel
     }
   ];
 
-  const openModal = (featureId: string) => {
-    setActiveModal(featureId);
+  const getColorClasses = (color: string) => {
+    const colorMap: Record<string, { bg: string; text: string; hover: string; border: string }> = {
+      blue: { bg: 'bg-blue-50', text: 'text-blue-600', hover: 'hover:bg-blue-100', border: 'border-blue-200' },
+      green: { bg: 'bg-green-50', text: 'text-green-600', hover: 'hover:bg-green-100', border: 'border-green-200' },
+      yellow: { bg: 'bg-yellow-50', text: 'text-yellow-600', hover: 'hover:bg-yellow-100', border: 'border-yellow-200' },
+      red: { bg: 'bg-red-50', text: 'text-red-600', hover: 'hover:bg-red-100', border: 'border-red-200' },
+      purple: { bg: 'bg-purple-50', text: 'text-purple-600', hover: 'hover:bg-purple-100', border: 'border-purple-200' },
+      indigo: { bg: 'bg-indigo-50', text: 'text-indigo-600', hover: 'hover:bg-indigo-100', border: 'border-indigo-200' },
+    };
+    return colorMap[color] || colorMap.blue;
   };
 
-  const closeModal = () => {
-    setActiveModal(null);
-  };
+  const renderActivePanel = () => {
+    if (activePanel === 'overview') {
+      return (
+        <div className="space-y-6">
+          {/* Super Admin Welcome */}
+          <div className="bg-gradient-to-r from-red-600 to-purple-600 rounded-lg shadow-lg p-8 text-white">
+            <h1 className="text-3xl font-bold mb-2">Super Admin Control Center</h1>
+            <p className="text-red-100">
+              Ultimate system authority - {user.username} | Complete ClamFlow oversight
+            </p>
+          </div>
 
-  const renderModalContent = () => {
-    if (!activeModal) return null;
+          {/* System Status Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="bg-white rounded-lg shadow-lg p-6">
+              <div className="flex items-center">
+                <div className="p-2 rounded-lg bg-green-50">
+                  <CheckCircleIcon className="h-8 w-8 text-green-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">System Status</p>
+                  <p className="text-2xl font-semibold text-green-600">Operational</p>
+                </div>
+              </div>
+            </div>
 
-    switch (activeModal) {
-      case 'user-management':
-        return <UserManagementPanel title="User Management" onClose={closeModal} />;
-      
-      case 'admin-permissions':
-        return (
-          <div className="p-6">
-            <h2 className="text-2xl font-bold mb-4 text-gray-800">Admin Permissions</h2>
-            <p className="text-gray-600">This panel is under development.</p>
+            <div className="bg-white rounded-lg shadow-lg p-6">
+              <div className="flex items-center">
+                <div className="p-2 rounded-lg bg-blue-50">
+                  <UserGroupIcon className="h-8 w-8 text-blue-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Total Users</p>
+                  <p className="text-2xl font-semibold text-blue-600">248</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-lg p-6">
+              <div className="flex items-center">
+                <div className="p-2 rounded-lg bg-purple-50">
+                  <CpuChipIcon className="h-8 w-8 text-purple-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Hardware Devices</p>
+                  <p className="text-2xl font-semibold text-purple-600">15</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-lg p-6">
+              <div className="flex items-center">
+                <div className="p-2 rounded-lg bg-red-50">
+                  <BellIcon className="h-8 w-8 text-red-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Critical Alerts</p>
+                  <p className="text-2xl font-semibold text-red-600">0</p>
+                </div>
+              </div>
+            </div>
           </div>
-        );
-      
-      case 'system-config':
-        return (
-          <div className="p-6">
-            <h2 className="text-2xl font-bold mb-4 text-gray-800">System Configuration</h2>
-            <p className="text-gray-600">This panel is under development.</p>
+
+          {/* Super Admin Panels Grid - ALL 9 PANELS */}
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Super Admin Control Panels</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {superAdminPanels.map((panel) => {
+                const colors = getColorClasses(panel.color);
+                const Icon = panel.icon;
+                return (
+                  <button
+                    key={panel.id}
+                    onClick={() => setActivePanel(panel.id)}
+                    className={`bg-white rounded-lg shadow-lg p-6 text-left transition-all duration-200 ${colors.hover} border ${colors.border}`}
+                  >
+                    <div className="flex items-center mb-4">
+                      <div className={`p-3 rounded-lg ${colors.bg}`}>
+                        <Icon className={`h-8 w-8 ${colors.text}`} />
+                      </div>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{panel.title}</h3>
+                    <p className="text-gray-600 text-sm">{panel.description}</p>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        );
-      
-      case 'backup-recovery':
-        return (
-          <div className="p-6">
-            <h2 className="text-2xl font-bold mb-4 text-gray-800">Backup & Recovery</h2>
-            <p className="text-gray-600">This panel is under development.</p>
+
+          {/* Emergency Controls */}
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Emergency Controls</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <button className="p-4 text-left border-2 border-red-200 rounded-lg hover:bg-red-50 transition-colors">
+                <h4 className="font-medium text-red-900">System Shutdown</h4>
+                <p className="text-sm text-red-600">Emergency system halt</p>
+              </button>
+              <button className="p-4 text-left border-2 border-yellow-200 rounded-lg hover:bg-yellow-50 transition-colors">
+                <h4 className="font-medium text-yellow-900">Lock All Gates</h4>
+                <p className="text-sm text-yellow-600">Security lockdown</p>
+              </button>
+              <button className="p-4 text-left border-2 border-blue-200 rounded-lg hover:bg-blue-50 transition-colors">
+                <h4 className="font-medium text-blue-900">Backup System</h4>
+                <p className="text-sm text-blue-600">Full data backup</p>
+              </button>
+              <button className="p-4 text-left border-2 border-green-200 rounded-lg hover:bg-green-50 transition-colors">
+                <h4 className="font-medium text-green-900">Reset Hardware</h4>
+                <p className="text-sm text-green-600">Restart all devices</p>
+              </button>
+            </div>
           </div>
-        );
-      
-      case 'hardware-management':
-        return (
-          <div className="p-6">
-            <h2 className="text-2xl font-bold mb-4 text-gray-800">Hardware Management</h2>
-            <p className="text-gray-600">This panel is under development.</p>
-          </div>
-        );
-      
-      case 'emergency-controls':
-        return (
-          <div className="p-6">
-            <h2 className="text-2xl font-bold mb-4 text-gray-800">Emergency Controls</h2>
-            <p className="text-gray-600">This panel is under development.</p>
-          </div>
-        );
-      
-      case 'audit-log':
-        return (
-          <div className="p-6">
-            <h2 className="text-2xl font-bold mb-4 text-gray-800">Audit Log Export</h2>
-            <p className="text-gray-600">This panel is under development.</p>
-          </div>
-        );
-      
-      case 'database-console':
-        return (
-          <div className="p-6">
-            <h2 className="text-2xl font-bold mb-4 text-gray-800">Database Console</h2>
-            <p className="text-gray-600">This panel is under development.</p>
-          </div>
-        );
-      
-      case 'api-monitoring':
-        return (
-          <div className="p-6">
-            <h2 className="text-2xl font-bold mb-4 text-gray-800">API Monitoring</h2>
-            <p className="text-gray-600">This panel is under development.</p>
-          </div>
-        );
-      
-      default:
-        return null;
+        </div>
+      );
     }
-  };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'critical': return 'border-red-500';
-      case 'high': return 'border-orange-500';
-      case 'medium': return 'border-yellow-500';
-      default: return 'border-gray-300';
+    // Render the selected panel component
+    const selectedPanel = superAdminPanels.find(panel => panel.id === activePanel);
+    if (selectedPanel) {
+      const PanelComponent = selectedPanel.component;
+      return <PanelComponent />;
     }
+
+    return <div>Panel not found</div>;
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+      {/* Top Navigation */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <img
-                  className="h-8 w-8"
-                  src="/logo_relish.png"
-                  alt="Relish"
-                />
-              </div>
-              <div className="ml-4">
-                <h1 className="text-2xl font-bold text-gray-900">ClamFlow</h1>
-                <p className="text-sm text-gray-500">Super Admin Dashboard</p>
+          <div className="flex justify-between items-center py-4">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => setActivePanel('overview')}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  activePanel === 'overview'
+                    ? 'bg-red-100 text-red-700'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Super Admin Overview
+              </button>
+              <div className="text-gray-300">|</div>
+              <div className="text-gray-600">
+                {activePanel !== 'overview' && (
+                  <span className="capitalize">
+                    {superAdminPanels.find(p => p.id === activePanel)?.title || 'Panel'}
+                  </span>
+                )}
               </div>
             </div>
-            <div className="flex items-center">
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                Super Admin
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-600">
+                Super Admin: <span className="font-medium text-red-600">{user.username}</span>
               </span>
+              <div className="h-8 w-8 bg-red-600 rounded-full flex items-center justify-center">
+                <span className="text-white text-sm font-medium">
+                  {user.username.charAt(0)}
+                </span>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          <div className="mb-8">
-            <h2 className="text-lg font-medium text-gray-900 mb-2">System Administration</h2>
-            <p className="text-sm text-gray-600">
-              Manage users, configure systems, and monitor critical operations
-            </p>
-          </div>
-
-          {/* Feature Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((feature) => (
-              <div
-                key={feature.id}
-                className={`bg-white overflow-hidden shadow rounded-lg border-l-4 ${getPriorityColor(feature.priority)} hover:shadow-lg transition-shadow duration-200 cursor-pointer`}
-                onClick={() => openModal(feature.id)}
-              >
-                <div className="p-5">
-                  <div className="flex items-center">
-                    <div className={`flex-shrink-0 ${feature.color} rounded-md p-3 text-white`}>
-                      {feature.icon}
-                    </div>
-                    <div className="ml-5 w-0 flex-1">
-                      <dl>
-                        <dt className="text-sm font-medium text-gray-500 truncate">
-                          {feature.title}
-                        </dt>
-                        <dd className="text-sm text-gray-900 mt-1">
-                          {feature.description}
-                        </dd>
-                      </dl>
-                    </div>
-                  </div>
-                  <div className="mt-4">
-                    <div className="flex items-center justify-between">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        feature.priority === 'critical' ? 'bg-red-100 text-red-800' :
-                        feature.priority === 'high' ? 'bg-orange-100 text-orange-800' :
-                        'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {feature.priority.toUpperCase()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {renderActivePanel()}
       </div>
-
-      {/* Modal Overlay */}
-      {activeModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
-            <div className="absolute top-0 right-0 pt-4 pr-4">
-              <button
-                type="button"
-                className="bg-white rounded-md text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
-                onClick={closeModal}
-              >
-                <span className="sr-only">Close</span>
-                <X className="h-6 w-6" aria-hidden="true" />
-              </button>
-            </div>
-            <div className="mt-3">
-              {renderModalContent()}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
