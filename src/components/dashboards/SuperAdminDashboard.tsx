@@ -189,7 +189,7 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ user }) => {
               <img 
                 src="/logo-relish.png" 
                 alt="Relish Logo" 
-                className="h-12 w-12 mr-4 bg-white rounded-lg p-2"
+                className="h-16 w-16 mr-4 bg-white rounded-lg p-2"
               />
               <div>
                 <h1 className="text-3xl font-bold">ClamFlow Control Center</h1>
