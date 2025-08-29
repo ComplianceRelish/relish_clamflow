@@ -185,10 +185,19 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ user }) => {
         <div className="space-y-6">
           {/* Super Admin Welcome */}
           <div className="bg-gradient-to-r from-red-600 to-purple-600 rounded-lg shadow-lg p-8 text-white">
-            <h1 className="text-3xl font-bold mb-2">Super Admin Control Center</h1>
-            <p className="text-red-100">
-              Ultimate system authority - {user.username} | Complete ClamFlow oversight
-            </p>
+            <div className="flex items-center mb-4">
+              <img 
+                src="/logo-relish.png" 
+                alt="Relish Logo" 
+                className="h-12 w-12 mr-4 bg-white rounded-lg p-2"
+              />
+              <div>
+                <h1 className="text-3xl font-bold">ClamFlow Control Center</h1>
+                <p className="text-red-100">
+                  Ultimate system authority - {user.username} | Complete ClamFlow oversight
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* System Status Cards */}
@@ -317,16 +326,23 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ user }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setActivePanel('overview')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  activePanel === 'overview'
-                    ? 'bg-red-100 text-red-700'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Super Admin Overview
-              </button>
+              <div className="flex items-center space-x-3">
+                <img 
+                  src="/logo-relish.png" 
+                  alt="Relish Logo" 
+                  className="h-8 w-8 bg-white rounded-lg p-1"
+                />
+                <button
+                  onClick={() => setActivePanel('overview')}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    activePanel === 'overview'
+                      ? 'bg-red-100 text-red-700'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  ClamFlow Dashboard
+                </button>
+              </div>
               <div className="text-gray-300">|</div>
               <div className="text-gray-600">
                 {activePanel !== 'overview' && (
