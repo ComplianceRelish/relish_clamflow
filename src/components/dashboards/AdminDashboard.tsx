@@ -127,26 +127,26 @@ const AdminDashboard: React.FC = () => {
           const data = await response.json();
           setStats(data);
         } else {
-          // Fallback demo data
+          // Initialize with zero - only real data should be displayed
           setStats({
-            totalLeads: 12,
-            activeLeads: 9,
-            pendingApprovals: 5,
-            departmentsManaged: 4,
-            todayActivity: 23,
-            urgentIssues: 2
+            totalLeads: 0,
+            activeLeads: 0,
+            pendingApprovals: 0,
+            departmentsManaged: 0,
+            todayActivity: 0,
+            urgentIssues: 0
           });
         }
       } catch (error) {
         console.error('Failed to fetch admin stats:', error);
-        // Use fallback data
+        // Initialize with zero - only real data should be displayed
         setStats({
-          totalLeads: 12,
-          activeLeads: 9,
-          pendingApprovals: 5,
-          departmentsManaged: 4,
-          todayActivity: 23,
-          urgentIssues: 2
+          totalLeads: 0,
+          activeLeads: 0,
+          pendingApprovals: 0,
+          departmentsManaged: 0,
+          todayActivity: 0,
+          urgentIssues: 0
         });
       } finally {
         setLoading(false);

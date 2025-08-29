@@ -7,11 +7,6 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata = {
   title: 'ClamFlow - Quality Management System | Relish',
   description: 'Professional clam processing quality management and workflow system powered by Relish',
-  icons: {
-    icon: '/logo-relish.png',
-    shortcut: '/logo-relish.png',
-    apple: '/logo-relish.png',
-  },
 };
 
 export default function RootLayout({

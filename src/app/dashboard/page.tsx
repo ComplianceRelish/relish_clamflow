@@ -29,33 +29,7 @@ const DashboardPage: React.FC = () => {
           return;
         }
 
-        // Try to validate with backend first
-        try {
-          const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/validate`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          });
-
-          if (response.ok) {
-            const userData = await response.json();
-            
-            // Verify user has dashboard access
-            if (!['Super Admin', 'Admin'].includes(userData.role)) {
-              setError(`Access denied. Role "${userData.role}" does not have dashboard access privileges.`);
-              return;
-            }
-
-            setUser(userData);
-            return;
-          }
-        } catch (apiError) {
-          console.log('Backend API unavailable, checking fallback credentials...');
-        }
-
-        // Fallback to stored user data if API is unavailable
+        // Get user data from localStorage (already validated during login)
         const storedUser = localStorage.getItem('clamflow_user');
         if (storedUser) {
           const userData = JSON.parse(storedUser);
