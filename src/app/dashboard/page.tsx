@@ -23,7 +23,7 @@ const DashboardPage: React.FC = () => {
   useEffect(() => {
     const validateAndLoadUser = async () => {
       try {
-        const token = localStorage.getItem('authToken');
+        const token = localStorage.getItem('clamflow_token');
         if (!token) {
           router.push('/login');
           return;
@@ -56,7 +56,7 @@ const DashboardPage: React.FC = () => {
         }
 
         // Fallback to stored user data if API is unavailable
-        const storedUser = localStorage.getItem('user');
+        const storedUser = localStorage.getItem('clamflow_user');
         if (storedUser) {
           const userData = JSON.parse(storedUser);
           
@@ -71,8 +71,8 @@ const DashboardPage: React.FC = () => {
         }
 
         // No valid authentication found
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('user');
+        localStorage.removeItem('clamflow_token');
+        localStorage.removeItem('clamflow_user');
         router.push('/login');
         
       } catch (err) {
@@ -80,8 +80,8 @@ const DashboardPage: React.FC = () => {
         setError('Authentication failed. Please log in again.');
         
         // Clear invalid tokens and redirect
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('user');
+        localStorage.removeItem('clamflow_token');
+        localStorage.removeItem('clamflow_user');
         setTimeout(() => {
           router.push('/login');
         }, 3000);

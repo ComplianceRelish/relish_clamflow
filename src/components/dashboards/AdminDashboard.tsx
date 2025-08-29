@@ -119,7 +119,7 @@ const AdminDashboard: React.FC = () => {
       try {
         const response = await fetch('/api/admin/dashboard-stats', {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+            'Authorization': `Bearer ${localStorage.getItem('clamflow_token')}`
           }
         });
         
