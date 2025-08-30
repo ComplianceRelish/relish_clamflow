@@ -400,16 +400,18 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ user }) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header Component with Branding, User Info & Navigation */}
+      {/* Header Component */}
       <Header 
         pageTitle={getPageTitle()}
         pageSubtitle={getPageSubtitle()}
       />
 
-      {/* Main Content - Mobile Optimized */}
-      <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-3 sm:py-4 lg:py-8">
-        {renderActivePanel()}
-      </div>
+      {/* Main Content - Mobile First */}
+      <main className="pb-16 lg:pb-8">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-3 sm:py-4 lg:py-8">
+          {renderActivePanel()}
+        </div>
+      </main>
     </div>
   );
 };
