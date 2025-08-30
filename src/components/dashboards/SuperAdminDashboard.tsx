@@ -11,16 +11,20 @@ import {
   CpuChipIcon,
   KeyIcon,
   UserIcon,
-  CheckCircleIcon,          // ADDED THIS
-  ExclamationTriangleIcon   // ADDED THIS
+  CheckCircleIcon,
+  ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 
-// Import all Super Admin panels
+// Import CORRECT panels - No more placeholder components
 import DashboardMetricsPanel from './admin/DashboardMetricsPanel';
-import UserActivitiesPanel from './admin/UserActivitiesPanel';
+import UserManagementPanel from './admin/UserManagementPanel'; // CORRECTED - Real user management
 import SystemConfigurationPanel from './admin/SystemConfigurationPanel';
 import HardwareManagementPanel from './admin/HardwareManagementPanel';
 import AdminPermissionsPanel from './admin/AdminPermissionsPanel';
+import DisasterRecovery from './admin/DisasterRecovery'; // CORRECTED - Real backup & recovery
+import SystemHealth from './admin/SystemHealth'; // CORRECTED - Real emergency controls
+import AuditTrail from './admin/AuditTrail'; // CORRECTED - Real audit log export
+import DepartmentOversightPanel from './admin/DepartmentOversightPanel';
 
 interface SuperAdminDashboardProps {
   user: {
@@ -40,8 +44,7 @@ type SuperAdminPanel =
   | 'emergency_controls'
   | 'audit_log_export'
   | 'api_monitoring'
-  | 'dashboard_metrics'
-  | 'user_activities';
+  | 'dashboard_metrics';
 
 const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ user }) => {
   const [activePanel, setActivePanel] = useState<SuperAdminPanel>('overview');
@@ -59,7 +62,7 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ user }) => {
       try {
         // Get real user count from AuthContext or localStorage
         const storedUser = localStorage.getItem('clamflow_user');
-        const realUserCount = storedUser ? 1 : 0; // Count actual authenticated users
+        const realUserCount = storedUser ? 1 : 0;
         
         // Get real hardware device count (implement when hardware is connected)
         const hardwareDevices = 0; // TODO: Implement real hardware count API
@@ -68,7 +71,7 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ user }) => {
         const criticalAlerts = 0; // TODO: Implement real alerts API
         
         // Calculate system uptime
-        const systemUptime = Math.floor((Date.now() - new Date().setHours(0, 0, 0, 0)) / (1000 * 60 * 60)); // Hours since midnight
+        const systemUptime = Math.floor((Date.now() - new Date().setHours(0, 0, 0, 0)) / (1000 * 60 * 60));
         
         setDashboardStats({
           totalUsers: realUserCount,
@@ -91,7 +94,7 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ user }) => {
     return () => clearInterval(interval);
   }, []);
 
-  // Super Admin panel configuration - ALL 9 PANELS
+  // Super Admin panel configuration - CORRECTED MAPPINGS
   const superAdminPanels = [
     {
       id: 'user_management' as SuperAdminPanel,
@@ -99,7 +102,7 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ user }) => {
       description: 'Create, modify, delete user accounts and roles',
       icon: UserGroupIcon,
       color: 'blue',
-      component: UserActivitiesPanel // Use as user management for now
+      component: UserManagementPanel // CORRECTED - Real user management with CRUD
     },
     {
       id: 'system_configuration' as SuperAdminPanel,
@@ -131,7 +134,7 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ user }) => {
       description: 'System backup and disaster recovery controls',
       icon: ClipboardDocumentListIcon,
       color: 'green',
-      component: DashboardMetricsPanel // Placeholder for now
+      component: DisasterRecovery // CORRECTED - Real disaster recovery component
     },
     {
       id: 'emergency_controls' as SuperAdminPanel,
@@ -139,7 +142,7 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ user }) => {
       description: 'Emergency system shutdown and safety controls',
       icon: BellIcon,
       color: 'red',
-      component: DashboardMetricsPanel // Placeholder for now
+      component: SystemHealth // CORRECTED - Real emergency controls component
     },
     {
       id: 'audit_log_export' as SuperAdminPanel,
@@ -147,7 +150,7 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ user }) => {
       description: 'Export system audit logs and compliance reports',
       icon: UserIcon,
       color: 'yellow',
-      component: UserActivitiesPanel
+      component: AuditTrail // CORRECTED - Real audit trail component
     },
     {
       id: 'api_monitoring' as SuperAdminPanel,
@@ -155,7 +158,7 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ user }) => {
       description: 'Monitor API performance and system health',
       icon: ChartBarIcon,
       color: 'green',
-      component: DashboardMetricsPanel
+      component: DashboardMetricsPanel // Keep for now until dedicated API monitoring created
     },
     {
       id: 'dashboard_metrics' as SuperAdminPanel,
@@ -183,23 +186,8 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ user }) => {
     if (activePanel === 'overview') {
       return (
         <div className="space-y-6">
-          {/* Super Admin Welcome */}
-          <div className="bg-gradient-to-r from-red-600 to-purple-600 rounded-lg shadow-lg p-8 text-white">
-            <div className="flex items-center mb-4">
-              <img 
-                src="/logo-relish.png" 
-                alt="Relish Logo" 
-                className="h-16 w-16 mr-4 bg-white rounded-lg p-2"
-              />
-              <div>
-                <h1 className="text-3xl font-bold">ClamFlow Control Center</h1>
-                <p className="text-red-100">
-                  Ultimate system authority - {user.username} | Complete ClamFlow oversight
-                </p>
-              </div>
-            </div>
-          </div>
-
+          {/* REMOVED DUPLICATE HEADER - This should be handled by separate header component */}
+          
           {/* System Status Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="bg-white rounded-lg shadow-lg p-6">
@@ -257,7 +245,7 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ user }) => {
             </div>
           </div>
 
-          {/* Super Admin Panels Grid - ALL 9 PANELS */}
+          {/* Super Admin Panels Grid - ALL 9 PANELS WITH CORRECT COMPONENTS */}
           <div>
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Super Admin Control Panels</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -287,19 +275,31 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ user }) => {
           <div className="bg-white rounded-lg shadow-lg p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Emergency Controls</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <button className="p-4 text-left border-2 border-red-200 rounded-lg hover:bg-red-50 transition-colors">
+              <button 
+                onClick={() => setActivePanel('emergency_controls')}
+                className="p-4 text-left border-2 border-red-200 rounded-lg hover:bg-red-50 transition-colors"
+              >
                 <h4 className="font-medium text-red-900">System Shutdown</h4>
                 <p className="text-sm text-red-600">Emergency system halt</p>
               </button>
-              <button className="p-4 text-left border-2 border-yellow-200 rounded-lg hover:bg-yellow-50 transition-colors">
+              <button 
+                onClick={() => setActivePanel('emergency_controls')}
+                className="p-4 text-left border-2 border-yellow-200 rounded-lg hover:bg-yellow-50 transition-colors"
+              >
                 <h4 className="font-medium text-yellow-900">Lock All Gates</h4>
                 <p className="text-sm text-yellow-600">Security lockdown</p>
               </button>
-              <button className="p-4 text-left border-2 border-blue-200 rounded-lg hover:bg-blue-50 transition-colors">
+              <button 
+                onClick={() => setActivePanel('backup_recovery')}
+                className="p-4 text-left border-2 border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+              >
                 <h4 className="font-medium text-blue-900">Backup System</h4>
                 <p className="text-sm text-blue-600">Full data backup</p>
               </button>
-              <button className="p-4 text-left border-2 border-green-200 rounded-lg hover:bg-green-50 transition-colors">
+              <button 
+                onClick={() => setActivePanel('hardware_management')}
+                className="p-4 text-left border-2 border-green-200 rounded-lg hover:bg-green-50 transition-colors"
+              >
                 <h4 className="font-medium text-green-900">Reset Hardware</h4>
                 <p className="text-sm text-green-600">Restart all devices</p>
               </button>
@@ -313,6 +313,8 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ user }) => {
     const selectedPanel = superAdminPanels.find(panel => panel.id === activePanel);
     if (selectedPanel) {
       const PanelComponent = selectedPanel.component;
+      
+      // Most components don't need props, they're standalone panels
       return <PanelComponent />;
     }
 
@@ -321,50 +323,7 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ user }) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Top Navigation */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-3">
-                <img 
-                  src="/logo-relish.png" 
-                  alt="Relish Logo" 
-                  className="h-8 w-8 bg-white rounded-lg p-1"
-                />
-                <button
-                  onClick={() => setActivePanel('overview')}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    activePanel === 'overview'
-                      ? 'bg-red-100 text-red-700'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  ClamFlow Dashboard
-                </button>
-              </div>
-              <div className="text-gray-300">|</div>
-              <div className="text-gray-600">
-                {activePanel !== 'overview' && (
-                  <span className="capitalize">
-                    {superAdminPanels.find(p => p.id === activePanel)?.title || 'Panel'}
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-600">
-                Super Admin: <span className="font-medium text-red-600">{user.username}</span>
-              </span>
-              <div className="h-8 w-8 bg-red-600 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-medium">
-                  {user.username.charAt(0)}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* REMOVED DUPLICATE TOP NAVIGATION - Should be handled by separate header component */}
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
