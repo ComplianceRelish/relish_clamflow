@@ -207,6 +207,18 @@ export default function Header({ pageTitle, pageSubtitle }: HeaderProps) {
                 >
                   🏠 Dashboard Home
                 </Link>
+                
+                {/* Shift Scheduling - Only for authorized roles */}
+                {user && ['Production Lead', 'QC Lead', 'Admin', 'Super Admin'].includes(user.role) && (
+                  <Link
+                    href="/shift-scheduling"
+                    className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors min-h-[44px] flex items-center"
+                    onClick={() => setShowMobileMenu(false)}
+                  >
+                    📅 Shift Scheduling
+                  </Link>
+                )}
+                
                 <button
                   onClick={() => {
                     window.location.reload();

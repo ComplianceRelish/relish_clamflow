@@ -1,13 +1,15 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import {
   Calendar,
   Clock,
   Users,
   UserCheck,
   AlertCircle,
-  Plus
+  Plus,
+  ExternalLink
 } from 'lucide-react';
 
 interface ShiftManagementPanelProps {
@@ -36,10 +38,20 @@ const ShiftManagementPanel: React.FC<ShiftManagementPanelProps> = ({ onClose }) 
           <h2 className="text-2xl font-bold text-gray-900">Shift Management</h2>
           <p className="text-sm text-gray-600">Schedule leads and manage shift coverage</p>
         </div>
-        <button className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-          <Plus className="w-5 h-5" />
-          <span>Create Schedule</span>
-        </button>
+        <div className="flex items-center space-x-3">
+          <Link 
+            href="/shift-scheduling"
+            className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            <Calendar className="w-5 h-5" />
+            <span>Interactive Calendar</span>
+            <ExternalLink className="w-4 h-4" />
+          </Link>
+          <button className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            <Plus className="w-5 h-5" />
+            <span>Create Schedule</span>
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -78,10 +90,27 @@ const ShiftManagementPanel: React.FC<ShiftManagementPanelProps> = ({ onClose }) 
       </div>
 
       <div className="bg-white border rounded-lg p-6">
-        <h3 className="text-lg font-semibold mb-4">Weekly Schedule</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">Weekly Schedule</h3>
+          <Link 
+            href="/shift-scheduling"
+            className="flex items-center space-x-2 text-blue-600 hover:text-blue-800 transition-colors text-sm font-medium"
+          >
+            <span>Open Full Calendar</span>
+            <ExternalLink className="w-4 h-4" />
+          </Link>
+        </div>
         <div className="text-center py-8 text-gray-500">
           <Calendar className="w-12 h-12 mx-auto mb-4" />
-          <p>Schedule management interface coming soon</p>
+          <p className="mb-4">Access the Interactive Shift Scheduling Calendar for comprehensive scheduling management</p>
+          <Link 
+            href="/shift-scheduling"
+            className="inline-flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Calendar className="w-5 h-5" />
+            <span>Launch Interactive Calendar</span>
+            <ExternalLink className="w-4 h-4" />
+          </Link>
         </div>
       </div>
     </div>

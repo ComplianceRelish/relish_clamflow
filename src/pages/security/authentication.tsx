@@ -2,8 +2,8 @@
 import ClamFlowSecure from '@/components/integrations/ClamFlowSecure';
 
 export default function SecurityPage() {
-  const handleAuthSuccess = (userId: string, method: string) => {
-    console.log(`User ${userId} authenticated via ${method}`);
+  const handleAuthSuccess = (userId: string) => {
+    console.log(`User ${userId} authenticated successfully`);
     // Redirect to dashboard or update auth state
   };
 
@@ -15,7 +15,6 @@ export default function SecurityPage() {
   return (
     <div className="container mx-auto p-6">
       <ClamFlowSecure
-        mode="authentication"
         onAuthSuccess={handleAuthSuccess}
         onAuthFailure={handleAuthFailure}
       />
