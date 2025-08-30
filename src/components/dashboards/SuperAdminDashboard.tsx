@@ -15,15 +15,18 @@ import {
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 
-// Import CORRECT panels - No more placeholder components
+// Import Header Component
+import Header from '../layout/Header';
+
+// Import CORRECT panels
 import DashboardMetricsPanel from './admin/DashboardMetricsPanel';
-import UserManagementPanel from './admin/UserManagementPanel'; // CORRECTED - Real user management
+import UserManagementPanel from './admin/UserManagementPanel';
 import SystemConfigurationPanel from './admin/SystemConfigurationPanel';
 import HardwareManagementPanel from './admin/HardwareManagementPanel';
 import AdminPermissionsPanel from './admin/AdminPermissionsPanel';
-import DisasterRecovery from './admin/DisasterRecovery'; // CORRECTED - Real backup & recovery
-import SystemHealth from './admin/SystemHealth'; // CORRECTED - Real emergency controls
-import AuditTrail from './admin/AuditTrail'; // CORRECTED - Real audit log export
+import DisasterRecovery from './admin/DisasterRecovery';
+import SystemHealth from './admin/SystemHealth';
+import AuditTrail from './admin/AuditTrail';
 import DepartmentOversightPanel from './admin/DepartmentOversightPanel';
 
 interface SuperAdminDashboardProps {
@@ -31,6 +34,7 @@ interface SuperAdminDashboardProps {
     id: string;
     username: string;
     role: string;
+    full_name?: string;
   };
 }
 
@@ -60,17 +64,10 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ user }) => {
   useEffect(() => {
     const fetchDashboardStats = async () => {
       try {
-        // Get real user count from AuthContext or localStorage
         const storedUser = localStorage.getItem('clamflow_user');
         const realUserCount = storedUser ? 1 : 0;
-        
-        // Get real hardware device count (implement when hardware is connected)
-        const hardwareDevices = 0; // TODO: Implement real hardware count API
-        
-        // Get real critical alerts count
-        const criticalAlerts = 0; // TODO: Implement real alerts API
-        
-        // Calculate system uptime
+        const hardwareDevices = 0;
+        const criticalAlerts = 0;
         const systemUptime = Math.floor((Date.now() - new Date().setHours(0, 0, 0, 0)) / (1000 * 60 * 60));
         
         setDashboardStats({
@@ -87,14 +84,11 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ user }) => {
     };
 
     fetchDashboardStats();
-    
-    // Refresh stats every 30 seconds for real-time updates
     const interval = setInterval(fetchDashboardStats, 30000);
-    
     return () => clearInterval(interval);
   }, []);
 
-  // Super Admin panel configuration - CORRECTED MAPPINGS
+  // Super Admin panel configuration
   const superAdminPanels = [
     {
       id: 'user_management' as SuperAdminPanel,
@@ -102,7 +96,8 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ user }) => {
       description: 'Create, modify, delete user accounts and roles',
       icon: UserGroupIcon,
       color: 'blue',
-      component: UserManagementPanel // CORRECTED - Real user management with CRUD
+      component: UserManagementPanel,
+      priority: 'CRITICAL'
     },
     {
       id: 'system_configuration' as SuperAdminPanel,
@@ -110,7 +105,8 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ user }) => {
       description: 'Configure system settings and parameters',
       icon: Cog6ToothIcon,
       color: 'blue',
-      component: SystemConfigurationPanel
+      component: SystemConfigurationPanel,
+      priority: 'HIGH'
     },
     {
       id: 'hardware_management' as SuperAdminPanel,
@@ -118,7 +114,8 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ user }) => {
       description: 'Control RFID readers, sensors, and IoT devices',
       icon: CpuChipIcon,
       color: 'purple',
-      component: HardwareManagementPanel
+      component: HardwareManagementPanel,
+      priority: 'MEDIUM'
     },
     {
       id: 'admin_permissions' as SuperAdminPanel,
@@ -126,7 +123,8 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ user }) => {
       description: 'Manage admin roles and system permissions',
       icon: KeyIcon,
       color: 'indigo',
-      component: AdminPermissionsPanel
+      component: AdminPermissionsPanel,
+      priority: 'CRITICAL'
     },
     {
       id: 'backup_recovery' as SuperAdminPanel,
@@ -134,7 +132,8 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ user }) => {
       description: 'System backup and disaster recovery controls',
       icon: ClipboardDocumentListIcon,
       color: 'green',
-      component: DisasterRecovery // CORRECTED - Real disaster recovery component
+      component: DisasterRecovery,
+      priority: 'HIGH'
     },
     {
       id: 'emergency_controls' as SuperAdminPanel,
@@ -142,7 +141,8 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ user }) => {
       description: 'Emergency system shutdown and safety controls',
       icon: BellIcon,
       color: 'red',
-      component: SystemHealth // CORRECTED - Real emergency controls component
+      component: SystemHealth,
+      priority: 'CRITICAL'
     },
     {
       id: 'audit_log_export' as SuperAdminPanel,
@@ -150,7 +150,8 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ user }) => {
       description: 'Export system audit logs and compliance reports',
       icon: UserIcon,
       color: 'yellow',
-      component: AuditTrail // CORRECTED - Real audit trail component
+      component: AuditTrail,
+      priority: 'MEDIUM'
     },
     {
       id: 'api_monitoring' as SuperAdminPanel,
@@ -158,7 +159,8 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ user }) => {
       description: 'Monitor API performance and system health',
       icon: ChartBarIcon,
       color: 'green',
-      component: DashboardMetricsPanel // Keep for now until dedicated API monitoring created
+      component: DashboardMetricsPanel,
+      priority: 'HIGH'
     },
     {
       id: 'dashboard_metrics' as SuperAdminPanel,
@@ -166,7 +168,8 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ user }) => {
       description: 'Real-time system performance and analytics',
       icon: ChartBarIcon,
       color: 'indigo',
-      component: DashboardMetricsPanel
+      component: DashboardMetricsPanel,
+      priority: 'MEDIUM'
     }
   ];
 
@@ -182,62 +185,69 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ user }) => {
     return colorMap[color] || colorMap.blue;
   };
 
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'CRITICAL': return 'bg-red-100 text-red-800 border-red-200';
+      case 'HIGH': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'MEDIUM': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
   const renderActivePanel = () => {
     if (activePanel === 'overview') {
       return (
         <div className="space-y-6">
-          {/* REMOVED DUPLICATE HEADER - This should be handled by separate header component */}
-          
-          {/* System Status Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="bg-white rounded-lg shadow-lg p-6">
+          {/* System Status Cards - Mobile Optimized */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+            <div className="bg-white rounded-lg shadow-lg p-4 lg:p-6">
               <div className="flex items-center">
                 <div className="p-2 rounded-lg bg-green-50">
-                  <CheckCircleIcon className="h-8 w-8 text-green-600" />
+                  <CheckCircleIcon className="h-6 w-6 lg:h-8 lg:w-8 text-green-600" />
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">System Status</p>
-                  <p className="text-2xl font-semibold text-green-600">Operational</p>
+                <div className="ml-3 lg:ml-4">
+                  <p className="text-xs lg:text-sm font-medium text-gray-600">System Status</p>
+                  <p className="text-lg lg:text-2xl font-semibold text-green-600">Operational</p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-lg p-6">
+            <div className="bg-white rounded-lg shadow-lg p-4 lg:p-6">
               <div className="flex items-center">
                 <div className="p-2 rounded-lg bg-blue-50">
-                  <UserGroupIcon className="h-8 w-8 text-blue-600" />
+                  <UserGroupIcon className="h-6 w-6 lg:h-8 lg:w-8 text-blue-600" />
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Users</p>
-                  <p className="text-2xl font-semibold text-blue-600">
+                <div className="ml-3 lg:ml-4">
+                  <p className="text-xs lg:text-sm font-medium text-gray-600">Total Users</p>
+                  <p className="text-lg lg:text-2xl font-semibold text-blue-600">
                     {dashboardStats.loading ? '...' : dashboardStats.totalUsers}
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-lg p-6">
+            <div className="bg-white rounded-lg shadow-lg p-4 lg:p-6">
               <div className="flex items-center">
                 <div className="p-2 rounded-lg bg-purple-50">
-                  <CpuChipIcon className="h-8 w-8 text-purple-600" />
+                  <CpuChipIcon className="h-6 w-6 lg:h-8 lg:w-8 text-purple-600" />
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Hardware Devices</p>
-                  <p className="text-2xl font-semibold text-purple-600">
+                <div className="ml-3 lg:ml-4">
+                  <p className="text-xs lg:text-sm font-medium text-gray-600">Hardware Devices</p>
+                  <p className="text-lg lg:text-2xl font-semibold text-purple-600">
                     {dashboardStats.loading ? '...' : dashboardStats.hardwareDevices}
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-lg p-6">
+            <div className="bg-white rounded-lg shadow-lg p-4 lg:p-6">
               <div className="flex items-center">
                 <div className="p-2 rounded-lg bg-red-50">
-                  <BellIcon className="h-8 w-8 text-red-600" />
+                  <BellIcon className="h-6 w-6 lg:h-8 lg:w-8 text-red-600" />
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Critical Alerts</p>
-                  <p className="text-2xl font-semibold text-red-600">
+                <div className="ml-3 lg:ml-4">
+                  <p className="text-xs lg:text-sm font-medium text-gray-600">Critical Alerts</p>
+                  <p className="text-lg lg:text-2xl font-semibold text-red-600">
                     {dashboardStats.loading ? '...' : dashboardStats.criticalAlerts}
                   </p>
                 </div>
@@ -245,10 +255,10 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ user }) => {
             </div>
           </div>
 
-          {/* Super Admin Panels Grid - ALL 9 PANELS WITH CORRECT COMPONENTS */}
+          {/* Super Admin Panels Grid - Mobile Optimized */}
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Super Admin Control Panels</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <h2 className="text-xl lg:text-2xl font-bold text-gray-900 mb-4 lg:mb-6">Super Admin Control Panels</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
               {superAdminPanels.map((panel) => {
                 const colors = getColorClasses(panel.color);
                 const Icon = panel.icon;
@@ -256,14 +266,17 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ user }) => {
                   <button
                     key={panel.id}
                     onClick={() => setActivePanel(panel.id)}
-                    className={`bg-white rounded-lg shadow-lg p-6 text-left transition-all duration-200 ${colors.hover} border ${colors.border}`}
+                    className={`bg-white rounded-lg shadow-lg p-4 lg:p-6 text-left transition-all duration-200 ${colors.hover} border ${colors.border} touch-manipulation`}
                   >
-                    <div className="flex items-center mb-4">
-                      <div className={`p-3 rounded-lg ${colors.bg}`}>
-                        <Icon className={`h-8 w-8 ${colors.text}`} />
+                    <div className="flex items-center justify-between mb-3 lg:mb-4">
+                      <div className={`p-2 lg:p-3 rounded-lg ${colors.bg}`}>
+                        <Icon className={`h-6 w-6 lg:h-8 lg:w-8 ${colors.text}`} />
                       </div>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getPriorityColor(panel.priority)}`}>
+                        {panel.priority}
+                      </span>
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{panel.title}</h3>
+                    <h3 className="text-base lg:text-lg font-semibold text-gray-900 mb-2">{panel.title}</h3>
                     <p className="text-gray-600 text-sm">{panel.description}</p>
                   </button>
                 );
@@ -271,37 +284,40 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ user }) => {
             </div>
           </div>
 
-          {/* Emergency Controls */}
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Emergency Controls</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Emergency Controls - Mobile Optimized */}
+          <div className="bg-white rounded-lg shadow-lg p-4 lg:p-6">
+            <h3 className="text-base lg:text-lg font-semibold text-gray-900 mb-4">Emergency Controls</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
               <button 
                 onClick={() => setActivePanel('emergency_controls')}
-                className="p-4 text-left border-2 border-red-200 rounded-lg hover:bg-red-50 transition-colors"
+                className="p-3 lg:p-4 text-left border-2 border-red-200 rounded-lg hover:bg-red-50 transition-colors touch-manipulation"
               >
-                <h4 className="font-medium text-red-900">System Shutdown</h4>
-                <p className="text-sm text-red-600">Emergency system halt</p>
+                <h4 className="font-medium text-red-900 text-sm lg:text-base">System Shutdown</h4>
+                <p className="text-xs lg:text-sm text-red-600">Emergency system halt</p>
               </button>
+              
               <button 
                 onClick={() => setActivePanel('emergency_controls')}
-                className="p-4 text-left border-2 border-yellow-200 rounded-lg hover:bg-yellow-50 transition-colors"
+                className="p-3 lg:p-4 text-left border-2 border-yellow-200 rounded-lg hover:bg-yellow-50 transition-colors touch-manipulation"
               >
-                <h4 className="font-medium text-yellow-900">Lock All Gates</h4>
-                <p className="text-sm text-yellow-600">Security lockdown</p>
+                <h4 className="font-medium text-yellow-900 text-sm lg:text-base">Lock All Gates</h4>
+                <p className="text-xs lg:text-sm text-yellow-600">Security lockdown</p>
               </button>
+              
               <button 
                 onClick={() => setActivePanel('backup_recovery')}
-                className="p-4 text-left border-2 border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+                className="p-3 lg:p-4 text-left border-2 border-blue-200 rounded-lg hover:bg-blue-50 transition-colors touch-manipulation"
               >
-                <h4 className="font-medium text-blue-900">Backup System</h4>
-                <p className="text-sm text-blue-600">Full data backup</p>
+                <h4 className="font-medium text-blue-900 text-sm lg:text-base">Backup System</h4>
+                <p className="text-xs lg:text-sm text-blue-600">Full data backup</p>
               </button>
+              
               <button 
                 onClick={() => setActivePanel('hardware_management')}
-                className="p-4 text-left border-2 border-green-200 rounded-lg hover:bg-green-50 transition-colors"
+                className="p-3 lg:p-4 text-left border-2 border-green-200 rounded-lg hover:bg-green-50 transition-colors touch-manipulation"
               >
-                <h4 className="font-medium text-green-900">Reset Hardware</h4>
-                <p className="text-sm text-green-600">Restart all devices</p>
+                <h4 className="font-medium text-green-900 text-sm lg:text-base">Reset Hardware</h4>
+                <p className="text-xs lg:text-sm text-green-600">Restart all devices</p>
               </button>
             </div>
           </div>
@@ -313,20 +329,51 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ user }) => {
     const selectedPanel = superAdminPanels.find(panel => panel.id === activePanel);
     if (selectedPanel) {
       const PanelComponent = selectedPanel.component;
-      
-      // Most components don't need props, they're standalone panels
-      return <PanelComponent />;
+      return (
+        <div>
+          {/* Back Navigation - Mobile Optimized */}
+          <div className="mb-4 lg:mb-6">
+            <button
+              onClick={() => setActivePanel('overview')}
+              className="flex items-center text-gray-600 hover:text-gray-900 transition-colors text-sm lg:text-base touch-manipulation"
+            >
+              <svg className="w-4 h-4 lg:w-5 lg:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Back to Dashboard
+            </button>
+          </div>
+          <PanelComponent />
+        </div>
+      );
     }
 
     return <div>Panel not found</div>;
   };
 
+  // Get dynamic page title based on active panel
+  const getPageTitle = () => {
+    if (activePanel === 'overview') return 'Super Admin Dashboard';
+    const selectedPanel = superAdminPanels.find(panel => panel.id === activePanel);
+    return selectedPanel ? selectedPanel.title : 'Super Admin Dashboard';
+  };
+
+  const getPageSubtitle = () => {
+    if (activePanel === 'overview') return 'System Administration & Control Center';
+    const selectedPanel = superAdminPanels.find(panel => panel.id === activePanel);
+    return selectedPanel ? selectedPanel.description : '';
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* REMOVED DUPLICATE TOP NAVIGATION - Should be handled by separate header component */}
+      {/* Header Component with Branding, User Info & Navigation */}
+      <Header 
+        pageTitle={getPageTitle()}
+        pageSubtitle={getPageSubtitle()}
+      />
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Main Content - Mobile Optimized */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 lg:py-8">
         {renderActivePanel()}
       </div>
     </div>
