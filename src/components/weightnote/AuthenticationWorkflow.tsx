@@ -1,9 +1,11 @@
-// frontend/components/WeightNote/AuthenticationWorkflow.tsx
 "use client"
 
 import React, { useState, useEffect } from 'react'
-import { useAuthentication } from '../../hooks/useWeightNote'
-import { WeightNote } from '../../types/supabase'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { Database } from '../../types/supabase'
+
+type WeightNote = Database['public']['Tables']['weight_notes']['Row']
+type UserProfile = Database['public']['Tables']['user_profiles']['Row']
 
 interface AuthenticationWorkflowProps {
   weightNote: WeightNote
@@ -16,37 +18,31 @@ const AuthenticationWorkflow: React.FC<AuthenticationWorkflowProps> = ({
   onComplete,
   onCancel
 }) => {
-  const {
-    session,
-    loading,
-    error,
-    startAuthSession,
-    completeAuthentication,
-    validateRFID,
-    performFaceRecognition
-  } = useAuthentication()
-
-  const [currentStep, setCurrentStep] = useState<'qc' | 'production' | 'supplier'>('qc')
+  const supabase = createClientComponentClient<Database>()
+  
+  const [currentStep, setCurrentStep] = useState<'production' | 'supplier' | 'qc'>('production')
   const [authMethod, setAuthMethod] = useState<'face_recognition' | 'rfid' | null>(null)
   const [rfidInput, setRfidInput] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
   const [showFallback, setShowFallback] = useState(false)
   const [fallbackReason, setFallbackReason] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
   // Get next authentication step needed
-  const getNextStep = () => {
-    if (!weightNote.qc_approval_status) return 'qc'
-    if (!weightNote.production_auth_at) return 'production'
+  const getNextStep = (): 'production' | 'supplier' | 'qc' | null => {
+    if (!weightNote.production_staff_id) return 'production'
     if (!weightNote.supplier_authenticated_by) return 'supplier'
+    if (weightNote.qc_approval_status === 'pending') return 'qc'
     return null
   }
 
   // Role mapping for each step
   const getRequiredRole = (step: string) => {
     switch (step) {
-      case 'qc': return 'QC Staff'
       case 'production': return 'Production Staff'
       case 'supplier': return 'Supplier'
+      case 'qc': return 'QC Staff'
       default: return 'Staff'
     }
   }
@@ -54,69 +50,59 @@ const AuthenticationWorkflow: React.FC<AuthenticationWorkflowProps> = ({
   // Step descriptions
   const getStepDescription = (step: string) => {
     switch (step) {
-      case 'qc': return 'Quality Control Verification'
-      case 'production': return 'Production Staff Confirmation'
-      case 'supplier': return 'Supplier Acknowledgment'
+      case 'production': return 'Production Staff Authentication'
+      case 'supplier': return 'Supplier Authentication'
+      case 'qc': return 'Quality Control Approval'
       default: return 'Authentication Required'
     }
   }
 
-  // Initialize authentication session
+  // Initialize current step
   useEffect(() => {
     const nextStep = getNextStep()
-    if (nextStep && weightNote.id) {
+    if (nextStep) {
       setCurrentStep(nextStep)
-      startAuthSession(
-        weightNote.id,
-        nextStep,
-        getRequiredRole(nextStep)
-      )
     }
   }, [weightNote])
+
+  // Mock staff validation (replace with real implementation)
+  const validateStaff = async (identifier: string, method: 'rfid' | 'face_recognition'): Promise<UserProfile> => {
+    // Mock implementation - replace with actual validation
+    const mockStaff: UserProfile = {
+      id: 'mock-staff-id',
+      full_name: 'Mock Staff Member',
+      role: getRequiredRole(currentStep) as UserProfile['role'],
+      created_at: new Date().toISOString(),
+      station: 'Mock Station',
+      username: 'mockuser',
+      is_active: true,
+      login_attempts: 0,
+      password_reset_required: false
+    }
+    
+    // Simulate validation delay
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    
+    return mockStaff
+  }
 
   // Handle RFID authentication
   const handleRFIDAuth = async () => {
     if (!rfidInput.trim()) {
-      console.error('Please scan or enter RFID')
+      setError('Please scan or enter RFID')
       return
     }
 
     setIsProcessing(true)
+    setError('')
+    
     try {
-      const staffData = await validateRFID(rfidInput)
-
-      if (staffData.role !== getRequiredRole(currentStep)) {
-        throw new Error(`This step requires ${getRequiredRole(currentStep)} authentication`)
-      }
-
-      const authRecord: {
-        staff_id: string;
-        staff_name: string;
-        timestamp: string;
-        method: string;
-        rfid_data: string;
-      } = {
-        staff_id: staffData.id,
-        staff_name: staffData.full_name,
-        timestamp: new Date().toISOString(),
-        method: 'rfid',
-        rfid_data: rfidInput
-      }
-
-      if (session) {
-        await completeAuthentication(
-          session.id,
-          staffData.id,
-          'rfid',
-          { rfid_id: rfidInput }
-        )
-      }
-
-      console.log('RFID Authentication completed:', currentStep, authRecord)
+      const staffData = await validateStaff(rfidInput, 'rfid')
+      await completeAuthenticationStep(staffData.id, 'rfid')
       setRfidInput('')
       setAuthMethod(null)
     } catch (err) {
-      console.error(err instanceof Error ? err.message : 'RFID authentication failed')
+      setError(err instanceof Error ? err.message : 'RFID authentication failed')
       setShowFallback(true)
     } finally {
       setIsProcessing(false)
@@ -126,98 +112,96 @@ const AuthenticationWorkflow: React.FC<AuthenticationWorkflowProps> = ({
   // Handle face recognition authentication
   const handleFaceAuth = async () => {
     setIsProcessing(true)
+    setError('')
+    
     try {
-      // Simulate face recognition capture
-      // In real implementation, this would integrate with camera/face recognition service
-      const faceData = 'simulated_face_data'
-      const confidence = 0.92 // Simulated confidence score
-
-      const staffData = await performFaceRecognition(faceData, confidence)
-
-      if (staffData.role !== getRequiredRole(currentStep)) {
-        throw new Error(`This step requires ${getRequiredRole(currentStep)} authentication`)
-      }
-
-      const authRecord: {
-        staff_id: string;
-        staff_name: string;
-        timestamp: string;
-        method: string;
-        biometric_confidence: number;
-      } = {
-        staff_id: staffData.id,
-        staff_name: staffData.full_name,
-        timestamp: new Date().toISOString(),
-        method: 'face_recognition',
-        biometric_confidence: confidence
-      }
-
-      if (session) {
-        await completeAuthentication(
-          session.id,
-          staffData.id,
-          'face_recognition',
-          { confidence }
-        )
-      }
-
-      console.log('Face recognition completed:', currentStep, authRecord)
+      // Mock face recognition - replace with actual implementation
+      const staffData = await validateStaff('face_data', 'face_recognition')
+      await completeAuthenticationStep(staffData.id, 'face_recognition')
       setAuthMethod(null)
     } catch (err) {
-      console.error(err instanceof Error ? err.message : 'Face recognition failed')
+      setError(err instanceof Error ? err.message : 'Face recognition failed')
       setShowFallback(true)
     } finally {
       setIsProcessing(false)
     }
   }
 
-  // Handle fallback authentication (Production Lead approval)
+  // Handle fallback authentication
   const handleFallbackAuth = async () => {
     if (!fallbackReason.trim()) {
-      console.error('Please provide a reason for fallback authentication')
+      setError('Please provide a reason for fallback authentication')
       return
     }
 
     setIsProcessing(true)
+    setError('')
+    
     try {
-      // This would trigger notification to Production Lead
-      const authRecord: {
-        staff_id: string;
-        staff_name: string;
-        timestamp: string;
-        method: string;
-        fallback_reason: string;
-        production_lead_approval: boolean;
-      } = {
-        staff_id: 'fallback_pending',
-        staff_name: 'Pending Production Lead Approval',
-        timestamp: new Date().toISOString(),
-        method: 'fallback',
-        fallback_reason: fallbackReason,
-        production_lead_approval: false
-      }
-
-      if (session) {
-        await completeAuthentication(
-          session.id,
-          'fallback_pending',
-          'fallback_approval',
-          { reason: fallbackReason }
-        )
-      }
-
-      console.log('Fallback authentication submitted:', currentStep, authRecord)
+      await completeAuthenticationStep('fallback_pending', 'fallback')
       setFallbackReason('')
       setShowFallback(false)
       setAuthMethod(null)
     } catch (err) {
-      console.error(err instanceof Error ? err.message : 'Fallback authentication failed')
+      setError(err instanceof Error ? err.message : 'Fallback authentication failed')
     } finally {
       setIsProcessing(false)
     }
   }
 
-  if (!getNextStep()) {
+  // Complete authentication step and update database
+  const completeAuthenticationStep = async (staffId: string, method: 'face_recognition' | 'rfid' | 'fallback') => {
+    const updates: any = {}
+
+    switch (currentStep) {
+      case 'production':
+        updates.production_staff_id = staffId
+        updates.production_auth_method = method
+        updates.production_auth_at = new Date().toISOString()
+        updates.authentication_step = 2
+        break
+      case 'supplier':
+        updates.supplier_authenticated_by = staffId
+        updates.supplier_auth_method = method
+        updates.supplier_auth_at = new Date().toISOString()
+        updates.authentication_step = 3
+        break
+      case 'qc':
+        updates.qc_approved_by = staffId
+        updates.qc_approved_at = new Date().toISOString()
+        updates.qc_approval_status = 'approved'
+        updates.authentication_step = 4
+        updates.workflow_completed = true
+        updates.workflow_completed_at = new Date().toISOString()
+        break
+    }
+
+    const { error: updateError } = await supabase
+      .from('weight_notes')
+      .update(updates)
+      .eq('id', weightNote.id)
+
+    if (updateError) {
+      throw updateError
+    }
+
+    // Check if workflow is complete
+    if (currentStep === 'qc') {
+      onComplete(weightNote.id)
+    } else {
+      // Move to next step
+      const nextStep = getNextStep()
+      if (nextStep) {
+        setCurrentStep(nextStep)
+      } else {
+        onComplete(weightNote.id)
+      }
+    }
+  }
+
+  // Check if authentication is complete
+  const nextStep = getNextStep()
+  if (!nextStep) {
     return (
       <div className="bg-green-50 border border-green-200 rounded-lg p-6">
         <div className="flex items-center">
@@ -246,7 +230,7 @@ const AuthenticationWorkflow: React.FC<AuthenticationWorkflowProps> = ({
           Authentication Required
         </h2>
         <p className="text-sm text-gray-600 mt-1">
-          {getStepDescription(currentStep)} - Weight Note #{weightNote.box_number}
+          {getStepDescription(currentStep)} - Weight Note Box: {weightNote.box_number}
         </p>
       </div>
 
@@ -261,19 +245,13 @@ const AuthenticationWorkflow: React.FC<AuthenticationWorkflowProps> = ({
         <div className="flex items-center justify-between text-sm">
           <span className="text-gray-600">Authentication Progress</span>
           <span className="text-gray-600">
-            {['qc', 'production', 'supplier'].filter(step => 
-              weightNote[`${step}_authentication` as keyof WeightNote]
-            ).length} / 3 Complete
+            Step {weightNote.authentication_step || 1} of 4
           </span>
         </div>
         <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
           <div 
             className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
-            style={{ 
-              width: `${((['qc', 'production', 'supplier'].filter(step => 
-                weightNote[`${step}_authentication` as keyof WeightNote]
-              ).length) / 3) * 100}%` 
-            }}
+            style={{ width: `${((weightNote.authentication_step || 1) / 4) * 100}%` }}
           ></div>
         </div>
       </div>
@@ -479,6 +457,16 @@ const AuthenticationWorkflow: React.FC<AuthenticationWorkflowProps> = ({
           </div>
         </div>
       )}
+
+      {/* Cancel Button */}
+      <div className="flex justify-center mt-8">
+        <button
+          onClick={onCancel}
+          className="px-6 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+        >
+          Cancel Workflow
+        </button>
+      </div>
     </div>
   )
 }

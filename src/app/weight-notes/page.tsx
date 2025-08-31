@@ -3,10 +3,12 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import WeightNoteForm from '../../components/forms/WeightNoteForm'
-import AuthenticationWorkflow from '../../components/weightnote/AuthenticationWorkflow'  // Use existing
-import WeightNotePrintable from '../../components/weightnote/WeightNotePrintable'      // Use existing
-import { Database } from '../../types/supabase'
+import WeightNoteForm from '@/components/forms/WeightNoteForm'
+import WeightNotesList from '@/components/forms/WeightNotesList'
+import WeightNotePrintPreview from '@/components/forms/WeightNotePrintPreview'
+import AuthenticationWorkflow from '@/components/weightnote/AuthenticationWorkflow'
+import WeightNotePrintable from '@/components/weightnote/WeightNotePrintable'
+import { Database } from '@/types/supabase'
 
 type WeightNote = Database['public']['Tables']['weight_notes']['Row']
 type UserProfile = Database['public']['Tables']['user_profiles']['Row']
@@ -46,7 +48,14 @@ export default function WeightNotesPage() {
   const loadWeightNotes = async () => {
     const { data } = await supabase
       .from('weight_notes')
-      .select('*')
+      .select(`
+        *,
+        qc_staff:qc_staff_id(full_name, role),
+        production_staff:production_staff_id(full_name, role),
+        supplier_auth:supplier_authenticated_by(full_name, role),
+        supplier:supplier_id(first_name, last_name, type),
+        lot:lot_id(lot_number, status)
+      `)
       .order('created_at', { ascending: false })
       .limit(20)
 
@@ -106,46 +115,19 @@ export default function WeightNotesPage() {
         )}
       </div>
 
-      {/* Simple List View */}
+      {/* List View */}
       {activeView === 'list' && (
-        <div className="space-y-4">
-          {weightNotes.map((note) => (
-            <div key={note.id} className="bg-white rounded-lg shadow p-6">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-semibold text-lg">Box: {note.box_number}</h3>
-                  <p className="text-gray-600">Weight: {note.weight} kg</p>
-                  <p className="text-gray-600">Created: {new Date(note.created_at || '').toLocaleDateString()}</p>
-                </div>
-                <div className="space-x-2">
-                  <button
-                    onClick={() => {
-                      setSelectedWeightNote(note)
-                      setActiveView(note.workflow_completed ? 'print' : 'authenticate')
-                    }}
-                    className="px-3 py-1 text-blue-600 border border-blue-600 rounded hover:bg-blue-50"
-                  >
-                    {note.workflow_completed ? 'View/Print' : 'Continue Workflow'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-          
-          {weightNotes.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-gray-500 mb-4">No weight notes found</p>
-              <button
-                onClick={() => setActiveView('create')}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                Create First Weight Note
-              </button>
-            </div>
-          )}
-        </div>
+        <WeightNotesList 
+          onCreateNew={() => setActiveView('create')}
+          onViewDetails={(note) => {
+            setSelectedWeightNote(note)
+            setActiveView(note.workflow_completed ? 'print' : 'authenticate')
+          }}
+          currentUser={currentUser}
+        />
       )}
 
+      {/* Create Form */}
       {activeView === 'create' && (
         <WeightNoteForm 
           onSubmit={handleFormSubmit}
@@ -154,6 +136,7 @@ export default function WeightNotesPage() {
         />
       )}
 
+      {/* Authentication Workflow */}
       {activeView === 'authenticate' && selectedWeightNote && (
         <AuthenticationWorkflow 
           weightNote={selectedWeightNote}
@@ -162,6 +145,7 @@ export default function WeightNotesPage() {
         />
       )}
 
+      {/* Print Preview */}
       {activeView === 'print' && selectedWeightNote && (
         <WeightNotePrintable 
           weightNote={selectedWeightNote}
