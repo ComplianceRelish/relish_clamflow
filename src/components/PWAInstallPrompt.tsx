@@ -114,10 +114,10 @@ const PWAInstallPrompt: React.FC = () => {
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 relative">
               <Image
-                src="/icons/icon-96x96.png"
+                src="/icons/icon-72x72.png"
                 alt="ClamFlow"
-                width={32}
-                height={32}
+                width={36}
+                height={36}
                 className="rounded-lg"
               />
             </div>
