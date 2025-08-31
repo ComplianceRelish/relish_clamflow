@@ -1,10 +1,19 @@
 // frontend/hooks/useWeightNote.ts
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { WeightNoteData, AuthenticationRecord, AuthenticationSession } from '../types/supabase'
+import { WeightNote, AuthenticationSession } from '../types/supabase'
+
+// Define AuthenticationStepData locally since it's not in the database schema
+type AuthenticationStepData = {
+  staff_id: string;
+  staff_name: string;
+  timestamp: string;
+  method: 'face_recognition' | 'rfid' | 'fallback';
+  [key: string]: any;
+}
 
 export const useWeightNote = (weightNoteId?: string) => {
-  const [weightNote, setWeightNote] = useState<WeightNoteData | null>(null)
+  const [weightNote, setWeightNote] = useState<WeightNote | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -22,7 +31,7 @@ export const useWeightNote = (weightNoteId?: string) => {
 
       if (supabaseError) throw supabaseError
 
-      setWeightNote(data as WeightNoteData)
+      setWeightNote(data as WeightNote)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch weight note')
     } finally {
@@ -31,7 +40,7 @@ export const useWeightNote = (weightNoteId?: string) => {
   }
 
   // Create new weight note
-  const createWeightNote = async (data: Omit<WeightNoteData, 'id' | 'created_at' | 'updated_at'>) => {
+  const createWeightNote = async (data: Omit<WeightNote, 'id' | 'created_at' | 'updated_at'>) => {
     setLoading(true)
     setError(null)
 
@@ -48,7 +57,7 @@ export const useWeightNote = (weightNoteId?: string) => {
 
       if (supabaseError) throw supabaseError
 
-      setWeightNote(newWeightNote as WeightNoteData)
+      setWeightNote(newWeightNote as WeightNote)
       return newWeightNote
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create weight note')
@@ -62,7 +71,7 @@ export const useWeightNote = (weightNoteId?: string) => {
   const updateAuthentication = async (
     id: string,
     step: 'qc' | 'production' | 'supplier',
-    authData: AuthenticationRecord
+    authData: AuthenticationStepData
   ) => {
     setLoading(true)
     setError(null)
@@ -81,7 +90,7 @@ export const useWeightNote = (weightNoteId?: string) => {
 
       if (supabaseError) throw supabaseError
 
-      setWeightNote(data as WeightNoteData)
+      setWeightNote(data as WeightNote)
       return data
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update authentication')
@@ -121,7 +130,7 @@ export const useWeightNote = (weightNoteId?: string) => {
 
       if (supabaseError) throw supabaseError
 
-      return data as WeightNoteData[]
+      return data as WeightNote[]
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch weight notes')
       return []
@@ -163,17 +172,16 @@ export const useAuthentication = () => {
     setError(null)
 
     try {
-      const sessionId = `auth_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
       const expiresAt = new Date(Date.now() + 15 * 60 * 1000) // 15 minutes
 
       const { data, error: supabaseError } = await supabase
         .from('authentication_sessions')
         .insert([{
-          session_id: sessionId,
           weight_note_id: weightNoteId,
-          authentication_step: step,
-          required_role: requiredRole,
-          session_status: 'active',
+          session_type: 'weight_note_creation',
+          current_step: 1,
+          qc_staff_id: 'temp_qc_staff', // This should be the actual QC staff ID
+          status: 'active',
           expires_at: expiresAt.toISOString()
         }])
         .select()
@@ -205,13 +213,13 @@ export const useAuthentication = () => {
       const { data, error: supabaseError } = await supabase
         .from('authentication_sessions')
         .update({
-          staff_id: staffId,
-          authentication_method: method,
-          authentication_data: authData,
-          session_status: 'completed',
-          completed_at: new Date().toISOString()
+          production_staff_id: staffId,
+          production_auth_method: method as 'face_recognition' | 'rfid' | 'fallback',
+          session_data: authData,
+          status: 'completed',
+          updated_at: new Date().toISOString()
         })
-        .eq('session_id', sessionId)
+        .eq('id', sessionId)
         .select()
         .single()
 
