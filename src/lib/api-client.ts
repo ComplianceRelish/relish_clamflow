@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios'
 import { supabase } from './supabase'
-import { ApiResponse } from '../types/api'
+import { ApiResponse, PaginatedResponse, ErrorResponse } from '../services/api';
 
 // Request configuration interface
 interface RequestConfig {
@@ -260,13 +260,17 @@ class APIClient {
       return {
         success: true,
         data: response.data,
-        message: 'Request successful'
+        message: 'Request successful',
+        status: response.status
       }
     } catch (error: any) {
+      // ✅ FIXED: Return proper ApiResponse with optional data
       return {
         success: false,
+        data: null as T, // ✅ FIX: Provide data as null with proper type
         error: error.response?.data?.error || error.message,
-        message: error.response?.data?.message || 'Request failed'
+        message: error.response?.data?.message || 'Request failed',
+        status: error.response?.status
       }
     }
   }

@@ -1,7 +1,7 @@
 // Type checking tests for ClamFlow Frontend
 
 import { User, UserRole } from '../types';
-import { ApiResponse } from '../types/api';
+import { ApiResponse } from '../services/api';
 
 // Test User type
 const testUser: User = {

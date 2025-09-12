@@ -1,65 +1,59 @@
-// API Response Types
-import { User } from './auth';
+// services/api.ts
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 
-export interface ApiResponse<T = any> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  message?: string;
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://clamflowbackend-production.up.railway.app';
+
+class APIClient {
+  private client: AxiosInstance;
+
+  constructor() {
+    this.client = axios.create({
+      baseURL: API_BASE,
+      timeout: 10000,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    this.client.interceptors.request.use(
+      (config) => {
+        const token = localStorage.getItem('auth_token');
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+      },
+      (error) => Promise.reject(error)
+    );
+
+    this.client.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response?.status === 401) {
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('user');
+          window.location.href = '/login';
+        }
+        return Promise.reject(error);
+      }
+    );
+  }
+
+  get<T>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    return this.client.get<T>(url, config);
+  }
+
+  post<T>(url: string, data: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    return this.client.post<T>(url, data, config); // Fixed: pass 'data'
+  }
+
+  put<T>(url: string, data: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    return this.client.put<T>(url, data, config); // Fixed: pass 'data'
+  }
+
+  delete<T>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    return this.client.delete<T>(url, config);
+  }
 }
 
-export interface PaginatedResponse<T> {
-  success: boolean;
-  data: T[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
-}
-
-export interface LoginResponse {
-  access_token: string;
-  token_type: string;
-  user: User;
-}
-
-export interface ErrorResponse {
-  success: false;
-  error: string;
-  details?: any;
-}
-
-// Form submission types
-export interface FormSubmissionResponse {
-  success: boolean;
-  id?: string;
-  message?: string;
-  error?: string;
-}
-
-// Health check types
-export interface HealthCheckResponse {
-  status: 'healthy' | 'warning' | 'critical';
-  timestamp: string;
-  services: {
-    database: boolean;
-    authentication: boolean;
-    hardware: boolean;
-  };
-  uptime: string;
-}
-
-// Dashboard metrics
-export interface DashboardMetrics {
-  totalUsers: number;
-  activeUsers: number;
-  totalLots: number;
-  pendingApprovals: number;
-  systemHealth: 'healthy' | 'warning' | 'critical';
-  lastUpdated: string;
-}
-
-// Export legacy compatibility
-export type { User as UserProfile } from './auth';
+export const apiClient = new APIClient();

@@ -15,6 +15,15 @@ import {
   Cog6ToothIcon
 } from '@heroicons/react/24/outline';
 
+// Import our new hardware components
+import { 
+  FaceCapture, 
+  PassiveDetect, 
+  HardwareConfig, 
+  DeviceRegistry, 
+  HardwareTest 
+} from '../../hardware';
+
 interface HardwareDevice {
   id: string;
   name: string;
@@ -56,6 +65,9 @@ const HardwareManagementPanel: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // New state for hardware management tabs
+  const [activeHardwareTab, setActiveHardwareTab] = useState('devices');
 
   const deviceTypes = [
     'all', 'rfid_reader', 'scale', 'temperature_sensor', 'camera', 'scanner', 'conveyor'
@@ -81,7 +93,7 @@ const HardwareManagementPanel: React.FC = () => {
       setError(null);
       const token = localStorage.getItem('authToken');
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/hardware/devices`, {
+      const response = await fetch(`https://clamflowbackend-production.up.railway.app/admin/hardware/devices`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -93,7 +105,7 @@ const HardwareManagementPanel: React.FC = () => {
       }
 
       const data = await response.json();
-      setDevices(data);
+      setDevices(data.devices || []);
     } catch (err) {
       console.error('Error loading devices:', err);
       setError('Failed to load hardware devices');
@@ -107,7 +119,7 @@ const HardwareManagementPanel: React.FC = () => {
     try {
       const token = localStorage.getItem('authToken');
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/hardware/metrics`, {
+      const response = await fetch(`https://clamflowbackend-production.up.railway.app/admin/hardware/metrics`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -159,7 +171,7 @@ const HardwareManagementPanel: React.FC = () => {
       setLoading(true);
       const token = localStorage.getItem('authToken');
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/hardware/devices/${deviceId}/action`, {
+      const response = await fetch(`https://clamflowbackend-production.up.railway.app/admin/hardware/devices/${deviceId}/action`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -231,90 +243,8 @@ const HardwareManagementPanel: React.FC = () => {
     return matchesType && matchesStatus;
   });
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <CpuChipIcon className="h-8 w-8 text-purple-600" />
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Hardware Management</h2>
-            <p className="text-gray-600">Monitor and control RFID readers, sensors, and IoT devices</p>
-          </div>
-        </div>
-        <button
-          onClick={() => {
-            loadDevices();
-            loadMetrics();
-          }}
-          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700"
-        >
-          <ArrowPathIcon className="h-4 w-4 mr-2" />
-          Refresh All
-        </button>
-      </div>
-
-      {/* Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <CpuChipIcon className="h-8 w-8 text-gray-400" />
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Total Devices</p>
-              {metrics.totalDevices > 0 ? (
-                <p className="text-2xl font-semibold text-gray-900">{metrics.totalDevices}</p>
-              ) : (
-                <p className="text-sm text-gray-500">No devices configured</p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <CheckCircleIcon className="h-8 w-8 text-green-400" />
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Online</p>
-              <p className="text-2xl font-semibold text-green-600">{metrics.onlineDevices}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <XCircleIcon className="h-8 w-8 text-gray-400" />
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Offline</p>
-              <p className="text-2xl font-semibold text-gray-600">{metrics.offlineDevices}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <ExclamationTriangleIcon className="h-8 w-8 text-red-400" />
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Errors</p>
-              <p className="text-2xl font-semibold text-red-600">{metrics.errorDevices}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <SignalIcon className="h-8 w-8 text-blue-400" />
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Total Readings</p>
-              {metrics.totalReadings > 0 ? (
-                <p className="text-2xl font-semibold text-blue-600">{metrics.totalReadings.toLocaleString()}</p>
-              ) : (
-                <p className="text-sm text-gray-500">No readings yet</p>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
+  const renderDevicesTab = () => (
+    <>
       {/* Filters */}
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
@@ -510,6 +440,253 @@ const HardwareManagementPanel: React.FC = () => {
           ))}
         </div>
       )}
+    </>
+  );
+
+  const renderTabContent = () => {
+    switch (activeHardwareTab) {
+      case 'devices':
+        return renderDevicesTab();
+
+      case 'face_recognition':
+        return (
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-6 flex items-center">
+              <EyeIcon className="h-6 w-6 mr-2 text-purple-600" />
+              Face Recognition Configuration
+            </h3>
+            <div className="space-y-8">
+              <HardwareConfig hardwareType="face_recognition" />
+              <div className="border-t pt-6">
+                <h4 className="text-md font-medium text-gray-900 mb-4">Test Face Recognition</h4>
+                <FaceCapture mode="registration" />
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'passive_detection':
+        return (
+          <div className="bg-white rounded-lg shadow p-6">
+            <PassiveDetect />
+          </div>
+        );
+
+      case 'hardware_config':
+        return (
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-6 flex items-center">
+                <SignalIcon className="h-6 w-6 mr-2 text-purple-600" />
+                RFID System Configuration
+              </h3>
+              <HardwareConfig hardwareType="rfid" />
+            </div>
+            
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-6 flex items-center">
+                <CpuChipIcon className="h-6 w-6 mr-2 text-purple-600" />
+                Label Printer Configuration
+              </h3>
+              <HardwareConfig hardwareType="label_printer" />
+            </div>
+            
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-6 flex items-center">
+                <BoltIcon className="h-6 w-6 mr-2 text-purple-600" />
+                QR Code System Configuration
+              </h3>
+              <HardwareConfig hardwareType="qr_code" />
+            </div>
+          </div>
+        );
+
+      case 'device_registry':
+        return (
+          <div className="bg-white rounded-lg shadow p-6">
+            <DeviceRegistry />
+          </div>
+        );
+
+      case 'testing':
+        return (
+          <div className="bg-white rounded-lg shadow p-6">
+            <HardwareTest />
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <CpuChipIcon className="h-8 w-8 text-purple-600" />
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Hardware Management</h2>
+            <p className="text-gray-600">Monitor and control RFID readers, sensors, and IoT devices</p>
+          </div>
+        </div>
+        <button
+          onClick={() => {
+            loadDevices();
+            loadMetrics();
+          }}
+          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700"
+        >
+          <ArrowPathIcon className="h-4 w-4 mr-2" />
+          Refresh All
+        </button>
+      </div>
+
+      {/* Metrics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center">
+            <CpuChipIcon className="h-8 w-8 text-gray-400" />
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-500">Total Devices</p>
+              {metrics.totalDevices > 0 ? (
+                <p className="text-2xl font-semibold text-gray-900">{metrics.totalDevices}</p>
+              ) : (
+                <p className="text-sm text-gray-500">No devices configured</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center">
+            <CheckCircleIcon className="h-8 w-8 text-green-400" />
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-500">Online</p>
+              <p className="text-2xl font-semibold text-green-600">{metrics.onlineDevices}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center">
+            <XCircleIcon className="h-8 w-8 text-gray-400" />
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-500">Offline</p>
+              <p className="text-2xl font-semibold text-gray-600">{metrics.offlineDevices}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center">
+            <ExclamationTriangleIcon className="h-8 w-8 text-red-400" />
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-500">Errors</p>
+              <p className="text-2xl font-semibold text-red-600">{metrics.errorDevices}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center">
+            <SignalIcon className="h-8 w-8 text-blue-400" />
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-500">Total Readings</p>
+              {metrics.totalReadings > 0 ? (
+                <p className="text-2xl font-semibold text-blue-600">{metrics.totalReadings.toLocaleString()}</p>
+              ) : (
+                <p className="text-sm text-gray-500">No readings yet</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Hardware Management Tabs */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
+            <button
+              onClick={() => setActiveHardwareTab('devices')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeHardwareTab === 'devices'
+                  ? 'border-purple-500 text-purple-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <CpuChipIcon className="h-5 w-5 inline mr-2" />
+              Device Overview
+            </button>
+            
+            <button
+              onClick={() => setActiveHardwareTab('face_recognition')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeHardwareTab === 'face_recognition'
+                  ? 'border-purple-500 text-purple-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <EyeIcon className="h-5 w-5 inline mr-2" />
+              Face Recognition
+            </button>
+            
+            <button
+              onClick={() => setActiveHardwareTab('passive_detection')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeHardwareTab === 'passive_detection'
+                  ? 'border-purple-500 text-purple-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <SignalIcon className="h-5 w-5 inline mr-2" />
+              Passive Detection
+            </button>
+            
+            <button
+              onClick={() => setActiveHardwareTab('hardware_config')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeHardwareTab === 'hardware_config'
+                  ? 'border-purple-500 text-purple-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <Cog6ToothIcon className="h-5 w-5 inline mr-2" />
+              Hardware Config
+            </button>
+            
+            <button
+              onClick={() => setActiveHardwareTab('device_registry')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeHardwareTab === 'device_registry'
+                  ? 'border-purple-500 text-purple-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <WifiIcon className="h-5 w-5 inline mr-2" />
+              Device Registry
+            </button>
+            
+            <button
+              onClick={() => setActiveHardwareTab('testing')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeHardwareTab === 'testing'
+                  ? 'border-purple-500 text-purple-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <BoltIcon className="h-5 w-5 inline mr-2" />
+              Testing
+            </button>
+          </nav>
+        </div>
+      </div>
+
+      {/* Tab Content */}
+      <div className="tab-content-container">
+        {renderTabContent()}
+      </div>
 
       {/* Device Details Modal */}
       {selectedDevice && (

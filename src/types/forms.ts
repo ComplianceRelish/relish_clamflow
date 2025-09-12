@@ -58,7 +58,226 @@ export interface PPCForm extends PPCFormData {
   rejection_reason?: string
 }
 
-// FP Form Types
+// ==================== ENHANCED FP FORM TYPES ====================
+
+// FP Workflow Stage Types
+export type WorkflowStage = 
+  | 'ppc_scanning'
+  | 'production_authentication' 
+  | 'final_packing_data'
+  | 'label_generation'
+  | 'qc_station_review'
+  | 'production_lead_review'
+  | 'inventory_entry'
+  | 'microbiology_testing'
+  | 'ready_for_shipment'
+  | 'quality_hold'
+  | 'production_rework'
+  | 'qc_station_rework';
+
+export type FPFormStatus = 
+  | 'draft'
+  | 'in_progress'
+  | 'pending_qc'
+  | 'pending_production_lead'
+  | 'in_inventory'
+  | 'microbiology_testing'
+  | 'ready_for_shipment'
+  | 'on_hold'
+  | 'rejected'
+  | 'completed';
+
+// Pack Size Configuration (Admin-Defined Multiple Pack Sizes)
+export interface PackSizeConfiguration {
+  id?: string;
+  pack_size_id: string;
+  pack_size_name: string;
+  pack_size_code: string;
+  quantity: number;
+  weight_per_pack: number;
+  pieces_per_pack?: number;
+  pack_dimensions?: {
+    length: number;
+    width: number;
+    height: number;
+  };
+  label_template_id?: string;
+  admin_defined: boolean;
+  created_by?: string;
+  created_at?: string;
+}
+
+// Enhanced FP Form Creation
+export interface FPFormCreate {
+  lot_id: string;
+  ppc_form_references: string[];
+  expected_box_count: number;
+  qc_station_id: string;
+  expected_pack_configurations: PackSizeConfiguration[];
+  priority_level?: 'low' | 'medium' | 'high' | 'critical';
+  special_instructions?: string;
+  customer_requirements?: any;
+}
+
+// Box Scanning Data (Step 2: In-Scans Boxes from PPC)
+export interface BoxScanData {
+  id?: string;
+  box_id: string;
+  rfid_tag: string;
+  scan_timestamp: string;
+  ppc_reference: string;
+  box_weight?: number;
+  scanner_id?: string;
+  scan_location?: string;
+  validation_status?: 'valid' | 'invalid' | 'duplicate' | 'missing_ppc';
+  validation_errors?: string[];
+}
+
+// Final Packing Data (Step 4: Multi-Box/Multiple Pack Sizes)
+export interface FinalPackingData {
+  production_staff_id: string;
+  final_product_type: string;
+  pack_configurations: PackSizeConfiguration[];
+  packaging_specifications: {
+    packaging_material: string;
+    packaging_date: string;
+    expiry_date: string;
+    batch_code?: string;
+  };
+  quality_notes?: string;
+  environmental_conditions?: {
+    temperature: number;
+    humidity: number;
+    recorded_at: string;
+  };
+  customer_specific_requirements?: any;
+}
+
+// Label Generation Results
+export interface LabelGenerationResult {
+  id: string;
+  pack_configuration_id: string;
+  label_data: {
+    qr_code: string; // base64 image
+    barcode?: string; // base64 image
+    label_content: any;
+  };
+  label_format: string;
+  generated_at: string;
+  printed_status: 'pending' | 'printed' | 'reprinted' | 'failed';
+  print_count: number;
+}
+
+// Microbiology Test Results (Step 9: QC Lead Testing)
+export interface MicrobiologyTestResult {
+  test_type: 'pathogen_screening' | 'salmonella' | 'ecoli' | 'listeria' | 'vibrio' | 'comprehensive';
+  test_results: {
+    pathogen_detected: boolean;
+    pathogen_type?: string;
+    bacterial_count?: number;
+    test_method: string;
+    detection_limit: number;
+  };
+  test_passed: boolean;
+  tested_by: string;
+  test_date: string;
+  lab_certificate_url?: string;
+  accreditation_info?: {
+    lab_name: string;
+    accreditation_number: string;
+    certification_date: string;
+  };
+  retest_required?: boolean;
+  corrective_actions?: string[];
+}
+
+// Enhanced Approval Interface (QC Staff & Production Lead)
+export interface FPFormApproval {
+  approved: boolean;
+  comments?: string;
+  quality_rating?: number;
+  rejection_reason?: string;
+  corrective_actions?: string[];
+  quality_checklist?: {
+    [key: string]: boolean;
+  };
+  attachments?: string[];
+  next_review_date?: string;
+}
+
+// Workflow History Tracking
+export interface FPWorkflowHistory {
+  id: string;
+  stage: WorkflowStage;
+  action: string;
+  performed_by: string;
+  performed_by_role: string;
+  timestamp: string;
+  comments?: string;
+  data?: any;
+}
+
+// Enhanced FP Form (Comprehensive)
+export interface FPForm {
+  id: string;
+  lot_id: string;
+  form_number: string;
+  status: FPFormStatus;
+  workflow_stage: WorkflowStage;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  expected_box_count: number;
+  actual_box_count?: number;
+  qc_station_id: string;
+  priority_level: 'low' | 'medium' | 'high' | 'critical';
+  
+  // Workflow tracking
+  ppc_scan_completed?: boolean;
+  production_staff_authenticated?: boolean;
+  final_packing_completed?: boolean;
+  labels_generated?: boolean;
+  qc_approved?: boolean;
+  production_lead_approved?: boolean;
+  inventory_entered?: boolean;
+  microbiology_completed?: boolean;
+  
+  // Assignees
+  current_assignee?: string;
+  current_assignee_role?: string;
+  qc_staff_assigned?: string;
+  production_lead_assigned?: string;
+  qc_lead_assigned?: string;
+  
+  // Timestamps
+  ppc_scan_timestamp?: string;
+  production_auth_timestamp?: string;
+  final_packing_timestamp?: string;
+  qc_approval_timestamp?: string;
+  production_approval_timestamp?: string;
+  inventory_entry_timestamp?: string;
+  microbiology_timestamp?: string;
+  completion_timestamp?: string;
+  
+  // Data
+  pack_configurations?: PackSizeConfiguration[];
+  total_weight?: number;
+  total_pieces?: number;
+  special_instructions?: string;
+}
+
+// Detailed FP Form (with full workflow context)
+export interface FPFormDetailed extends FPForm {
+  workflow_history: FPWorkflowHistory[];
+  current_permissions: string[];
+  next_actions: string[];
+  scanned_boxes: BoxScanData[];
+  packing_configurations: PackSizeConfiguration[];
+  generated_labels: LabelGenerationResult[];
+  rejection_history: any[];
+}
+
+// Legacy FP Form Types (maintaining backward compatibility)
 export interface FPFormData {
   lot_id: string
   station_staff_id: string
@@ -81,18 +300,7 @@ export interface FPBox {
   expiry_date: string
 }
 
-export interface FPForm extends FPFormData {
-  id: string
-  fp_form_number: string
-  created_at: string
-  updated_at: string
-  status: 'submitted_to_qc' | 'qc_approved' | 'qc_rejected' | 'submitted_to_supervisor' | 'supervisor_approved' | 'supervisor_rejected'
-  qc_approved_by?: string
-  qc_approved_at?: string
-  supervisor_approved_by?: string
-  supervisor_approved_at?: string
-  rejection_reason?: string
-}
+// ==================== EXISTING FORM TYPES (Unchanged) ====================
 
 // Sample Extraction Form Types
 export interface SampleExtractionFormData {
@@ -328,7 +536,9 @@ export interface FormTemplate {
   created_at: string
 }
 
-// Zod Schema Types (for runtime validation)
+// ==================== VALIDATION SCHEMAS ====================
+
+// Existing Zod Schemas
 export const WeightNoteSchema = z.object({
   lot_id: z.string().uuid('Invalid lot ID'),
   supplier_id: z.string().uuid('Invalid supplier ID'),
@@ -358,6 +568,68 @@ export const PPCFormSchema = z.object({
   operator_signature: z.string().optional()
 })
 
+// Enhanced FP Form Schema (New Workflow)
+export const EnhancedFPFormSchema = z.object({
+  lot_id: z.string().uuid('Invalid lot ID'),
+  ppc_form_references: z.array(z.string().uuid()).min(1, 'At least one PPC form reference required'),
+  expected_box_count: z.number().positive('Expected box count must be positive'),
+  qc_station_id: z.string().min(1, 'QC Station ID is required'),
+  expected_pack_configurations: z.array(z.object({
+    pack_size_id: z.string().min(1, 'Pack size ID required'),
+    pack_size_name: z.string().min(1, 'Pack size name required'),
+    pack_size_code: z.string().min(1, 'Pack size code required'),
+    quantity: z.number().positive('Quantity must be positive'),
+    weight_per_pack: z.number().positive('Weight per pack must be positive'),
+    pieces_per_pack: z.number().positive().optional(),
+    admin_defined: z.boolean()
+  })).min(1, 'At least one pack configuration required'),
+  priority_level: z.enum(['low', 'medium', 'high', 'critical']).optional(),
+  special_instructions: z.string().optional()
+})
+
+export const PackSizeConfigurationSchema = z.object({
+  pack_size_id: z.string().min(1, 'Pack size ID required'),
+  pack_size_name: z.string().min(1, 'Pack size name required'),
+  pack_size_code: z.string().min(1, 'Pack size code required'),
+  quantity: z.number().positive('Quantity must be positive'),
+  weight_per_pack: z.number().positive('Weight per pack must be positive'),
+  pieces_per_pack: z.number().positive().optional(),
+  pack_dimensions: z.object({
+    length: z.number().positive(),
+    width: z.number().positive(),
+    height: z.number().positive()
+  }).optional(),
+  admin_defined: z.boolean()
+})
+
+export const BoxScanDataSchema = z.object({
+  box_id: z.string().min(1, 'Box ID required'),
+  rfid_tag: z.string().min(1, 'RFID tag required'),
+  ppc_reference: z.string().uuid('Invalid PPC reference'),
+  box_weight: z.number().positive().optional(),
+  scanner_id: z.string().optional(),
+  scan_location: z.string().optional()
+})
+
+export const FinalPackingDataSchema = z.object({
+  production_staff_id: z.string().uuid('Invalid production staff ID'),
+  final_product_type: z.string().min(1, 'Final product type required'),
+  pack_configurations: z.array(PackSizeConfigurationSchema).min(1, 'At least one pack configuration required'),
+  packaging_specifications: z.object({
+    packaging_material: z.string().min(1, 'Packaging material required'),
+    packaging_date: z.string().datetime('Invalid packaging date'),
+    expiry_date: z.string().datetime('Invalid expiry date'),
+    batch_code: z.string().optional()
+  }),
+  quality_notes: z.string().optional(),
+  environmental_conditions: z.object({
+    temperature: z.number(),
+    humidity: z.number().min(0).max(100),
+    recorded_at: z.string().datetime()
+  }).optional()
+})
+
+// Legacy FP Form Schema (backward compatibility)
 export const FPFormSchema = z.object({
   lot_id: z.string().uuid('Invalid lot ID'),
   station_staff_id: z.string().uuid('Invalid staff ID'),
@@ -378,6 +650,11 @@ export const FPFormSchema = z.object({
   operator_signature: z.string().optional()
 })
 
+// Type Inference
 export type WeightNoteFormValidation = z.infer<typeof WeightNoteSchema>
 export type PPCFormValidation = z.infer<typeof PPCFormSchema>
 export type FPFormValidation = z.infer<typeof FPFormSchema>
+export type EnhancedFPFormValidation = z.infer<typeof EnhancedFPFormSchema>
+export type PackSizeConfigurationValidation = z.infer<typeof PackSizeConfigurationSchema>
+export type BoxScanDataValidation = z.infer<typeof BoxScanDataSchema>
+export type FinalPackingDataValidation = z.infer<typeof FinalPackingDataSchema>
