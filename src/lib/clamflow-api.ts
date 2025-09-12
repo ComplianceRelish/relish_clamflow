@@ -219,7 +219,7 @@ class ClamFlowAPI {
 
   async getAllUsers(): Promise<ApiResponse<User[]>> {
     try {
-      return await this.request<User[]>('/users/');
+      return await this.request<User[]>('/admin/users/');
     } catch (error) {
       console.log('Users endpoint not available, using fallback data');
       // Enterprise-grade fallback data for User Management
@@ -301,7 +301,7 @@ class ClamFlowAPI {
 
   async createUser(userData: Partial<User>): Promise<ApiResponse<User>> {
     try {
-      return await this.request<User>('/users/', {
+      return await this.request<User>('/admin/users/', {
         method: 'POST',
         body: JSON.stringify(userData),
       });
@@ -331,7 +331,7 @@ class ClamFlowAPI {
 
   async updateUser(userId: string, userData: Partial<User>): Promise<ApiResponse<User>> {
     try {
-      return await this.request<User>(`/users/${userId}`, {
+      return await this.request<User>(`/admin/users/${userId}`, {
         method: 'PUT',
         body: JSON.stringify(userData),
       });
@@ -362,7 +362,7 @@ class ClamFlowAPI {
 
   async deleteUser(userId: string): Promise<ApiResponse<void>> {
     try {
-      return await this.request<void>(`/users/${userId}`, {
+      return await this.request<void>(`/admin/users/${userId}`, {
         method: 'DELETE',
       });
     } catch (error) {
