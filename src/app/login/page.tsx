@@ -7,6 +7,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { FormField } from '../../components/ui/FormField';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
+import PasswordChangeForm from '../../components/auth/PasswordChangeForm';
 
 interface LoginState {
   username: string;
@@ -16,7 +17,7 @@ interface LoginState {
 }
 
 const LoginPage: React.FC = () => {
-  const { login, isAuthenticated, isLoading } = useAuth();
+  const { login, user, requiresPasswordChange, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   
   const [state, setState] = useState<LoginState>({
@@ -26,12 +27,17 @@ const LoginPage: React.FC = () => {
     error: null,
   });
 
-  // Redirect if already authenticated
+  // Show password change form if user is logged in but needs to change password
+  if (user && requiresPasswordChange) {
+    return <PasswordChangeForm />;
+  }
+
+  // Redirect if already authenticated and doesn't need password change
   useEffect(() => {
-    if (isAuthenticated && !isLoading) {
+    if (isAuthenticated && !isLoading && !requiresPasswordChange) {
       router.push('/dashboard');
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isLoading, requiresPasswordChange, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,16 +50,19 @@ const LoginPage: React.FC = () => {
     setState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
-      const success = await login(state.username, state.password);
+      const result = await login(state.username, state.password);
       
-      if (!success) {
+      if (!result.success) {
         setState(prev => ({
           ...prev,
           loading: false,
-          error: 'Invalid username or password',
+          error: result.error || 'Invalid username or password',
         }));
+      } else if (result.requiresPasswordChange) {
+        // Password change form will be shown automatically by the conditional render above
+        setState(prev => ({ ...prev, loading: false }));
       }
-      // If successful, the AuthContext will handle the redirect
+      // If successful and no password change needed, AuthContext handles redirect
     } catch (error) {
       console.error('Login error:', error);
       setState(prev => ({
@@ -76,13 +85,13 @@ const LoginPage: React.FC = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <LoadingSpinner size="lg" className="text-relish-purple" />
+        <LoadingSpinner size="lg" className="text-relish-purple" />
       </div>
     );
   }
 
   // Don't render login form if already authenticated
-  if (isAuthenticated) {
+  if (isAuthenticated && !requiresPasswordChange) {
     return null;
   }
 
@@ -111,7 +120,7 @@ const LoginPage: React.FC = () => {
                 type="text"
                 value={state.username}
                 onChange={(e) => handleInputChange('username', e.target.value)}
-                placeholder="Enter your username"
+                placeholder="relishfoodsalby@gmail.com"
                 required
                 disabled={state.loading}
                 className="text-lg"
@@ -124,7 +133,7 @@ const LoginPage: React.FC = () => {
                 type="password"
                 value={state.password}
                 onChange={(e) => handleInputChange('password', e.target.value)}
-                placeholder="Enter your password"
+                placeholder="••••••"
                 required
                 disabled={state.loading}
                 className="text-lg"
@@ -171,6 +180,19 @@ const LoginPage: React.FC = () => {
               </button>
             </div>
           </form>
+
+          {/* Enterprise Credentials Helper */}
+          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+            <h4 className="font-medium text-blue-900 mb-2">Enterprise Login</h4>
+            <div className="text-xs text-blue-700 space-y-1">
+              <div><strong>Super Admin:</strong> SA_Motty</div>
+              <div><strong>Admin:</strong> AD_Admin</div>
+              <div><strong>QC Lead:</strong> QC_Lead</div>
+              <div className="text-xs text-blue-600 mt-2">
+                * Default passwords require change on first login
+              </div>
+            </div>
+          </div>
         </Card>
 
         {/* Footer */}

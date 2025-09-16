@@ -1,454 +1,321 @@
-'use client';
+// src/components/dashboards/admin/UserManagementPanel.tsx - Corrected Version
+"use client";
 
 import React, { useState, useEffect } from 'react';
-import { clamflowAPI } from '../../../lib/clamflow-api';
-import { User } from '../../../types/auth';
-import { Card } from '../../ui/Card';
-import { Button } from '../../ui/Button';
-import { Input } from '../../ui/Input';
-import { Badge } from '../../ui/Badge';
-import { Modal } from '../../ui/Modal';
-import { LoadingSpinner } from '../../ui/LoadingSpinner';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
+import { Alert, AlertDescription } from '@/components/ui/Alert';
+import { 
+  Users, 
+  UserPlus, 
+  Edit3, 
+  Trash2,
+  AlertTriangle, 
+  CheckCircle,
+  Search,
+  Filter
+} from 'lucide-react';
+import { User, UserRole, ROLE_DISPLAY_NAMES, toApiRole } from '@/types/auth';
+import clamflowAPI from '@/lib/clamflow-api';
 
-interface UserManagementProps {
-  title: string;
-  onClose: () => void;
+interface UserManagementPanelProps {
+  currentUser: User | null;
 }
 
-interface UserManagementState {
-  users: User[];
-  loading: boolean;
-  error: string | null;
-  selectedUser: User | null;
-  showCreateModal: boolean;
-  showEditModal: boolean;
-  searchTerm: string;
-  filterRole: string;
-}
+// Custom Select component that matches the expected API
+const CustomSelect: React.FC<{
+  value: string;
+  onValueChange: (value: string) => void;
+  children: React.ReactNode;
+}> = ({ value, onValueChange, children }) => {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onValueChange(e.target.value)}
+      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      {children}
+    </select>
+  );
+};
 
-const UserManagementPanel: React.FC<UserManagementProps> = ({ title, onClose }) => {
-  const [state, setState] = useState<UserManagementState>({
-    users: [],
-    loading: true,
-    error: null,
-    selectedUser: null,
-    showCreateModal: false,
-    showEditModal: false,
-    searchTerm: '',
-    filterRole: '',
-  });
+// Custom Switch component
+const CustomSwitch: React.FC<{
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+}> = ({ checked, onCheckedChange }) => {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onCheckedChange(!checked)}
+      className={`inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 ${
+        checked ? 'bg-primary' : 'bg-input'
+      }`}
+    >
+      <span
+        className={`pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform ${
+          checked ? 'translate-x-5' : 'translate-x-0'
+        }`}
+      />
+    </button>
+  );
+};
 
-  const [newUser, setNewUser] = useState({
+const UserManagementPanel: React.FC<UserManagementPanelProps> = ({ currentUser }) => {
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterRole, setFilterRole] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+  const [formData, setFormData] = useState({
     username: '',
     full_name: '',
-    role: 'Production Staff' as User['role'],
+    role: 'Production Staff' as string,
     station: '',
-    password: '',
+    is_active: true
   });
 
-  // Fetch users
   useEffect(() => {
     fetchUsers();
   }, []);
 
   const fetchUsers = async () => {
     try {
-      setState(prev => ({ ...prev, loading: true, error: null }));
-      
+      setLoading(true);
       const response = await clamflowAPI.getAllUsers();
-      
       if (response.success && response.data) {
-        setState(prev => ({
-          ...prev,
-          users: response.data || [],
-          loading: false,
+        // Convert API response to match our types
+        const convertedUsers = response.data.map(user => ({
+          ...user,
+          role: toApiRole(user.role) // Ensure snake_case
         }));
+        setUsers(convertedUsers);
       } else {
-        setState(prev => ({
-          ...prev,
-          error: response.error || 'Failed to fetch users',
-          loading: false,
-        }));
+        setError(response.error || 'Failed to fetch users');
       }
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      setState(prev => ({
-        ...prev,
-        error: 'Failed to fetch users',
-        loading: false,
-      }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch users');
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const openEditDialog = (user: User) => {
+    setSelectedUser(user);
+    setFormData({
+      username: user.username || '',
+      full_name: user.full_name || '',
+      role: ROLE_DISPLAY_NAMES[user.role], // Convert to display name for UI
+      station: user.station || '',
+      is_active: user.is_active ?? true
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const resetForm = () => {
+    setFormData({
+      username: '',
+      full_name: '',
+      role: 'Production Staff',
+      station: '',
+      is_active: true
+    });
   };
 
   const handleCreateUser = async () => {
-    try {
-      const response = await clamflowAPI.createUser(newUser);
-      
-      if (response.success) {
-        await fetchUsers();
-        setState(prev => ({ ...prev, showCreateModal: false }));
-        setNewUser({
-          username: '',
-          full_name: '',
-          role: 'Production Staff',
-          station: '',
-          password: '',
-        });
-      }
-    } catch (error) {
-      console.error('Error creating user:', error);
-    }
-  };
-
-  const handleEditUser = async () => {
-    if (!state.selectedUser) return;
-    
-    try {
-      const response = await clamflowAPI.updateUser(state.selectedUser.id, state.selectedUser);
-      
-      if (response.success) {
-        await fetchUsers();
-        setState(prev => ({ ...prev, showEditModal: false, selectedUser: null }));
-      }
-    } catch (error) {
-      console.error('Error updating user:', error);
-    }
-  };
-
-  const handleDeleteUser = async (userId: string) => {
-    if (!confirm('Are you sure you want to delete this user?')) return;
-    
-    try {
-      const response = await clamflowAPI.deleteUser(userId);
-      
-      if (response.success) {
-        await fetchUsers();
-      }
-    } catch (error) {
-      console.error('Error deleting user:', error);
-    }
-  };
-
-  const getRoleBadgeColor = (role: User['role']) => {
-    const colors = {
-      'Super Admin': 'bg-purple-100 text-purple-800',
-      'Admin': 'bg-blue-100 text-blue-800',
-      'Production Lead': 'bg-green-100 text-green-800',
-      'QC Lead': 'bg-orange-100 text-orange-800',
-      'Staff Lead': 'bg-indigo-100 text-indigo-800',
-      'QC Staff': 'bg-yellow-100 text-yellow-800',
-      'Production Staff': 'bg-gray-100 text-gray-800',
-      'Security Guard': 'bg-red-100 text-red-800',
+    const userData = {
+      username: formData.username,
+      full_name: formData.full_name,
+      role: toApiRole(formData.role), // Convert to snake_case
+      station: formData.station,
+      is_active: formData.is_active,
+      created_at: new Date().toISOString()
     };
-    return colors[role] || 'bg-gray-100 text-gray-800';
+
+    try {
+      const response = await clamflowAPI.createUser(userData);
+      if (response.success) {
+        setIsCreateDialogOpen(false);
+        resetForm();
+        fetchUsers();
+      } else {
+        setError(response.error || 'Failed to create user');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create user');
+    }
   };
 
-  // Filter users based on search and role filter
-  const filteredUsers = state.users.filter(user => {
-    const matchesSearch = user.full_name.toLowerCase().includes(state.searchTerm.toLowerCase()) ||
-                         user.username.toLowerCase().includes(state.searchTerm.toLowerCase());
-    const matchesRole = !state.filterRole || user.role === state.filterRole;
-    return matchesSearch && matchesRole;
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          user.username.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRole = filterRole === 'all' || user.role === toApiRole(filterRole);
+    const matchesStatus = filterStatus === 'all' || 
+                         (filterStatus === 'active' && user.is_active) ||
+                         (filterStatus === 'inactive' && !user.is_active);
+    return matchesSearch && matchesRole && matchesStatus;
   });
-
-  if (state.loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <LoadingSpinner />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">User Management</h2>
-        <Button onClick={() => setState(prev => ({ ...prev, showCreateModal: true }))}>
-          Add New User
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">User Management</h2>
+          <p className="text-gray-600">Manage system users and their permissions</p>
+        </div>
+        <Button onClick={() => setIsCreateDialogOpen(true)}>
+          <UserPlus className="h-4 w-4 mr-2" />
+          Add User
         </Button>
       </div>
 
-      {/* Search and Filter */}
-      <Card className="p-4">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <Input
-            placeholder="Search users..."
-            value={state.searchTerm}
-            onChange={(e) => setState(prev => ({ ...prev, searchTerm: e.target.value }))}
-            className="flex-1"
-          />
-          <select
-            value={state.filterRole}
-            onChange={(e) => setState(prev => ({ ...prev, filterRole: e.target.value }))}
-            className="px-3 py-2 border border-gray-300 rounded-md"
-          >
-            <option value="">All Roles</option>
-            <option value="Super Admin">Super Admin</option>
-            <option value="Admin">Admin</option>
-            <option value="Production Lead">Production Lead</option>
-            <option value="QC Lead">QC Lead</option>
-            <option value="Staff Lead">Staff Lead</option>
-            <option value="QC Staff">QC Staff</option>
-            <option value="Production Staff">Production Staff</option>
-            <option value="Security Guard">Security Guard</option>
-          </select>
-        </div>
-      </Card>
-
-      {/* Error Message */}
-      {state.error && (
-        <Card className="p-4 bg-red-50 border-red-200">
-          <p className="text-red-600">{state.error}</p>
-        </Card>
+      {error && (
+        <Alert className="border-red-200 bg-red-50">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
 
-      {/* Users Table */}
-      <Card className="p-0">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  User
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Role
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Station
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Last Login
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredUsers.map((user) => (
-                <tr key={user.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{user.full_name}</div>
-                      <div className="text-sm text-gray-500">{user.username}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <Badge className={getRoleBadgeColor(user.role)}>
-                      {user.role}
-                    </Badge>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {user.station || '-'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <Badge variant={user.is_active ? 'success' : 'destructive'}>
-                      {user.is_active ? 'Active' : 'Inactive'}
-                    </Badge>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Never'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setState(prev => ({ 
-                        ...prev, 
-                        selectedUser: user, 
-                        showEditModal: true 
-                      }))}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDeleteUser(user.id)}
-                    >
-                      Delete
-                    </Button>
-                  </td>
+      <Card>
+        <CardHeader>
+          <CardTitle>Users ({filteredUsers.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left p-2">User</th>
+                  <th className="text-left p-2">Role</th>
+                  <th className="text-left p-2">Station</th>
+                  <th className="text-left p-2">Status</th>
+                  <th className="text-left p-2">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {filteredUsers.map((user) => (
+                  <tr key={user.id} className="border-b hover:bg-gray-50">
+                    <td className="p-2">
+                      <div>
+                        <div className="font-medium">{user.username}</div>
+                        <div className="text-sm text-gray-500">{user.full_name}</div>
+                      </div>
+                    </td>
+                    <td className="p-2">
+                      <Badge>{ROLE_DISPLAY_NAMES[user.role]}</Badge>
+                    </td>
+                    <td className="p-2">
+                      <span className="text-sm">{user.station || 'Unassigned'}</span>
+                    </td>
+                    <td className="p-2">
+                      <div className="flex items-center space-x-2">
+                        {user.is_active ? (
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <AlertTriangle className="h-4 w-4 text-red-500" />
+                        )}
+                        <span className={user.is_active ? 'text-green-700' : 'text-red-700'}>
+                          {user.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="p-2">
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openEditDialog(user)}
+                        >
+                          <Edit3 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
       </Card>
 
-      {filteredUsers.length === 0 && !state.loading && (
-        <Card className="p-8 text-center">
-          <p className="text-gray-500">No users found matching your criteria.</p>
-        </Card>
-      )}
-
-      {/* Create User Modal */}
-      <Modal
-        isOpen={state.showCreateModal}
-        onClose={() => setState(prev => ({ ...prev, showCreateModal: false }))}
-        title="Create New User"
-      >
-        <div className="space-y-4">
-          {/* Username Field */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
-            <Input
-              value={newUser.username}
-              onChange={(e) => setNewUser(prev => ({ ...prev, username: e.target.value }))}
-              placeholder="Enter username"
-              className="w-full"
-            />
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New User</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="create-username">Username</Label>
+                <Input
+                  id="create-username"
+                  value={formData.username}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData(prev => ({ ...prev, username: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="create-name">Full Name</Label>
+                <Input
+                  id="create-name"
+                  value={formData.full_name}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="create-role">Role</Label>
+                <CustomSelect 
+                  value={formData.role} 
+                  onValueChange={(value: string) => setFormData(prev => ({ ...prev, role: value }))}
+                >
+                  {Object.values(ROLE_DISPLAY_NAMES).map((displayRole) => (
+                    <option key={displayRole} value={displayRole}>
+                      {displayRole}
+                    </option>
+                  ))}
+                </CustomSelect>
+              </div>
+              <div>
+                <Label htmlFor="create-station">Station</Label>
+                <Input
+                  id="create-station"
+                  value={formData.station}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData(prev => ({ ...prev, station: e.target.value }))}
+                />
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <CustomSwitch
+                checked={formData.is_active}
+                onCheckedChange={(checked: boolean) => setFormData(prev => ({ ...prev, is_active: checked }))}
+              />
+              <Label>Active User</Label>
+            </div>
           </div>
-
-          {/* Full Name Field */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-            <Input
-              value={newUser.full_name}
-              onChange={(e) => setNewUser(prev => ({ ...prev, full_name: e.target.value }))}
-              placeholder="Enter full name"
-              className="w-full"
-            />
-          </div>
-
-          {/* Role Field */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-            <select
-              value={newUser.role}
-              onChange={(e) => setNewUser(prev => ({ ...prev, role: e.target.value as User['role'] }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="Super Admin">Super Admin</option>
-              <option value="Admin">Admin</option>
-              <option value="Production Lead">Production Lead</option>
-              <option value="QC Lead">QC Lead</option>
-              <option value="Staff Lead">Staff Lead</option>
-              <option value="QC Staff">QC Staff</option>
-              <option value="Production Staff">Production Staff</option>
-              <option value="Security Guard">Security Guard</option>
-            </select>
-          </div>
-
-          {/* Station Field */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Station</label>
-            <Input
-              value={newUser.station}
-              onChange={(e) => setNewUser(prev => ({ ...prev, station: e.target.value }))}
-              placeholder="Enter station (optional)"
-              className="w-full"
-            />
-          </div>
-
-          {/* Password Field */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <Input
-              type="password"
-              value={newUser.password}
-              onChange={(e) => setNewUser(prev => ({ ...prev, password: e.target.value }))}
-              placeholder="Enter password"
-              className="w-full"
-            />
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button
-              variant="outline"
-              onClick={() => setState(prev => ({ ...prev, showCreateModal: false }))}
-            >
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
               Cancel
             </Button>
             <Button onClick={handleCreateUser}>Create User</Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Edit User Modal */}
-      <Modal
-        isOpen={state.showEditModal}
-        onClose={() => setState(prev => ({ ...prev, showEditModal: false }))}
-        title="Edit User"
-      >
-        {state.selectedUser && (
-          <div className="space-y-4">
-            {/* Full Name Field */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-              <Input
-                value={state.selectedUser.full_name}
-                onChange={(e) => setState(prev => ({
-                  ...prev,
-                  selectedUser: prev.selectedUser ? {
-                    ...prev.selectedUser,
-                    full_name: e.target.value
-                  } : null
-                }))}
-                className="w-full"
-              />
-            </div>
-
-            {/* Role Field */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-              <select
-                value={state.selectedUser.role}
-                onChange={(e) => setState(prev => ({
-                  ...prev,
-                  selectedUser: prev.selectedUser ? {
-                    ...prev.selectedUser,
-                    role: e.target.value as User['role']
-                  } : null
-                }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="Super Admin">Super Admin</option>
-                <option value="Admin">Admin</option>
-                <option value="Production Lead">Production Lead</option>
-                <option value="QC Lead">QC Lead</option>
-                <option value="Staff Lead">Staff Lead</option>
-                <option value="QC Staff">QC Staff</option>
-                <option value="Production Staff">Production Staff</option>
-                <option value="Security Guard">Security Guard</option>
-              </select>
-            </div>
-
-            {/* Station Field */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Station</label>
-              <Input
-                value={state.selectedUser.station || ''}
-                onChange={(e) => setState(prev => ({
-                  ...prev,
-                  selectedUser: prev.selectedUser ? {
-                    ...prev.selectedUser,
-                    station: e.target.value
-                  } : null
-                }))}
-                className="w-full"
-              />
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex justify-end space-x-2 pt-4">
-              <Button
-                variant="outline"
-                onClick={() => setState(prev => ({ ...prev, showEditModal: false }))}
-              >
-                Cancel
-              </Button>
-              <Button onClick={handleEditUser}>Update User</Button>
-            </div>
-          </div>
-        )}
-      </Modal>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -1,42 +1,34 @@
-// Type checking tests for ClamFlow Frontend
+// __tests__/type-check.ts - SCHEMA COMPLIANT TESTS
 
-import { User, UserRole } from '../types';
-import { ApiResponse } from '../services/api';
+import { User, UserRole } from '../types/auth';
 
-// Test User type
+// ✅ FIXED: Schema-compliant test user (snake_case)
 const testUser: User = {
   id: '1',
   username: 'test_user',
   full_name: 'Test User',
-  role: 'Production Staff', // Fixed: Use valid role
+  role: 'production_staff', // ✅ Correct snake_case format
   station: 'Station 1',
   is_active: true,
   last_login: '2023-01-01T00:00:00Z',
   created_at: '2023-01-01T00:00:00Z',
-  updated_at: '2023-01-01T00:00:00Z',
   password_reset_required: false,
   login_attempts: 0,
 };
 
-// Test UserRole type
-const testRole: UserRole = 'QC Staff'; // Fixed: Use valid role
+// ✅ FIXED: Schema-compliant role test
+const testRole: UserRole = 'qc_staff'; // ✅ Correct snake_case format
 
-// Test ApiResponse type
-const testApiResponse: ApiResponse<User> = {
-  success: true,
-  data: testUser,
-};
-
-// Test all valid roles
+// ✅ FIXED: All valid roles from schema CHECK constraint (snake_case)
 const validRoles: UserRole[] = [
-  'Super Admin',
-  'Admin',
-  'Production Lead',
-  'QC Lead',
-  'Staff Lead',
-  'QC Staff',
-  'Production Staff',
-  'Security Guard'
+  'super_admin',
+  'admin',
+  'staff_lead',
+  'production_lead',
+  'production_staff',
+  'qc_staff',
+  'qc_lead',
+  'security_guard'
 ];
 
 // Test role validation function
@@ -45,7 +37,7 @@ function isValidRole(role: string): role is UserRole {
 }
 
 // Example usage
-const sampleRole = 'QC Staff';
+const sampleRole = 'qc_staff';
 if (isValidRole(sampleRole)) {
   console.log(`${sampleRole} is a valid role`);
 }

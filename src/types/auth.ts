@@ -1,149 +1,61 @@
-// Authentication Types - Enhanced for ClamFlow Backend Integration
+// src/types/auth.ts
+export type UserRole = 
+  | "super_admin"
+  | "admin"
+  | "staff_lead"
+  | "production_lead"
+  | "qc_lead"
+  | "production_staff"
+  | "qc_staff"
+  | "security_guard";
 
 export interface User {
   id: string;
-  username: string;
   full_name: string;
-  role: 'Super Admin' | 'Admin' | 'Production Lead' | 'QC Lead' | 'Staff Lead' | 'QC Staff' | 'Production Staff' | 'Security Guard';
+  username: string;
+  role: UserRole;
   station?: string;
   is_active: boolean;
+  created_at: string;
   last_login?: string;
-  created_at?: string;
-  updated_at?: string;
   password_reset_required?: boolean;
   login_attempts?: number;
+  face_embedding?: ArrayBuffer;
 }
 
-// Legacy compatibility - export User as UserProfile
-export type UserProfile = User;
-
-export interface LoginCredentials {
-  username: string;
-  password: string;
+export interface AuthUser extends User {
+  token: string;
+  refresh_token?: string;
 }
 
-export interface AuthResponse {
-  access_token: string;
-  token_type: string;
-  user: User;
-}
+// Map display names for UI only
+export const ROLE_DISPLAY_NAMES: Record<UserRole, string> = {
+  "super_admin": "Super Admin",
+  "admin": "Admin",
+  "staff_lead": "Staff Lead",
+  "production_lead": "Production Lead",
+  "qc_lead": "QC Lead",
+  "production_staff": "Production Staff",
+  "qc_staff": "QC Staff",
+  "security_guard": "Security Guard"
+};
 
-export interface AuthContextType {
-  user: User | null;
-  token: string | null;
-  isLoading: boolean;
-  isAuthenticated: boolean;
-  login: (username: string, password: string) => Promise<boolean>;
-  loginWithFace: (imageFile: File) => Promise<boolean>;
-  logout: () => void;
-  refreshToken: () => Promise<boolean>;
-}
+// Reverse mapping for API → UI
+export const getDisplayRole = (role: UserRole): string => {
+  return ROLE_DISPLAY_NAMES[role];
+};
 
-// Role types
-export type UserRole = User['role'];
-
-// Role-based permissions
-export interface RolePermissions {
-  canCreateUsers: boolean;
-  canEditUsers: boolean;
-  canDeleteUsers: boolean;
-  canViewAuditLogs: boolean;
-  canManageSystem: boolean;
-  canApproveOnboarding: boolean;
-  canAccessReports: boolean;
-  canManageHardware: boolean;
-}
-
-// Module access levels
-export type ModuleAccess = 
-  | 'super_admin'
-  | 'admin_panel' 
-  | 'production_forms'
-  | 'quality_control'
-  | 'hr_management'
-  | 'gate_control'
-  | 'reports'
-  | 'hardware_management';
-
-export const DEFAULT_ROLE_PERMISSIONS: Record<User['role'], RolePermissions> = {
-  'Super Admin': {
-    canCreateUsers: true,
-    canEditUsers: true,
-    canDeleteUsers: true,
-    canViewAuditLogs: true,
-    canManageSystem: true,
-    canApproveOnboarding: true,
-    canAccessReports: true,
-    canManageHardware: true,
-  },
-  'Admin': {
-    canCreateUsers: true,
-    canEditUsers: true,
-    canDeleteUsers: false,
-    canViewAuditLogs: true,
-    canManageSystem: false,
-    canApproveOnboarding: true,
-    canAccessReports: true,
-    canManageHardware: true,
-  },
-  'Production Lead': {
-    canCreateUsers: false,
-    canEditUsers: false,
-    canDeleteUsers: false,
-    canViewAuditLogs: false,
-    canManageSystem: false,
-    canApproveOnboarding: false,
-    canAccessReports: true,
-    canManageHardware: false,
-  },
-  'QC Lead': {
-    canCreateUsers: false,
-    canEditUsers: false,
-    canDeleteUsers: false,
-    canViewAuditLogs: false,
-    canManageSystem: false,
-    canApproveOnboarding: false,
-    canAccessReports: true,
-    canManageHardware: false,
-  },
-  'Staff Lead': {
-    canCreateUsers: false,
-    canEditUsers: false,
-    canDeleteUsers: false,
-    canViewAuditLogs: false,
-    canManageSystem: false,
-    canApproveOnboarding: true,
-    canAccessReports: true,
-    canManageHardware: false,
-  },
-  'QC Staff': {
-    canCreateUsers: false,
-    canEditUsers: false,
-    canDeleteUsers: false,
-    canViewAuditLogs: false,
-    canManageSystem: false,
-    canApproveOnboarding: false,
-    canAccessReports: false,
-    canManageHardware: false,
-  },
-  'Production Staff': {
-    canCreateUsers: false,
-    canEditUsers: false,
-    canDeleteUsers: false,
-    canViewAuditLogs: false,
-    canManageSystem: false,
-    canApproveOnboarding: false,
-    canAccessReports: false,
-    canManageHardware: false,
-  },
-  'Security Guard': {
-    canCreateUsers: false,
-    canEditUsers: false,
-    canDeleteUsers: false,
-    canViewAuditLogs: false,
-    canManageSystem: false,
-    canApproveOnboarding: false,
-    canAccessReports: false,
-    canManageHardware: false,
-  },
+// Forward mapping for UI → API
+export const toApiRole = (displayRole: string): UserRole => {
+  const mapping: Record<string, UserRole> = {
+    "Super Admin": "super_admin",
+    "Admin": "admin",
+    "Staff Lead": "staff_lead",
+    "Production Lead": "production_lead",
+    "QC Lead": "qc_lead",
+    "Production Staff": "production_staff",
+    "QC Staff": "qc_staff",
+    "Security Guard": "security_guard"
+  };
+  return mapping[displayRole as keyof typeof mapping] || "production_staff";
 };

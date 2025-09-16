@@ -1,10 +1,10 @@
-// src/components/integrations/RFIDHardwareManager.tsx
+// src/components/integrations/RFIDHardwareManager.tsx - Corrected & Working Version
 import React, { useState, useEffect, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import { Input } from '@/components/ui/Input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { AlertCircle, CheckCircle, Wifi, WifiOff, Clock, Package, Users, Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiClient } from '@/lib/api-client';
@@ -295,9 +295,13 @@ const RFIDHardwareManager: React.FC<RFIDHardwareManagerProps> = ({
                 {reader.name}
                 <Badge variant={activeReaders.has(reader.id) ? "default" : "destructive"}>
                   {activeReaders.has(reader.id) ? (
-                    <><Wifi className="h-3 w-3 mr-1" /> Online</>
+                    <>
+                      <Wifi className="h-3 w-3 mr-1" /> Online
+                    </>
                   ) : (
-                    <><WifiOff className="h-3 w-3 mr-1" /> Offline</>
+                    <>
+                      <WifiOff className="h-3 w-3 mr-1" /> Offline
+                    </>
                   )}
                 </Badge>
               </CardTitle>
@@ -363,7 +367,7 @@ const RFIDHardwareManager: React.FC<RFIDHardwareManagerProps> = ({
             <Button
               variant="outline"
               onClick={startContinuousScanning}
-              disabled={scanIntervalRef.current !== null}
+              disabled={!!scanIntervalRef.current}
             >
               Start Continuous
             </Button>
@@ -371,7 +375,7 @@ const RFIDHardwareManager: React.FC<RFIDHardwareManagerProps> = ({
             <Button
               variant="outline"
               onClick={stopContinuousScanning}
-              disabled={scanIntervalRef.current === null}
+              disabled={!scanIntervalRef.current}
             >
               Stop Continuous
             </Button>

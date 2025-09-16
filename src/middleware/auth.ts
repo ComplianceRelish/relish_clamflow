@@ -16,7 +16,7 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 // Define protected routes and their required roles
 const PROTECTED_ROUTES: Record<string, string[]> = {
-  '/dashboard': ['*'], // All authenticated users
+  '/dashboard': ['*'],
   '/dashboard/admin': ['admin'],
   '/dashboard/plant-manager': ['admin', 'plant_manager'],
   '/dashboard/production': ['admin', 'plant_manager', 'production_lead'],
@@ -27,7 +27,7 @@ const PROTECTED_ROUTES: Record<string, string[]> = {
   '/dashboard/approvals': ['admin', 'plant_manager', 'qc_lead'],
   '/weight-notes': ['admin', 'plant_manager', 'qc_lead', 'qc_staff', 'qa_technician'],
   '/forms': ['admin', 'plant_manager', 'production_lead', 'staff_lead', 'qc_lead', 'qc_staff', 'station_staff'],
-  '/api': ['*'], // All API routes require authentication
+  '/api': ['*'],
   '/settings': ['admin', 'plant_manager'],
   '/users': ['admin'],
   '/onboarding': ['admin', 'plant_manager']
@@ -126,7 +126,8 @@ export async function middleware(request: NextRequest) {
     
     return response
 
-  } catch (error) {
+  } catch (rawError) {
+    const error = rawError instanceof Error ? rawError : new Error(String(rawError))
     console.error('Middleware error:', error)
     
     // In production, redirect to login for security
@@ -207,7 +208,8 @@ async function validateSession(token: string): Promise<UserSession | null> {
       is_active: userProfile.status === 'active',
       last_login: user.last_sign_in_at
     }
-  } catch (error) {
+  } catch (rawError) {
+    const error = rawError instanceof Error ? rawError : new Error(String(rawError))
     console.error('Session validation error:', error)
     return null
   }
@@ -237,7 +239,8 @@ async function fetchUserProfile(userId: string): Promise<any> {
       department: 'Quality Assurance',
       status: 'active'
     }
-  } catch (error) {
+  } catch (rawError) {
+    const error = rawError instanceof Error ? rawError : new Error(String(rawError))
     console.error('Error fetching user profile:', error)
     
     // Return mock data for development
@@ -380,13 +383,6 @@ function setSecurityHeaders(response: NextResponse): void {
 // Export configuration for Next.js
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public (public files)
-     */
     '/((?!_next/static|_next/image|favicon.ico|public).*)',
   ],
 }

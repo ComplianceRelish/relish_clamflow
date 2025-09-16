@@ -1,485 +1,372 @@
-import React, { useState, useEffect } from 'react';
-import { format } from 'date-fns';
+"use client"
 
-interface PendingItem {
-  id: string;
-  type: 'staff' | 'supplier' | 'vendor';
-  data: any;
-  submitted_by: string;
-  submitted_at: string;
-  status: string;
-}
+import React, { useState, useEffect } from 'react'
+import clamflowAPI, { ApiResponse } from '../../lib/clamflow-api'
+import { User } from '../../types/auth'
+import PendingFormViewer from '../forms/PendingFormViewer'
 
 interface ApprovalDashboardProps {
-  authToken?: string;
-  currentUserRole?: string;
+  currentUser: User | null
 }
 
-const ApprovalDashboard: React.FC<ApprovalDashboardProps> = ({ 
-  authToken, 
-  currentUserRole 
-}) => {
-  const [pendingItems, setPendingItems] = useState<PendingItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedItem, setSelectedItem] = useState<PendingItem | null>(null);
-  const [activeTab, setActiveTab] = useState<'all' | 'staff' | 'supplier' | 'vendor'>('all');
-  const [isProcessing, setIsProcessing] = useState(false);
+interface ApprovalStats {
+  totalPending: number
+  highPriority: number
+  mediumPriority: number
+  lowPriority: number
+  approvedToday: number
+  rejectedToday: number
+  avgApprovalTime: number
+}
 
-  // Weight Notes, PPC Forms, FP Forms for QC approval
-  const [qcPendingItems, setQcPendingItems] = useState({
-    weightNotes: [],
-    ppcForms: [],
-    fpForms: []
-  });
+interface ApprovalItem {
+  id: string
+  form_type: 'weight_note' | 'ppc_form' | 'fp_form' | 'qc_form' | 'depuration_form'
+  form_id: string
+  submitted_by: string
+  submitted_at: string
+  priority: 'high' | 'medium' | 'low'
+  status: 'pending' | 'approved' | 'rejected'
+  aging_hours: number
+}
+
+const ApprovalDashboard: React.FC<ApprovalDashboardProps> = ({ currentUser }) => {
+  const [approvalItems, setApprovalItems] = useState<ApprovalItem[]>([])
+  const [stats, setStats] = useState<ApprovalStats>({
+    totalPending: 0,
+    highPriority: 0,
+    mediumPriority: 0,
+    lowPriority: 0,
+    approvedToday: 0,
+    rejectedToday: 0,
+    avgApprovalTime: 0
+  })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string>('')
+  const [filter, setFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all')
+  const [selectedView, setSelectedView] = useState<'dashboard' | 'detailed'>('dashboard')
 
   useEffect(() => {
-    fetchPendingItems();
-    fetchQCPendingItems();
-  }, []);
+    loadApprovalData()
+    // Refresh every minute for real-time updates
+    const interval = setInterval(loadApprovalData, 60000)
+    return () => clearInterval(interval)
+  }, [])
 
-  const fetchPendingItems = async () => {
-    setLoading(true);
+  const loadApprovalData = async () => {
+    setLoading(true)
+    setError('')
+
     try {
-      // Note: These specific endpoints need to be added to your backend
-      // Using the existing onboarding endpoints for now
-      const response = await fetch('https://clamflowbackend-production.up.railway.app/admin/pending-approvals', {
-        headers: { 'Authorization': `Bearer ${authToken}` }
-      });
+      // ✅ FIXED: Using ClamFlow API
+      const [pendingResponse, auditResponse] = await Promise.all([
+        clamflowAPI.getPendingApprovals(),
+        clamflowAPI.getAuditLogs()
+      ])
 
-      if (response.ok) {
-        const data = await response.json();
-        setPendingItems(data);
-      } else {
-        // For now, fetch from individual onboarding endpoints
-        setPendingItems([]);
-      }
-    } catch (error) {
-      console.error('Failed to fetch pending items:', error);
-      setPendingItems([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchQCPendingItems = async () => {
-    try {
-      // FIXED: Proper error handling without mixing Response and plain objects
-      const fetchWithFallback = async (url: string) => {
-        try {
-          const response = await fetch(url, {
-            headers: { 'Authorization': `Bearer ${authToken}` }
-          });
-          if (response.ok) {
-            return await response.json();
-          }
-          return [];
-        } catch (error) {
-          console.error(`Failed to fetch from ${url}:`, error);
-          return [];
-        }
-      };
-
-      const [weightNotes, ppcForms, fpForms] = await Promise.all([
-        fetchWithFallback('https://clamflowbackend-production.up.railway.app/qa/weight-notes?qc_approved=false'),
-        fetchWithFallback('https://clamflowbackend-production.up.railway.app/qa/ppc-forms?qc_approved=false'),
-        fetchWithFallback('https://clamflowbackend-production.up.railway.app/qa/fp-forms?qc_approved=false')
-      ]);
-
-      setQcPendingItems({
-        weightNotes,
-        ppcForms,
-        fpForms
-      });
-    } catch (error) {
-      console.error('Failed to fetch QC pending items:', error);
-    }
-  };
-
-  const approveOnboardingItem = async (itemId: string, itemType: string) => {
-    setIsProcessing(true);
-    try {
-      // This endpoint needs to be added to your backend
-      const response = await fetch(`https://clamflowbackend-production.up.railway.app/admin/approve-${itemType}/${itemId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
-        }
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.detail || 'Failed to approve item');
+      if (pendingResponse.success && pendingResponse.data) {
+        const items = pendingResponse.data.map(item => ({
+          ...item,
+          aging_hours: calculateAgingHours(item.submitted_at)
+        }))
+        setApprovalItems(items)
+        calculateStats(items, auditResponse.data || [])
       }
 
-      await fetchPendingItems();
-      setSelectedItem(null);
-      alert(`${itemType} approved successfully!`);
-    } catch (error: any) {
-      console.error('Approval error:', error);
-      alert(`Error: ${error.message}`);
+    } catch (err: any) {
+      console.error('❌ Failed to load approval data:', err)
+      setError(err.message || 'Failed to load approval data')
     } finally {
-      setIsProcessing(false);
+      setLoading(false)
     }
-  };
+  }
 
-  const rejectOnboardingItem = async (itemId: string, itemType: string, reason: string) => {
-    setIsProcessing(true);
-    try {
-      const response = await fetch(`https://clamflowbackend-production.up.railway.app/admin/reject-${itemType}/${itemId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
-        },
-        body: JSON.stringify({ reason })
-      });
+  const calculateAgingHours = (submittedAt: string): number => {
+    const now = new Date()
+    const submitted = new Date(submittedAt)
+    return Math.round((now.getTime() - submitted.getTime()) / (1000 * 60 * 60))
+  }
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.detail || 'Failed to reject item');
-      }
+  const calculateStats = (items: ApprovalItem[], auditLogs: any[]) => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
 
-      await fetchPendingItems();
-      setSelectedItem(null);
-      alert(`${itemType} rejected successfully!`);
-    } catch (error: any) {
-      console.error('Rejection error:', error);
-      alert(`Error: ${error.message}`);
-    } finally {
-      setIsProcessing(false);
+    const newStats: ApprovalStats = {
+      totalPending: items.length,
+      highPriority: items.filter(item => item.priority === 'high').length,
+      mediumPriority: items.filter(item => item.priority === 'medium').length,
+      lowPriority: items.filter(item => item.priority === 'low').length,
+      approvedToday: 0, // Calculate from audit logs
+      rejectedToday: 0, // Calculate from audit logs
+      avgApprovalTime: items.reduce((sum, item) => sum + item.aging_hours, 0) / (items.length || 1)
     }
-  };
 
-  const approveQCItem = async (itemId: string, itemType: 'weight-note' | 'ppc-form' | 'fp-form') => {
-    setIsProcessing(true);
-    try {
-      const response = await fetch(`https://clamflowbackend-production.up.railway.app/qa/${itemType}/${itemId}/approve`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
-        }
-      });
+    // Calculate daily approvals/rejections from audit logs
+    const todayLogs = auditLogs.filter(log => {
+      const logDate = new Date(log.created_at)
+      return logDate >= today
+    })
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.detail || 'Failed to approve QC item');
-      }
+    newStats.approvedToday = todayLogs.filter(log => log.action?.includes('approve')).length
+    newStats.rejectedToday = todayLogs.filter(log => log.action?.includes('reject')).length
 
-      await fetchQCPendingItems();
-      alert(`${itemType} approved successfully!`);
-    } catch (error: any) {
-      console.error('QC approval error:', error);
-      alert(`Error: ${error.message}`);
-    } finally {
-      setIsProcessing(false);
+    setStats(newStats)
+  }
+
+  const getPriorityColor = (priority: string): string => {
+    const colors = {
+      'high': 'bg-red-100 text-red-800 border-red-200',
+      'medium': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      'low': 'bg-green-100 text-green-800 border-green-200'
     }
-  };
+    return colors[priority] || colors.low
+  }
 
-  const filteredItems = activeTab === 'all' 
-    ? pendingItems 
-    : pendingItems.filter(item => item.type === activeTab);
+  const getAgingColor = (hours: number): string => {
+    if (hours > 24) return 'text-red-600 font-bold'
+    if (hours > 8) return 'text-yellow-600 font-medium'
+    return 'text-green-600'
+  }
 
-  const renderItemDetails = (item: PendingItem) => {
-    if (!item.data) return <div>No data available</div>;
+  const formatFormType = (type: string): string => {
+    const typeMap = {
+      'weight_note': 'Weight Note',
+      'ppc_form': 'PPC Form',
+      'fp_form': 'Final Product',
+      'qc_form': 'QC Form',
+      'depuration_form': 'Depuration'
+    }
+    return typeMap[type] || type
+  }
+
+  const handleFormApproved = (formId: string, formType: string) => {
+    setApprovalItems(prev => prev.filter(item => item.id !== formId))
+    loadApprovalData() // Refresh data
+  }
+
+  const handleFormRejected = (formId: string, formType: string) => {
+    setApprovalItems(prev => prev.filter(item => item.id !== formId))
+    loadApprovalData() // Refresh data
+  }
+
+  const canApprove = (formType: string): boolean => {
+    if (!currentUser) return false
     
-    const data = item.data;
-    
-    switch (item.type) {
-      case 'staff':
-        return (
-          <div className="space-y-3">
-            <div><strong>Name:</strong> {data.first_name} {data.last_name}</div>
-            <div><strong>Designation:</strong> {data.designation}</div>
-            <div><strong>Contact:</strong> {data.contact_number}</div>
-            <div><strong>Aadhar:</strong> {data.aadhar_number}</div>
-            <div><strong>Address:</strong> {data.address}</div>
-            {data.face_image && (
-              <div>
-                <strong>Face Image:</strong>
-                <img src={data.face_image} alt="Staff face" className="mt-2 w-32 h-32 object-cover rounded" />
-              </div>
-            )}
-          </div>
-        );
-      
-      case 'supplier':
-        return (
-          <div className="space-y-3">
-            <div><strong>Type:</strong> {data.type}</div>
-            <div><strong>Name:</strong> {data.first_name} {data.last_name}</div>
-            <div><strong>Contact:</strong> {data.contact_number}</div>
-            <div><strong>Boat Registration:</strong> {data.boat_registration_number}</div>
-            <div><strong>GST:</strong> {data.gst_number || 'N/A'}</div>
-            <div><strong>Address:</strong> {data.address}</div>
-            {data.face_image && (
-              <div>
-                <strong>Face Image:</strong>
-                <img src={data.face_image} alt="Supplier face" className="mt-2 w-32 h-32 object-cover rounded" />
-              </div>
-            )}
-          </div>
-        );
-      
-      case 'vendor':
-        return (
-          <div className="space-y-3">
-            <div><strong>Name:</strong> {data.first_name} {data.last_name}</div>
-            <div><strong>Firm:</strong> {data.name_of_firm}</div>
-            <div><strong>Category:</strong> {data.category}</div>
-            <div><strong>Contact:</strong> {data.contact_number}</div>
-            <div><strong>GST:</strong> {data.gst_number || 'N/A'}</div>
-            <div><strong>Address:</strong> {data.address}</div>
-            {data.face_image && (
-              <div>
-                <strong>Face Image:</strong>
-                <img src={data.face_image} alt="Vendor face" className="mt-2 w-32 h-32 object-cover rounded" />
-              </div>
-            )}
-          </div>
-        );
-      
-      default:
-        return <div>Unknown item type</div>;
+    const role = currentUser.role
+    const approvalMatrix = {
+      'weight_note': ['Super Admin', 'Admin', 'Production Lead'],
+      'ppc_form': ['Super Admin', 'Admin', 'Production Lead'],
+      'fp_form': ['Super Admin', 'Admin', 'Production Lead'],
+      'qc_form': ['Super Admin', 'Admin', 'QC Lead'],
+      'depuration_form': ['Super Admin', 'Admin', 'QC Lead']
     }
-  };
+    
+    return approvalMatrix[formType]?.includes(role) || false
+  }
 
-  if (loading) {
+  const filteredItems = approvalItems.filter(item => 
+    filter === 'all' || item.priority === filter
+  )
+
+  if (loading && approvalItems.length === 0) {
     return (
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading approval data...</p>
         </div>
       </div>
-    );
+    )
   }
 
   return (
     <div className="max-w-7xl mx-auto p-6">
-      <h1 className="text-3xl font-bold text-gray-800 mb-8">Approval Dashboard</h1>
-      
-      {/* Role-based Access Notice */}
-      <div className="mb-6 p-4 bg-blue-50 rounded-lg">
-        <p className="text-blue-800">
-          <strong>Current Role:</strong> {currentUserRole || 'Unknown'}
-        </p>
-        <p className="text-blue-600 text-sm">
-          You can approve onboarding requests and QC forms based on your role permissions.
-        </p>
-      </div>
-
-      {/* Onboarding Approvals Section */}
-      <div className="mb-8">
-        <h2 className="text-2xl font-semibold text-gray-800 mb-4">Onboarding Approvals</h2>
+      {/* Header */}
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Approval Dashboard</h1>
+          <p className="text-gray-600 mt-1">
+            Manage pending approvals and track workflow progress
+          </p>
+        </div>
         
-        {/* Tabs */}
-        <div className="flex space-x-4 mb-6">
-          {['all', 'staff', 'supplier', 'vendor'].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab as any)}
-              className={`px-4 py-2 rounded-md font-medium ${
-                activeTab === tab
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-            >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-              {tab === 'all' && ` (${pendingItems.length})`}
-              {tab !== 'all' && ` (${pendingItems.filter(item => item.type === tab).length})`}
-            </button>
-          ))}
-        </div>
-
-        {/* Items Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredItems.map((item) => (
-            <div key={item.id} className="bg-white p-6 rounded-lg shadow-md border">
-              <div className="flex justify-between items-start mb-4">
-                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                  item.type === 'staff' ? 'bg-blue-100 text-blue-800' :
-                  item.type === 'supplier' ? 'bg-green-100 text-green-800' :
-                  'bg-purple-100 text-purple-800'
-                }`}>
-                  {item.type.toUpperCase()}
-                </span>
-                <span className="text-xs text-gray-500">
-                  {format(new Date(item.submitted_at), 'MMM dd, yyyy')}
-                </span>
-              </div>
-
-              <div className="mb-4">
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                  {item.data?.first_name || 'Unknown'} {item.data?.last_name || ''}
-                </h3>
-                <p className="text-sm text-gray-600">
-                  {item.type === 'staff' && item.data?.designation}
-                  {item.type === 'supplier' && item.data?.boat_registration_number}
-                  {item.type === 'vendor' && item.data?.category}
-                </p>
-              </div>
-
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => setSelectedItem(item)}
-                  className="flex-1 bg-gray-100 text-gray-700 py-2 px-3 rounded text-sm hover:bg-gray-200"
-                >
-                  View Details
-                </button>
-                <button
-                  onClick={() => approveOnboardingItem(item.id, item.type)}
-                  disabled={isProcessing}
-                  className="flex-1 bg-green-600 text-white py-2 px-3 rounded text-sm hover:bg-green-700 disabled:opacity-50"
-                >
-                  Approve
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {filteredItems.length === 0 && (
-          <div className="text-center py-12">
-            <div className="text-gray-400 text-lg">No pending {activeTab === 'all' ? 'items' : activeTab} for approval</div>
-          </div>
-        )}
-      </div>
-
-      {/* QC Approvals Section */}
-      <div className="mb-8">
-        <h2 className="text-2xl font-semibold text-gray-800 mb-4">QC Approvals</h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Weight Notes */}
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">
-              Weight Notes ({qcPendingItems.weightNotes.length})
-            </h3>
-            <div className="space-y-3">
-              {qcPendingItems.weightNotes.slice(0, 5).map((item: any) => (
-                <div key={item.id} className="border-l-4 border-blue-500 pl-3">
-                  <div className="text-sm font-medium">Box: {item.box_number}</div>
-                  <div className="text-xs text-gray-600">Weight: {item.weight} kg</div>
-                  <button
-                    onClick={() => approveQCItem(item.id, 'weight-note')}
-                    className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded mt-1 hover:bg-blue-200"
-                    disabled={isProcessing}
-                  >
-                    Approve
-                  </button>
-                </div>
-              ))}
-              {qcPendingItems.weightNotes.length === 0 && (
-                <div className="text-sm text-gray-500">No pending weight notes</div>
-              )}
-            </div>
-          </div>
-
-          {/* PPC Forms */}
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">
-              PPC Forms ({qcPendingItems.ppcForms.length})
-            </h3>
-            <div className="space-y-3">
-              {qcPendingItems.ppcForms.slice(0, 5).map((item: any) => (
-                <div key={item.id} className="border-l-4 border-orange-500 pl-3">
-                  <div className="text-sm font-medium">Box: {item.box_number}</div>
-                  <div className="text-xs text-gray-600">{item.product_type} - {item.grade}</div>
-                  <button
-                    onClick={() => approveQCItem(item.id, 'ppc-form')}
-                    className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded mt-1 hover:bg-orange-200"
-                    disabled={isProcessing}
-                  >
-                    Approve
-                  </button>
-                </div>
-              ))}
-              {qcPendingItems.ppcForms.length === 0 && (
-                <div className="text-sm text-gray-500">No pending PPC forms</div>
-              )}
-            </div>
-          </div>
-
-          {/* FP Forms */}
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">
-              FP Forms ({qcPendingItems.fpForms.length})
-            </h3>
-            <div className="space-y-3">
-              {qcPendingItems.fpForms.slice(0, 5).map((item: any) => (
-                <div key={item.id} className="border-l-4 border-green-500 pl-3">
-                  <div className="text-sm font-medium">Box: {item.box_number}</div>
-                  <div className="text-xs text-gray-600">{item.product_type} - {item.grade}</div>
-                  <button
-                    onClick={() => approveQCItem(item.id, 'fp-form')}
-                    className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded mt-1 hover:bg-green-200"
-                    disabled={isProcessing}
-                  >
-                    Approve
-                  </button>
-                </div>
-              ))}
-              {qcPendingItems.fpForms.length === 0 && (
-                <div className="text-sm text-gray-500">No pending FP forms</div>
-              )}
-            </div>
-          </div>
+        <div className="flex space-x-3">
+          <button
+            onClick={() => setSelectedView('dashboard')}
+            className={`px-4 py-2 rounded-lg font-medium ${
+              selectedView === 'dashboard'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Dashboard View
+          </button>
+          <button
+            onClick={() => setSelectedView('detailed')}
+            className={`px-4 py-2 rounded-lg font-medium ${
+              selectedView === 'detailed'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Detailed View
+          </button>
+          <button
+            onClick={loadApprovalData}
+            disabled={loading}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+          >
+            {loading ? 'Refreshing...' : 'Refresh'}
+          </button>
         </div>
       </div>
 
-      {/* Detail Modal */}
-      {selectedItem && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-2xl w-full mx-4 max-h-screen overflow-y-auto">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">
-                {selectedItem.type.charAt(0).toUpperCase() + selectedItem.type.slice(1)} Details
-              </h2>
-              <button
-                onClick={() => setSelectedItem(null)}
-                className="text-gray-500 hover:text-gray-700 text-2xl"
-              >
-                ×
-              </button>
-            </div>
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-800">{error}</p>
+        </div>
+      )}
 
-            <div className="mb-6">
-              {renderItemDetails(selectedItem)}
+      {/* Dashboard View */}
+      {selectedView === 'dashboard' && (
+        <div className="space-y-6">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+            <div className="bg-white p-6 rounded-lg shadow border-l-4 border-blue-500">
+              <h3 className="text-sm font-medium text-gray-500">Total Pending</h3>
+              <p className="text-2xl font-bold text-blue-600">{stats.totalPending}</p>
             </div>
+            <div className="bg-white p-6 rounded-lg shadow border-l-4 border-red-500">
+              <h3 className="text-sm font-medium text-gray-500">High Priority</h3>
+              <p className="text-2xl font-bold text-red-600">{stats.highPriority}</p>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow border-l-4 border-yellow-500">
+              <h3 className="text-sm font-medium text-gray-500">Medium Priority</h3>
+              <p className="text-2xl font-bold text-yellow-600">{stats.mediumPriority}</p>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow border-l-4 border-green-500">
+              <h3 className="text-sm font-medium text-gray-500">Low Priority</h3>
+              <p className="text-2xl font-bold text-green-600">{stats.lowPriority}</p>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow border-l-4 border-emerald-500">
+              <h3 className="text-sm font-medium text-gray-500">Approved Today</h3>
+              <p className="text-2xl font-bold text-emerald-600">{stats.approvedToday}</p>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow border-l-4 border-rose-500">
+              <h3 className="text-sm font-medium text-gray-500">Rejected Today</h3>
+              <p className="text-2xl font-bold text-rose-600">{stats.rejectedToday}</p>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow border-l-4 border-purple-500">
+              <h3 className="text-sm font-medium text-gray-500">Avg Time (hrs)</h3>
+              <p className="text-2xl font-bold text-purple-600">{stats.avgApprovalTime.toFixed(1)}</p>
+            </div>
+          </div>
 
-            <div className="flex space-x-4">
+          {/* Priority Filter */}
+          <div className="flex space-x-2">
+            {['all', 'high', 'medium', 'low'].map(priority => (
               <button
-                onClick={() => approveOnboardingItem(selectedItem.id, selectedItem.type)}
-                disabled={isProcessing}
-                className="bg-green-600 text-white py-2 px-6 rounded hover:bg-green-700 disabled:opacity-50"
+                key={priority}
+                onClick={() => setFilter(priority as any)}
+                className={`px-4 py-2 rounded-md text-sm font-medium ${
+                  filter === priority
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
               >
-                {isProcessing ? 'Processing...' : 'Approve'}
+                {priority === 'all' ? 'All Items' : `${priority.charAt(0).toUpperCase() + priority.slice(1)} Priority`}
               </button>
-              <button
-                onClick={() => {
-                  const reason = prompt('Enter rejection reason:');
-                  if (reason) {
-                    rejectOnboardingItem(selectedItem.id, selectedItem.type, reason);
-                  }
-                }}
-                disabled={isProcessing}
-                className="bg-red-600 text-white py-2 px-6 rounded hover:bg-red-700 disabled:opacity-50"
-              >
-                Reject
-              </button>
-              <button
-                onClick={() => setSelectedItem(null)}
-                className="bg-gray-300 text-gray-700 py-2 px-6 rounded hover:bg-gray-400"
-              >
-                Cancel
-              </button>
-            </div>
+            ))}
+          </div>
+
+          {/* Approval Items Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredItems.length === 0 ? (
+              <div className="col-span-full text-center py-12">
+                <div className="text-gray-400 text-6xl mb-4">✅</div>
+                <h3 className="text-xl font-semibold text-gray-600">No Pending Approvals</h3>
+                <p className="text-gray-500">All caught up! Great work.</p>
+              </div>
+            ) : (
+              filteredItems.map(item => (
+                <div key={item.id} className="bg-white rounded-lg shadow-lg border hover:shadow-xl transition-shadow">
+                  {/* Header */}
+                  <div className="p-4 border-b">
+                    <div className="flex justify-between items-start">
+                      <h3 className="font-semibold text-gray-900">
+                        {formatFormType(item.form_type)}
+                      </h3>
+                      <span className={`px-2 py-1 text-xs rounded-full border ${getPriorityColor(item.priority)}`}>
+                        {item.priority}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-1">ID: {item.form_id}</p>
+                  </div>
+
+                  {/* Content */}
+                  <div className="p-4">
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Submitted by:</span>
+                        <span className="font-medium">{item.submitted_by}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Submitted:</span>
+                        <span className="font-medium">
+                          {new Date(item.submitted_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Aging:</span>
+                        <span className={`font-medium ${getAgingColor(item.aging_hours)}`}>
+                          {item.aging_hours}h
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  {canApprove(item.form_type) ? (
+                    <div className="p-4 bg-gray-50 rounded-b-lg">
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => handleFormApproved(item.id, item.form_type)}
+                          className="flex-1 bg-green-600 text-white py-2 px-3 rounded text-sm hover:bg-green-700"
+                        >
+                          ✅ Approve
+                        </button>
+                        <button
+                          onClick={() => handleFormRejected(item.id, item.form_type)}
+                          className="flex-1 bg-red-600 text-white py-2 px-3 rounded text-sm hover:bg-red-700"
+                        >
+                          ❌ Reject
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-yellow-50 rounded-b-lg">
+                      <p className="text-yellow-800 text-sm text-center">
+                        Insufficient permissions for {formatFormType(item.form_type)}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}
-    </div>
-  );
-};
 
-export default ApprovalDashboard;
+      {/* Detailed View */}
+      {selectedView === 'detailed' && (
+        <PendingFormViewer
+          currentUser={currentUser}
+          onFormApproved={handleFormApproved}
+          onFormRejected={handleFormRejected}
+        />
+      )}
+    </div>
+  )
+}
+
+export default ApprovalDashboard

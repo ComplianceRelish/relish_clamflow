@@ -1,500 +1,696 @@
-"use client";
+'use client'
 
-import React, { useState, useEffect } from 'react';
-import {
-  BarChart3,
-  TrendingUp,
-  TrendingDown,
-  Users,
-  Activity,
-  CheckCircle,
-  AlertTriangle,
-  Clock,
-  Target,
-  Zap,
-  Building2,
-  Database,
-  Cpu,
-  HardDrive,
-  Wifi,
-  RefreshCw,
-  Download,
-  Calendar,
-  Filter
-} from 'lucide-react';
+import React, { useState, useEffect } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/Badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs'
+import { 
+  BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, 
+  Tooltip, Legend, ResponsiveContainer, AreaChart, Area 
+} from 'recharts'
+import { 
+  TrendingUp, TrendingDown, Users, Package, AlertTriangle, CheckCircle, 
+  Clock, DollarSign, Activity, Target, Calendar, RefreshCw 
+} from 'lucide-react'
+import { Alert, AlertDescription } from '@/components/ui/Alert'
 
-interface SystemMetrics {
-  total_users: number;
-  active_users: number;
-  user_growth: number;
-  total_departments: number;
-  active_requests: number;
-  completed_today: number;
-  system_uptime: number;
-  database_size: string;
-  api_calls_today: number;
-  error_rate: number;
-  avg_response_time: number;
-  storage_used: number;
-}
-
-interface DepartmentMetric {
-  name: string;
-  efficiency: number;
-  staff_count: number;
-  active_tasks: number;
-  completion_rate: number;
-  status: 'optimal' | 'good' | 'needs_attention' | 'critical';
-}
-
-interface RealtimeActivity {
-  id: string;
-  type: 'user_login' | 'approval_request' | 'task_completion' | 'system_alert' | 'data_export';
-  user: string;
-  action: string;
-  timestamp: string;
-  department?: string;
-  status: 'success' | 'warning' | 'error';
-}
-
-interface DashboardMetricsPanelProps {
-  onClose?: () => void;
-}
-
-const DashboardMetricsPanel: React.FC<DashboardMetricsPanelProps> = ({ onClose }) => {
-  const [metrics, setMetrics] = useState<SystemMetrics>({
-    total_users: 0,
-    active_users: 0,
-    user_growth: 0,
-    total_departments: 0,
-    active_requests: 0,
-    completed_today: 0,
-    system_uptime: 0,
-    database_size: '0 MB',
-    api_calls_today: 0,
-    error_rate: 0,
-    avg_response_time: 0,
-    storage_used: 0
-  });
-  
-  const [departmentMetrics, setDepartmentMetrics] = useState<DepartmentMetric[]>([]);
-  const [realtimeActivity, setRealtimeActivity] = useState<RealtimeActivity[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
-  const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d'>('24h');
-
-  // Fetch dashboard metrics
-  useEffect(() => {
-    const fetchMetrics = async () => {
-      try {
-        const response = await fetch('/api/admin/dashboard-metrics', {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setMetrics(data.metrics);
-          setDepartmentMetrics(data.department_metrics || []);
-          setRealtimeActivity(data.realtime_activity || []);
-        } else {
-          // Fallback demo data
-          const demoMetrics: SystemMetrics = {
-            total_users: 127,
-            active_users: 89,
-            user_growth: 12.5,
-            total_departments: 6,
-            active_requests: 23,
-            completed_today: 156,
-            system_uptime: 99.8,
-            database_size: '2.4 GB',
-            api_calls_today: 15420,
-            error_rate: 0.02,
-            avg_response_time: 145,
-            storage_used: 78
-          };
-
-          const demoDepartments: DepartmentMetric[] = [
-            {
-              name: 'Processing',
-              efficiency: 94,
-              staff_count: 28,
-              active_tasks: 12,
-              completion_rate: 89,
-              status: 'optimal'
-            },
-            {
-              name: 'Quality Control',
-              efficiency: 97,
-              staff_count: 12,
-              active_tasks: 8,
-              completion_rate: 95,
-              status: 'optimal'
-            },
-            {
-              name: 'Packaging',
-              efficiency: 82,
-              staff_count: 20,
-              active_tasks: 15,
-              completion_rate: 76,
-              status: 'needs_attention'
-            },
-            {
-              name: 'Shipping',
-              efficiency: 91,
-              staff_count: 15,
-              active_tasks: 6,
-              completion_rate: 92,
-              status: 'good'
-            },
-            {
-              name: 'Maintenance',
-              efficiency: 88,
-              staff_count: 8,
-              active_tasks: 4,
-              completion_rate: 85,
-              status: 'good'
-            },
-            {
-              name: 'Administration',
-              efficiency: 95,
-              staff_count: 6,
-              active_tasks: 3,
-              completion_rate: 98,
-              status: 'optimal'
-            }
-          ];
-
-          const demoActivity: RealtimeActivity[] = [
-            {
-              id: '1',
-              type: 'user_login',
-              user: 'Sarah Williams',
-              action: 'Logged in from QC workstation',
-              timestamp: new Date(Date.now() - 300000).toISOString(),
-              department: 'Quality Control',
-              status: 'success'
-            },
-            {
-              id: '2',
-              type: 'approval_request',
-              user: 'Michael Johnson',
-              action: 'Submitted staff onboarding request',
-              timestamp: new Date(Date.now() - 600000).toISOString(),
-              department: 'Processing',
-              status: 'success'
-            },
-            {
-              id: '3',
-              type: 'task_completion',
-              user: 'David Brown',
-              action: 'Completed packaging line inspection',
-              timestamp: new Date(Date.now() - 900000).toISOString(),
-              department: 'Packaging',
-              status: 'success'
-            },
-            {
-              id: '4',
-              type: 'system_alert',
-              user: 'System',
-              action: 'Database backup completed successfully',
-              timestamp: new Date(Date.now() - 1200000).toISOString(),
-              status: 'success'
-            },
-            {
-              id: '5',
-              type: 'data_export',
-              user: 'Lisa Rodriguez',
-              action: 'Generated monthly shipping report',
-              timestamp: new Date(Date.now() - 1500000).toISOString(),
-              department: 'Shipping',
-              status: 'success'
-            }
-          ];
-
-          setMetrics(demoMetrics);
-          setDepartmentMetrics(demoDepartments);
-          setRealtimeActivity(demoActivity);
-        }
-      } catch (error) {
-        console.error('Failed to fetch dashboard metrics:', error);
-      } finally {
-        setLoading(false);
-        setLastRefresh(new Date());
-      }
-    };
-
-    fetchMetrics();
-    
-    // Auto-refresh every 30 seconds
-    const interval = setInterval(fetchMetrics, 30000);
-    return () => clearInterval(interval);
-  }, [timeRange]);
-
-  // Get status color for departments
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'optimal': return 'bg-green-100 text-green-800';
-      case 'good': return 'bg-blue-100 text-blue-800';
-      case 'needs_attention': return 'bg-yellow-100 text-yellow-800';
-      case 'critical': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  // Get activity icon
-  const getActivityIcon = (type: string) => {
-    switch (type) {
-      case 'user_login': return Users;
-      case 'approval_request': return CheckCircle;
-      case 'task_completion': return Target;
-      case 'system_alert': return AlertTriangle;
-      case 'data_export': return Download;
-      default: return Activity;
-    }
-  };
-
-  // Format time ago
-  const formatTimeAgo = (timestamp: string) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / (1000 * 60));
-    
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    const diffHours = Math.floor(diffMins / 60);
-    if (diffHours < 24) return `${diffHours}h ago`;
-    return `${Math.floor(diffHours / 24)}d ago`;
-  };
-
-  // Manual refresh handler
-  const handleRefresh = () => {
-    setLoading(true);
-    // Trigger useEffect refresh
-    setLastRefresh(new Date());
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-
+// Custom Select component to avoid TypeScript issues
+const FormSelect: React.FC<{
+  value: string;
+  onValueChange: (value: string) => void;
+  children: React.ReactNode;
+  className?: string;
+}> = ({ value, onValueChange, children, className = "" }) => {
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Dashboard Metrics</h2>
-          <p className="text-sm text-gray-600">Real-time system performance and analytics</p>
-        </div>
-        <div className="flex items-center space-x-4">
-          <select
-            value={timeRange}
-            onChange={(e) => setTimeRange(e.target.value as '24h' | '7d' | '30d')}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="24h">Last 24 Hours</option>
-            <option value="7d">Last 7 Days</option>
-            <option value="30d">Last 30 Days</option>
-          </select>
-          <button
-            onClick={handleRefresh}
-            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            <RefreshCw className="w-5 h-5" />
-            <span>Refresh</span>
-          </button>
-        </div>
-      </div>
+    <select 
+      value={value} 
+      onChange={(e) => onValueChange(e.target.value)}
+      className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+    >
+      {children}
+    </select>
+  );
+};
 
-      {/* Last Updated */}
-      <div className="text-sm text-gray-500">
-        Last updated: {lastRefresh.toLocaleTimeString()}
-      </div>
+// Custom SelectItem component
+const FormSelectItem: React.FC<{
+  value: string;
+  children: React.ReactNode;
+}> = ({ value, children }) => {
+  return <option value={value}>{children}</option>;
+};
 
-      {/* Key Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-blue-50 rounded-lg p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-blue-600">Total Users</p>
-              <p className="text-2xl font-bold text-blue-900">{metrics.total_users}</p>
-              <div className="flex items-center mt-1">
-                <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-                <span className="text-sm text-green-600">+{metrics.user_growth}%</span>
-              </div>
-            </div>
-            <Users className="w-8 h-8 text-blue-600" />
-          </div>
-        </div>
-
-        <div className="bg-green-50 rounded-lg p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-green-600">Active Users</p>
-              <p className="text-2xl font-bold text-green-900">{metrics.active_users}</p>
-              <p className="text-sm text-green-600">
-                {Math.round((metrics.active_users / metrics.total_users) * 100)}% online
-              </p>
-            </div>
-            <Activity className="w-8 h-8 text-green-600" />
-          </div>
-        </div>
-
-        <div className="bg-purple-50 rounded-lg p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-purple-600">Completed Today</p>
-              <p className="text-2xl font-bold text-purple-900">{metrics.completed_today}</p>
-              <p className="text-sm text-purple-600">Tasks & Requests</p>
-            </div>
-            <CheckCircle className="w-8 h-8 text-purple-600" />
-          </div>
-        </div>
-
-        <div className="bg-orange-50 rounded-lg p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-orange-600">System Uptime</p>
-              <p className="text-2xl font-bold text-orange-900">{metrics.system_uptime}%</p>
-              <p className="text-sm text-orange-600">Last 30 days</p>
-            </div>
-            <Zap className="w-8 h-8 text-orange-600" />
-          </div>
-        </div>
-      </div>
-
-      {/* System Performance */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white border rounded-lg p-6">
-          <h3 className="text-lg font-semibold mb-4">System Performance</h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Database className="w-5 h-5 text-blue-600" />
-                <span className="text-sm font-medium">Database Size</span>
-              </div>
-              <span className="text-sm text-gray-900">{metrics.database_size}</span>
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Wifi className="w-5 h-5 text-green-600" />
-                <span className="text-sm font-medium">API Calls Today</span>
-              </div>
-              <span className="text-sm text-gray-900">{metrics.api_calls_today.toLocaleString()}</span>
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <AlertTriangle className="w-5 h-5 text-yellow-600" />
-                <span className="text-sm font-medium">Error Rate</span>
-              </div>
-              <span className="text-sm text-gray-900">{metrics.error_rate}%</span>
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Clock className="w-5 h-5 text-purple-600" />
-                <span className="text-sm font-medium">Avg Response Time</span>
-              </div>
-              <span className="text-sm text-gray-900">{metrics.avg_response_time}ms</span>
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <HardDrive className="w-5 h-5 text-orange-600" />
-                <span className="text-sm font-medium">Storage Used</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-20 bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-orange-600 h-2 rounded-full" 
-                    style={{ width: `${metrics.storage_used}%` }}
-                  ></div>
-                </div>
-                <span className="text-sm text-gray-900">{metrics.storage_used}%</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white border rounded-lg p-6">
-          <h3 className="text-lg font-semibold mb-4">Real-time Activity</h3>
-          <div className="space-y-3 max-h-64 overflow-y-auto">
-            {realtimeActivity.map((activity) => {
-              const IconComponent = getActivityIcon(activity.type);
-              return (
-                <div key={activity.id} className="flex items-start space-x-3 py-2 border-b border-gray-100 last:border-b-0">
-                  <div className={`p-2 rounded-full ${
-                    activity.status === 'success' ? 'bg-green-100 text-green-600' :
-                    activity.status === 'warning' ? 'bg-yellow-100 text-yellow-600' :
-                    'bg-red-100 text-red-600'
-                  }`}>
-                    <IconComponent className="w-4 h-4" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">{activity.user}</p>
-                    <p className="text-sm text-gray-600">{activity.action}</p>
-                    <div className="flex items-center space-x-2 mt-1">
-                      <span className="text-xs text-gray-500">{formatTimeAgo(activity.timestamp)}</span>
-                      {activity.department && (
-                        <>
-                          <span className="text-xs text-gray-400">•</span>
-                          <span className="text-xs text-gray-500">{activity.department}</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* Department Performance */}
-      <div className="bg-white border rounded-lg p-6">
-        <h3 className="text-lg font-semibold mb-4">Department Performance</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {departmentMetrics.map((dept) => (
-            <div key={dept.name} className="p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="font-semibold text-gray-900">{dept.name}</h4>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(dept.status)}`}>
-                  {dept.status.replace('_', ' ').toUpperCase()}
-                </span>
-              </div>
-              
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Efficiency:</span>
-                  <span className="font-medium">{dept.efficiency}%</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Staff:</span>
-                  <span className="font-medium">{dept.staff_count}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Active Tasks:</span>
-                  <span className="font-medium">{dept.active_tasks}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Completion Rate:</span>
-                  <span className="font-medium">{dept.completion_rate}%</span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+// Custom Progress component
+const FormProgress: React.FC<{
+  value: number;
+  className?: string;
+}> = ({ value, className = "" }) => {
+  return (
+    <div className={`w-full bg-gray-200 rounded-full h-2 ${className}`}>
+      <div
+        className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-in-out"
+        style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
+      />
     </div>
   );
 };
 
-export default DashboardMetricsPanel;
+// Mock API functions - replace with your actual API implementation
+const mockApi = {
+  dashboard: {
+    getMetrics: async ({ timeRange }: { timeRange: string }) => {
+      // Mock data - replace with actual API call
+      return {
+        overview: {
+          total_forms_today: 45,
+          total_forms_week: 312,
+          active_users: 23,
+          completion_rate: 94.5,
+          avg_processing_time: 12,
+          quality_score: 97.2
+        },
+        production: {
+          daily_throughput: 2400,
+          weekly_throughput: 15600,
+          yield_percentage: 89.5,
+          waste_percentage: 10.5,
+          efficiency_score: 92.3,
+          stations_active: 8
+        },
+        quality: {
+          passed_inspections: 234,
+          failed_inspections: 12,
+          pending_reviews: 8,
+          compliance_rate: 96.2,
+          defect_rate: 3.8,
+          rework_rate: 1.2
+        },
+        trends: {
+          daily_production: [
+            { date: '2024-01-01', production: 2200, quality: 95 },
+            { date: '2024-01-02', production: 2400, quality: 97 },
+            { date: '2024-01-03', production: 2100, quality: 94 }
+          ],
+          form_submissions: [
+            { date: '2024-01-01', weight_notes: 12, ppc: 8, fp: 15, qc: 10 },
+            { date: '2024-01-02', weight_notes: 15, ppc: 12, fp: 18, qc: 14 },
+            { date: '2024-01-03', weight_notes: 10, ppc: 6, fp: 12, qc: 8 }
+          ],
+          user_activity: [
+            { hour: '08:00', active_users: 15, forms_submitted: 8 },
+            { hour: '10:00', active_users: 22, forms_submitted: 15 },
+            { hour: '12:00', active_users: 18, forms_submitted: 12 }
+          ],
+          quality_trends: [
+            { date: '2024-01-01', passed: 45, failed: 3, pending: 2 },
+            { date: '2024-01-02', passed: 52, failed: 2, pending: 1 },
+            { date: '2024-01-03', passed: 48, failed: 4, pending: 3 }
+          ]
+        },
+        alerts: {
+          critical: 2,
+          warning: 5,
+          info: 12,
+          recent_alerts: [
+            {
+              id: '1',
+              type: 'Temperature Alert',
+              message: 'Freezer temperature exceeds threshold',
+              timestamp: new Date().toISOString(),
+              severity: 'critical' as const
+            },
+            {
+              id: '2',
+              type: 'Form Approval',
+              message: 'QC form pending approval',
+              timestamp: new Date().toISOString(),
+              severity: 'warning' as const
+            }
+          ]
+        }
+      }
+    }
+  }
+}
+
+interface DashboardMetrics {
+  overview: {
+    total_forms_today: number
+    total_forms_week: number
+    active_users: number
+    completion_rate: number
+    avg_processing_time: number
+    quality_score: number
+  }
+  production: {
+    daily_throughput: number
+    weekly_throughput: number
+    yield_percentage: number
+    waste_percentage: number
+    efficiency_score: number
+    stations_active: number
+  }
+  quality: {
+    passed_inspections: number
+    failed_inspections: number
+    pending_reviews: number
+    compliance_rate: number
+    defect_rate: number
+    rework_rate: number
+  }
+  trends: {
+    daily_production: Array<{date: string, production: number, quality: number}>
+    form_submissions: Array<{date: string, weight_notes: number, ppc: number, fp: number, qc: number}>
+    user_activity: Array<{hour: string, active_users: number, forms_submitted: number}>
+    quality_trends: Array<{date: string, passed: number, failed: number, pending: number}>
+  }
+  alerts: {
+    critical: number
+    warning: number
+    info: number
+    recent_alerts: Array<{
+      id: string
+      type: string
+      message: string
+      timestamp: string
+      severity: 'critical' | 'warning' | 'info'
+    }>
+  }
+}
+
+interface DashboardMetricsPanelProps {
+  currentUser?: {
+    id: string
+    username: string
+    role: string
+  } | null
+}
+
+export default function DashboardMetricsPanel({ currentUser }: DashboardMetricsPanelProps) {
+  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
+  const [timeRange, setTimeRange] = useState('24h')
+  const [activeTab, setActiveTab] = useState('overview')
+
+  const timeRanges = [
+    { value: '24h', label: 'Last 24 Hours' },
+    { value: '7d', label: 'Last 7 Days' },
+    { value: '30d', label: 'Last 30 Days' },
+    { value: '90d', label: 'Last 90 Days' }
+  ]
+
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8']
+
+  useEffect(() => {
+    loadMetrics()
+    
+    // Set up auto-refresh every 5 minutes
+    const interval = setInterval(() => {
+      loadMetrics(true)
+    }, 300000)
+    
+    return () => clearInterval(interval)
+  }, [timeRange])
+
+  const loadMetrics = async (isRefresh = false) => {
+    try {
+      if (isRefresh) {
+        setRefreshing(true)
+      } else {
+        setLoading(true)
+      }
+      
+      const response = await mockApi.dashboard.getMetrics({ timeRange })
+      setMetrics(response)
+    } catch (err) {
+      setError('Failed to load dashboard metrics')
+      console.error(err)
+    } finally {
+      setLoading(false)
+      setRefreshing(false)
+    }
+  }
+
+  const handleRefresh = () => {
+    loadMetrics(true)
+  }
+
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K'
+    return num.toString()
+  }
+
+  const getPercentageColor = (percentage: number) => {
+    if (percentage >= 90) return 'text-green-600'
+    if (percentage >= 70) return 'text-yellow-600'
+    return 'text-red-600'
+  }
+
+  const getSeverityColor = (severity: string) => {
+    switch (severity) {
+      case 'critical': return 'bg-red-500'
+      case 'warning': return 'bg-yellow-500'
+      case 'info': return 'bg-blue-500'
+      default: return 'bg-gray-500'
+    }
+  }
+
+  if (loading && !metrics) {
+    return (
+      <Card className="w-full">
+        <CardContent className="p-6">
+          <div className="text-center">Loading dashboard metrics...</div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (!metrics) {
+    return (
+      <Card className="w-full">
+        <CardContent className="p-6">
+          <div className="text-center">No metrics data available</div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      {error && (
+        <Alert>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Header Controls */}
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Dashboard Metrics</h2>
+        <div className="flex items-center space-x-2">
+          <FormSelect value={timeRange} onValueChange={(value: string) => setTimeRange(value)} className="w-[180px]">
+            {timeRanges.map(range => (
+              <FormSelectItem key={range.value} value={range.value}>
+                {range.label}
+              </FormSelectItem>
+            ))}
+          </FormSelect>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={refreshing}
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="production">Production</TabsTrigger>
+          <TabsTrigger value="quality">Quality</TabsTrigger>
+          <TabsTrigger value="alerts">Alerts</TabsTrigger>
+        </TabsList>
+
+        {/* Overview Tab */}
+        <TabsContent value="overview" className="space-y-6">
+          {/* Key Metrics Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-2">
+                  <Package className="h-5 w-5 text-blue-500" />
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Forms Today</p>
+                    <p className="text-2xl font-bold">{metrics.overview.total_forms_today}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {metrics.overview.total_forms_week} this week
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-2">
+                  <Users className="h-5 w-5 text-green-500" />
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Active Users</p>
+                    <p className="text-2xl font-bold">{metrics.overview.active_users}</p>
+                    <p className="text-xs text-green-600">Online now</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-2">
+                  <CheckCircle className="h-5 w-5 text-purple-500" />
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Completion Rate</p>
+                    <p className={`text-2xl font-bold ${getPercentageColor(metrics.overview.completion_rate)}`}>
+                      {metrics.overview.completion_rate}%
+                    </p>
+                    <FormProgress value={metrics.overview.completion_rate} className="w-full h-1 mt-1" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-2">
+                  <Clock className="h-5 w-5 text-orange-500" />
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Avg Processing</p>
+                    <p className="text-2xl font-bold">{metrics.overview.avg_processing_time}m</p>
+                    <p className="text-xs text-muted-foreground">Per form</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Charts */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Form Submissions Trend */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Form Submissions Trend</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={metrics.trends.form_submissions}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="weight_notes" stroke="#8884d8" name="Weight Notes" />
+                    <Line type="monotone" dataKey="ppc" stroke="#82ca9d" name="PPC Forms" />
+                    <Line type="monotone" dataKey="fp" stroke="#ffc658" name="FP Forms" />
+                    <Line type="monotone" dataKey="qc" stroke="#ff7300" name="QC Forms" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            {/* User Activity */}
+            <Card>
+              <CardHeader>
+                <CardTitle>User Activity (24h)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <AreaChart data={metrics.trends.user_activity}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="hour" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Area type="monotone" dataKey="active_users" stackId="1" stroke="#8884d8" fill="#8884d8" name="Active Users" />
+                    <Area type="monotone" dataKey="forms_submitted" stackId="2" stroke="#82ca9d" fill="#82ca9d" name="Forms Submitted" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Production Tab */}
+        <TabsContent value="production" className="space-y-6">
+          {/* Production Metrics */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Daily Throughput</p>
+                    <p className="text-2xl font-bold">{formatNumber(metrics.production.daily_throughput)} kg</p>
+                  </div>
+                  <TrendingUp className="h-8 w-8 text-green-500" />
+                </div>
+                <div className="mt-2">
+                  <p className="text-xs text-muted-foreground">
+                    Weekly: {formatNumber(metrics.production.weekly_throughput)} kg
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Yield Rate</p>
+                    <p className={`text-2xl font-bold ${getPercentageColor(metrics.production.yield_percentage)}`}>
+                      {metrics.production.yield_percentage}%
+                    </p>
+                  </div>
+                  <Target className="h-8 w-8 text-blue-500" />
+                </div>
+                <FormProgress value={metrics.production.yield_percentage} className="mt-2" />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Efficiency Score</p>
+                    <p className={`text-2xl font-bold ${getPercentageColor(metrics.production.efficiency_score)}`}>
+                      {metrics.production.efficiency_score}%
+                    </p>
+                  </div>
+                  <Activity className="h-8 w-8 text-purple-500" />
+                </div>
+                <div className="mt-2 flex items-center space-x-2">
+                  <Badge variant={metrics.production.stations_active > 7 ? "default" : "secondary"}>
+                    {metrics.production.stations_active}/9 Stations Active
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Production Trends */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Production & Quality Trends</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={400}>
+                <LineChart data={metrics.trends.daily_production}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis yAxisId="left" />
+                  <YAxis yAxisId="right" orientation="right" />
+                  <Tooltip />
+                  <Legend />
+                  <Bar yAxisId="left" dataKey="production" fill="#8884d8" name="Production (kg)" />
+                  <Line yAxisId="right" type="monotone" dataKey="quality" stroke="#ff7300" name="Quality Score (%)" />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Quality Tab */}
+        <TabsContent value="quality" className="space-y-6">
+          {/* Quality Metrics */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-2">
+                  <CheckCircle className="h-5 w-5 text-green-500" />
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Passed</p>
+                    <p className="text-2xl font-bold text-green-600">{metrics.quality.passed_inspections}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-2">
+                  <AlertTriangle className="h-5 w-5 text-red-500" />
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Failed</p>
+                    <p className="text-2xl font-bold text-red-600">{metrics.quality.failed_inspections}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-2">
+                  <Clock className="h-5 w-5 text-yellow-500" />
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Pending</p>
+                    <p className="text-2xl font-bold text-yellow-600">{metrics.quality.pending_reviews}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-2">
+                  <Target className="h-5 w-5 text-blue-500" />
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Compliance</p>
+                    <p className={`text-2xl font-bold ${getPercentageColor(metrics.quality.compliance_rate)}`}>
+                      {metrics.quality.compliance_rate}%
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Quality Distribution */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Quality Distribution</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: 'Passed', value: metrics.quality.passed_inspections, fill: '#00C49F' },
+                        { name: 'Failed', value: metrics.quality.failed_inspections, fill: '#FF8042' },
+                        { name: 'Pending', value: metrics.quality.pending_reviews, fill: '#FFBB28' }
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {[
+                        { name: 'Passed', value: metrics.quality.passed_inspections, fill: '#00C49F' },
+                        { name: 'Failed', value: metrics.quality.failed_inspections, fill: '#FF8042' },
+                        { name: 'Pending', value: metrics.quality.pending_reviews, fill: '#FFBB28' }
+                      ].map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            {/* Quality Trends */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Quality Trends</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <AreaChart data={metrics.trends.quality_trends}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Area type="monotone" dataKey="passed" stackId="1" stroke="#00C49F" fill="#00C49F" name="Passed" />
+                    <Area type="monotone" dataKey="failed" stackId="1" stroke="#FF8042" fill="#FF8042" name="Failed" />
+                    <Area type="monotone" dataKey="pending" stackId="1" stroke="#FFBB28" fill="#FFBB28" name="Pending" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Alerts Tab */}
+        <TabsContent value="alerts" className="space-y-6">
+          {/* Alert Summary */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 rounded-full bg-red-500" />
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Critical Alerts</p>
+                    <p className="text-2xl font-bold text-red-600">{metrics.alerts.critical}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Warning Alerts</p>
+                    <p className="text-2xl font-bold text-yellow-600">{metrics.alerts.warning}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 rounded-full bg-blue-500" />
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Info Alerts</p>
+                    <p className="text-2xl font-bold text-blue-600">{metrics.alerts.info}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Recent Alerts */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Alerts</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {metrics.alerts.recent_alerts.map(alert => (
+                  <div key={alert.id} className="flex items-start space-x-3 p-3 border rounded">
+                    <div className={`w-2 h-2 rounded-full mt-2 ${getSeverityColor(alert.severity)}`} />
+                    <div className="flex-1">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-medium">{alert.message}</p>
+                          <p className="text-sm text-muted-foreground">{alert.type}</p>
+                        </div>
+                        <Badge variant={alert.severity === 'critical' ? 'destructive' : alert.severity === 'warning' ? 'default' : 'secondary'}>
+                          {alert.severity}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {new Date(alert.timestamp).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  )
+}

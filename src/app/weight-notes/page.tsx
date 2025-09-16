@@ -5,19 +5,29 @@ import { useRouter } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import WeightNoteForm from '@/components/forms/WeightNoteForm'
 import WeightNotesList from '@/components/forms/WeightNotesList'
-import WeightNotePrintPreview from '@/components/forms/WeightNotePrintPreview'
-import AuthenticationWorkflow from '@/components/weightnote/AuthenticationWorkflow'
 import WeightNotePrintable from '@/components/weightnote/WeightNotePrintable'
-import { Database } from '@/types/supabase'
+import AuthenticationWorkflow from '@/components/weightnote/AuthenticationWorkflow'
+import { User, UserRole, toApiRole } from '@/types/auth'
 
-type WeightNote = Database['public']['Tables']['weight_notes']['Row']
-type UserProfile = Database['public']['Tables']['user_profiles']['Row']
+type WeightNote = {
+  id: string;
+  lot_id: string;
+  supplier_id: string;
+  box_number: string;
+  weight: number;
+  qc_staff_id: string;
+  notes?: string;
+  temperature?: number;
+  moisture_content?: number;
+  created_at: string;
+  workflow_completed: boolean;
+}
 
 export default function WeightNotesPage() {
   const router = useRouter()
-  const supabase = createClientComponentClient<Database>()
+  const supabase = createClientComponentClient()
   
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null)
+  const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [activeView, setActiveView] = useState<'list' | 'create' | 'authenticate' | 'print'>('list')
   const [selectedWeightNote, setSelectedWeightNote] = useState<WeightNote | null>(null)
   const [weightNotes, setWeightNotes] = useState<WeightNote[]>([])
@@ -33,11 +43,27 @@ export default function WeightNotesPage() {
 
       const { data: profile } = await supabase
         .from('user_profiles')
-        .select('*')
+        .select('id, full_name, role, station, username, is_active, created_at')
         .eq('id', user.id)
         .single()
 
-      setCurrentUser(profile)
+      if (profile) {
+        // ✅ Create full User object with all required fields
+        const fullUser: User = {
+          id: profile.id,
+          full_name: profile.full_name,
+          username: profile.username || profile.id,
+          role: toApiRole(profile.role), // Convert display name → snake_case
+          station: profile.station || undefined,
+          is_active: profile.is_active ?? true,
+          created_at: profile.created_at || new Date().toISOString(),
+          last_login: undefined,
+          password_reset_required: undefined,
+          login_attempts: undefined
+        };
+        setCurrentUser(fullUser);
+      }
+      
       await loadWeightNotes()
       setLoading(false)
     }
@@ -48,14 +74,7 @@ export default function WeightNotesPage() {
   const loadWeightNotes = async () => {
     const { data } = await supabase
       .from('weight_notes')
-      .select(`
-        *,
-        qc_staff:qc_staff_id(full_name, role),
-        production_staff:production_staff_id(full_name, role),
-        supplier_auth:supplier_authenticated_by(full_name, role),
-        supplier:supplier_id(first_name, last_name, type),
-        lot:lot_id(lot_number, status)
-      `)
+      .select('*')
       .order('created_at', { ascending: false })
       .limit(20)
 
@@ -115,10 +134,8 @@ export default function WeightNotesPage() {
         )}
       </div>
 
-      {/* List View */}
       {activeView === 'list' && (
         <WeightNotesList 
-          onCreateNew={() => setActiveView('create')}
           onViewDetails={(note) => {
             setSelectedWeightNote(note)
             setActiveView(note.workflow_completed ? 'print' : 'authenticate')
@@ -127,7 +144,6 @@ export default function WeightNotesPage() {
         />
       )}
 
-      {/* Create Form */}
       {activeView === 'create' && (
         <WeightNoteForm 
           onSubmit={handleFormSubmit}
@@ -136,7 +152,6 @@ export default function WeightNotesPage() {
         />
       )}
 
-      {/* Authentication Workflow */}
       {activeView === 'authenticate' && selectedWeightNote && (
         <AuthenticationWorkflow 
           weightNote={selectedWeightNote}
@@ -145,7 +160,6 @@ export default function WeightNotesPage() {
         />
       )}
 
-      {/* Print Preview */}
       {activeView === 'print' && selectedWeightNote && (
         <WeightNotePrintable 
           weightNote={selectedWeightNote}

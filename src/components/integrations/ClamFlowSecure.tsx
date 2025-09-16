@@ -1,15 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card } from '../ui/Card';
-import { Button } from '../ui/Button';
-import { Badge } from '../ui/Badge';
-import { LoadingSpinner } from '../ui/LoadingSpinner';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
 import { 
   BiometricAuthRequest, 
   BiometricAuthResponse, 
   SecurityEvent 
-} from '../../types'; // Fixed import
+} from '../../types';
 
 interface ClamFlowSecureProps {
   onAuthSuccess?: (userId: string) => void;
@@ -245,7 +244,7 @@ const ClamFlowSecure: React.FC<ClamFlowSecureProps> = ({
 
   const getDeviceStatusColor = (status: BiometricDevice['status']) => {
     switch (status) {
-      case 'connected': return 'success';
+      case 'connected': return 'default';
       case 'disconnected': return 'secondary';
       case 'error': return 'destructive';
       default: return 'secondary';
@@ -270,111 +269,124 @@ const ClamFlowSecure: React.FC<ClamFlowSecureProps> = ({
             <div className="w-3 h-3 rounded-full bg-blue-500 animate-pulse"></div>
             <h3 className="text-lg font-medium text-gray-900">ClamFlowSecure</h3>
           </div>
-          <Badge variant={connectionStatus === 'connected' ? 'success' : 'destructive'}>
+          <Badge variant={connectionStatus === 'connected' ? 'default' : 'destructive'}>
             {connectionStatus.toUpperCase()}
           </Badge>
         </div>
       </Card>
 
       {/* Device Status */}
-      <Card className="p-6">
-        <h4 className="text-md font-medium text-gray-900 mb-4">Biometric Devices</h4>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {devices.map((device) => (
-            <div key={device.id} className="border rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center space-x-2">
-                  <span className="text-2xl">{getDeviceIcon(device.type)}</span>
-                  <span className="font-medium capitalize">{device.type}</span>
+      <Card>
+        <CardHeader>
+          <CardTitle>Biometric Devices</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {devices.map((device) => (
+              <div key={device.id} className="border rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-2xl">{getDeviceIcon(device.type)}</span>
+                    <span className="font-medium capitalize">{device.type}</span>
+                  </div>
+                  <Badge variant={getDeviceStatusColor(device.status)}>
+                    {device.status}
+                  </Badge>
                 </div>
-                <Badge variant={getDeviceStatusColor(device.status)}>
-                  {device.status}
-                </Badge>
+                <div className="text-sm text-gray-600 space-y-1">
+                  <div>Accuracy: {(device.accuracy * 100).toFixed(1)}%</div>
+                  <div>ID: {device.id}</div>
+                  <div>Last Seen: {new Date(device.lastSeen).toLocaleTimeString()}</div>
+                </div>
+                <Button
+                  className="w-full mt-3"
+                  size="sm"
+                  disabled={device.status !== 'connected' || isScanning}
+                  onClick={() => startBiometricAuth(device.type)}
+                >
+                  {isScanning && currentSession?.deviceId === device.id ? (
+                    <span className="animate-spin">🔄</span>
+                  ) : (
+                    `Scan ${device.type}`
+                  )}
+                </Button>
               </div>
-              <div className="text-sm text-gray-600 space-y-1">
-                <div>Accuracy: {(device.accuracy * 100).toFixed(1)}%</div>
-                <div>ID: {device.id}</div>
-                <div>Last Seen: {new Date(device.lastSeen).toLocaleTimeString()}</div>
-              </div>
-              <Button
-                className="w-full mt-3"
-                size="sm"
-                disabled={device.status !== 'connected' || isScanning}
-                onClick={() => startBiometricAuth(device.type)}
-              >
-                {isScanning && currentSession?.deviceId === device.id ? (
-                  <LoadingSpinner size="sm" />
-                ) : (
-                  `Scan ${device.type}`
-                )}
-              </Button>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </CardContent>
       </Card>
 
       {/* Current Session */}
       {currentSession && (
-        <Card className="p-4">
-          <h4 className="text-md font-medium text-gray-900 mb-3">Current Authentication Session</h4>
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <div className="text-sm text-gray-600">Session ID: {currentSession.id}</div>
-              <div className="text-sm text-gray-600">Device: {currentSession.deviceId}</div>
-              {currentSession.userId && (
-                <div className="text-sm text-gray-600">User ID: {currentSession.userId}</div>
-              )}
+        <Card>
+          <CardHeader>
+            <CardTitle>Current Authentication Session</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <div className="text-sm text-gray-600">Session ID: {currentSession.id}</div>
+                <div className="text-sm text-gray-600">Device: {currentSession.deviceId}</div>
+                {currentSession.userId && (
+                  <div className="text-sm text-gray-600">User ID: {currentSession.userId}</div>
+                )}
+              </div>
+              <Badge 
+                variant={
+                  currentSession.status === 'success' ? 'default' :
+                  currentSession.status === 'failed' ? 'destructive' :
+                  'secondary'
+                }
+              >
+                {currentSession.status.toUpperCase()}
+              </Badge>
             </div>
-            <Badge 
-              variant={
-                currentSession.status === 'success' ? 'success' :
-                currentSession.status === 'failed' ? 'destructive' :
-                'warning'
-              }
-            >
-              {currentSession.status.toUpperCase()}
-            </Badge>
-          </div>
+          </CardContent>
         </Card>
       )}
 
       {/* Recent Security Events */}
-      <Card className="p-6">
-        <h4 className="text-md font-medium text-gray-900 mb-4">Recent Security Events</h4>
-        <div className="space-y-2 max-h-60 overflow-y-auto">
-          {securityEvents.length === 0 ? (
-            <p className="text-sm text-gray-500">No recent security events</p>
-          ) : (
-            securityEvents.map((event) => (
-              <div key={event.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                <div className="flex-1">
-                  <div className="text-sm font-medium text-gray-900 capitalize">
-                    {event.type.replace('_', ' ')}
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Security Events</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2 max-h-60 overflow-y-auto">
+            {securityEvents.length === 0 ? (
+              <p className="text-sm text-gray-500">No recent security events</p>
+            ) : (
+              securityEvents.map((event) => (
+                <div key={event.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-gray-900 capitalize">
+                      {event.type.replace('_', ' ')}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {new Date(event.timestamp).toLocaleString()}
+                    </div>
                   </div>
-                  <div className="text-xs text-gray-500">
-                    {new Date(event.timestamp).toLocaleString()}
-                  </div>
+                  <Badge 
+                    variant={
+                      event.severity === 'critical' || event.severity === 'high' 
+                        ? 'destructive' 
+                        : event.severity === 'medium' 
+                          ? 'secondary' 
+                          : 'secondary'
+                    }
+                  >
+                    {event.severity}
+                  </Badge>
                 </div>
-                <Badge 
-                  variant={
-                    event.severity === 'critical' ? 'destructive' :
-                    event.severity === 'high' ? 'destructive' :
-                    event.severity === 'medium' ? 'warning' :
-                    'secondary'
-                  }
-                >
-                  {event.severity}
-                </Badge>
-              </div>
-            ))
-          )}
-        </div>
+              ))
+            )}
+          </div>
+        </CardContent>
       </Card>
 
       {/* Hardware Test Controls */}
-      <Card className="p-4">
-        <div className="flex items-center justify-between">
-          <h4 className="text-md font-medium text-gray-900">Hardware Controls</h4>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Hardware Controls</CardTitle>
           <div className="space-x-2">
             <Button variant="outline" size="sm" onClick={checkDeviceStatus}>
               Refresh Status
@@ -383,7 +395,7 @@ const ClamFlowSecure: React.FC<ClamFlowSecureProps> = ({
               Reconnect
             </Button>
           </div>
-        </div>
+        </CardHeader>
       </Card>
     </div>
   );

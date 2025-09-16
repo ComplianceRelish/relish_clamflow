@@ -1,178 +1,228 @@
-import React, { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
+"use client"
 
-// Schema matching your EXACT backend
+import React, { useState, useEffect } from 'react'
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
+import { zodResolver } from '@hookform/resolvers/zod'
+import clamflowAPI, { ApiResponse } from '../../lib/clamflow-api'
+import { User } from '../../types/auth'
+
+// ✅ ENHANCED: Schema matching ClamFlow backend
 const depurationFormSchema = z.object({
-  lot_id: z.string().uuid("Invalid lot ID"),
-  sample_extraction_id: z.string().uuid("Invalid sample extraction ID"),
-  qc_lead_id: z.string().uuid("QC Lead ID is required"),
-  depuration_start_time: z.string().min(1, "Depuration start time is required"),
-  results: z.record(z.any()).refine(data => Object.keys(data).length > 0, {
-    message: "Results are required"
-  }),
-  depuration_form_url: z.string().url("Invalid URL format")
-});
+  sample_id: z.string().min(1, "Sample ID is required"),
+  lot_id: z.string().min(1, "Lot selection is required"),
+  depuration_tank_id: z.string().min(1, "Tank selection is required"),
+  start_time: z.string().min(1, "Start time is required"),
+  planned_duration: z.number().positive("Duration must be positive"),
+  initial_salinity: z.number().positive("Initial salinity is required"),
+  initial_temperature: z.number().positive("Initial temperature is required"),
+  initial_ph: z.number().min(6).max(9, "pH must be between 6-9"),
+  qc_staff_id: z.string().min(1, "QC Staff selection is required"),
+  notes: z.string().optional(),
+  water_source: z.string().min(1, "Water source is required"),
+  filtration_type: z.string().min(1, "Filtration type is required"),
+  monitoring_parameters: z.object({
+    salinity_checks: z.boolean().optional(),
+    temperature_monitoring: z.boolean().optional(),
+    ph_monitoring: z.boolean().optional(),
+    turbidity_checks: z.boolean().optional(),
+    bacterial_testing: z.boolean().optional()
+  }).optional()
+})
 
-type DepurationFormData = z.infer<typeof depurationFormSchema>;
+type DepurationFormData = z.infer<typeof depurationFormSchema>
 
 interface DepurationFormProps {
-  onSubmit?: (data: DepurationFormData) => void;
-  authToken?: string;
+  onSubmit?: (data: DepurationFormData) => void
+  currentUser: User | null
 }
 
-const DepurationForm: React.FC<DepurationFormProps> = ({ 
-  onSubmit, 
-  authToken 
-}) => {
-  const [lots, setLots] = useState<Array<{id: string, lot_number: string}>>([]);
-  const [sampleExtractions, setSampleExtractions] = useState<Array<{id: string, tank_number: string, lot_id: string}>>([]);
-  const [qcLeads, setQcLeads] = useState<Array<{id: string, full_name: string}>>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedLot, setSelectedLot] = useState<string>('');
-  
-  // Results form fields
-  const [testResults, setTestResults] = useState({
-    ph_level: '',
-    salinity: '',
-    temperature: '',
-    bacterial_count: '',
-    contaminant_level: '',
-    visual_inspection: '',
-    notes: ''
-  });
+const DepurationForm: React.FC<DepurationFormProps> = ({ onSubmit, currentUser }) => {
+  const [lots, setLots] = useState<Array<{id: string, lot_number: string, status: string}>>([])
+  const [qcStaff, setQcStaff] = useState<Array<{id: string, full_name: string, role: string}>>([])
+  const [tanks, setTanks] = useState<Array<{id: string, tank_number: string, capacity: number, status: string}>>([])
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string>('')
+  const [availableSamples, setAvailableSamples] = useState<Array<any>>([])
 
   const {
     register,
     handleSubmit,
     formState: { errors },
     reset,
-    setValue,
-    watch
+    watch,
+    setValue
   } = useForm<DepurationFormData>({
-    resolver: zodResolver(depurationFormSchema)
-  });
+    resolver: zodResolver(depurationFormSchema),
+    defaultValues: {
+      qc_staff_id: currentUser?.id || '',
+      planned_duration: 24, // Default 24 hours
+      monitoring_parameters: {
+        salinity_checks: true,
+        temperature_monitoring: true,
+        ph_monitoring: true,
+        turbidity_checks: false,
+        bacterial_testing: false
+      }
+    }
+  })
 
-  const watchedLotId = watch("lot_id");
+  const waterSources = [
+    'Municipal Treated Water',
+    'Filtered Seawater',
+    'UV Treated Seawater',
+    'Ozonated Seawater',
+    'RO Processed Water'
+  ]
+
+  const filtrationTypes = [
+    'Sand Filtration',
+    'Carbon Filtration',
+    'UV Sterilization',
+    'Ozone Treatment',
+    'Multi-Stage Filtration',
+    'Membrane Filtration'
+  ]
+
+  const watchedLotId = watch("lot_id")
 
   useEffect(() => {
-    fetchDropdownData();
-  }, []);
+    fetchInitialData()
+  }, [])
+
+  useEffect(() => {
+    if (currentUser?.id) {
+      setValue('qc_staff_id', currentUser.id)
+    }
+  }, [currentUser, setValue])
 
   useEffect(() => {
     if (watchedLotId) {
-      fetchSampleExtractions(watchedLotId);
+      fetchAvailableSamples(watchedLotId)
     }
-  }, [watchedLotId]);
+  }, [watchedLotId])
 
-  const fetchDropdownData = async () => {
+  const fetchInitialData = async () => {
     try {
-      const [lotsRes, leadsRes] = await Promise.all([
-        fetch('https://clamflowbackend-production.up.railway.app/lots', {
-          headers: { 'Authorization': `Bearer ${authToken}` }
-        }),
-        fetch('https://clamflowbackend-production.up.railway.app/staff/qc-leads', {
-          headers: { 'Authorization': `Bearer ${authToken}` }
-        })
-      ]);
+      // ✅ FIXED: Using correct API endpoints
+      const [lotsResponse, staffResponse] = await Promise.all([
+        clamflowAPI.getLots(),
+        clamflowAPI.getStaff()
+      ])
 
-      if (lotsRes.ok) setLots(await lotsRes.json());
-      if (leadsRes.ok) setQcLeads(await leadsRes.json());
-    } catch (error) {
-      console.error('Failed to fetch dropdown data:', error);
-    }
-  };
-
-  const fetchSampleExtractions = async (lotId: string) => {
-    try {
-      const response = await fetch(`https://clamflowbackend-production.up.railway.app/qa/sample-extractions?lot_id=${lotId}`, {
-        headers: { 'Authorization': `Bearer ${authToken}` }
-      });
-      if (response.ok) {
-        setSampleExtractions(await response.json());
+      if (lotsResponse.success && lotsResponse.data) {
+        setLots(lotsResponse.data.filter(lot => lot.status === 'in_progress' || lot.status === 'ready_for_depuration'))
       }
+
+      if (staffResponse.success && staffResponse.data) {
+        const qcOnlyStaff = staffResponse.data.filter(staff => 
+          staff.role && (staff.role.includes('QC') || staff.role.includes('Quality'))
+        )
+        setQcStaff(qcOnlyStaff)
+      }
+
+      // Mock tank data - replace with actual API call when available
+      setTanks([
+        { id: '1', tank_number: 'TANK-001', capacity: 1000, status: 'available' },
+        { id: '2', tank_number: 'TANK-002', capacity: 1500, status: 'available' },
+        { id: '3', tank_number: 'TANK-003', capacity: 2000, status: 'in_use' },
+        { id: '4', tank_number: 'TANK-004', capacity: 1200, status: 'available' },
+        { id: '5', tank_number: 'TANK-005', capacity: 1800, status: 'maintenance' }
+      ])
     } catch (error) {
-      console.error('Failed to fetch sample extractions:', error);
+      console.error('Failed to fetch initial data:', error)
+      setError('Failed to load form data. Please refresh the page.')
     }
-  };
+  }
 
-  const updateResults = () => {
-    const results = {
-      ph_level: parseFloat(testResults.ph_level) || 0,
-      salinity: parseFloat(testResults.salinity) || 0,
-      temperature: parseFloat(testResults.temperature) || 0,
-      bacterial_count: parseInt(testResults.bacterial_count) || 0,
-      contaminant_level: parseFloat(testResults.contaminant_level) || 0,
-      visual_inspection: testResults.visual_inspection,
-      notes: testResults.notes,
-      test_timestamp: new Date().toISOString()
-    };
-    setValue("results", results);
-  };
-
-  useEffect(() => {
-    updateResults();
-  }, [testResults]);
+  const fetchAvailableSamples = async (lotId: string) => {
+    try {
+      // Fetch samples for the selected lot
+      // This would typically come from a samples API endpoint
+      const mockSamples = [
+        { id: 'SMP-001', sample_type: 'Pre-processing', collected_at: new Date().toISOString() },
+        { id: 'SMP-002', sample_type: 'Mid-processing', collected_at: new Date().toISOString() },
+        { id: 'SMP-003', sample_type: 'Final Product', collected_at: new Date().toISOString() }
+      ]
+      setAvailableSamples(mockSamples)
+    } catch (error) {
+      console.error('Failed to fetch available samples:', error)
+    }
+  }
 
   const submitDepurationForm = async (data: DepurationFormData) => {
-    setIsSubmitting(true);
+    setIsSubmitting(true)
+    setError('')
+
     try {
-      const response = await fetch('https://clamflowbackend-production.up.railway.app/qc-lead/depuration-form', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
-        },
-        body: JSON.stringify({
-          lot_id: data.lot_id,
-          sample_extraction_id: data.sample_extraction_id,
-          qc_lead_id: data.qc_lead_id,
-          depuration_start_time: new Date(data.depuration_start_time).toISOString(),
-          results: data.results,
-          depuration_form_url: data.depuration_form_url
-        })
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.detail || 'Failed to submit depuration form');
+      // ✅ FIXED: Using correct API endpoint and data structure
+      const depurationData = {
+        sample_id: data.sample_id,
+        lot_id: data.lot_id,
+        depuration_tank_id: data.depuration_tank_id,
+        start_time: new Date(data.start_time).toISOString(),
+        planned_duration: data.planned_duration,
+        initial_salinity: data.initial_salinity,
+        initial_temperature: data.initial_temperature,
+        initial_ph: data.initial_ph,
+        qc_staff_id: data.qc_staff_id,
+        notes: data.notes || null,
+        water_source: data.water_source,
+        filtration_type: data.filtration_type,
+        monitoring_parameters: data.monitoring_parameters || {},
+        status: 'active',
+        created_at: new Date().toISOString()
       }
-      
-      const result = await response.json();
-      console.log('Depuration form submitted successfully:', result);
-      
+
+      // ✅ FIXED: Using correct endpoint /api/depuration/form
+      const response = await clamflowAPI.submitDepurationForm(depurationData)
+
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to submit depuration form')
+      }
+
+      console.log('✅ Depuration form submitted successfully:', response.data)
+
       if (onSubmit) {
-        onSubmit(data);
+        onSubmit(data)
       }
-      
-      reset();
-      setTestResults({
-        ph_level: '',
-        salinity: '',
-        temperature: '',
-        bacterial_count: '',
-        contaminant_level: '',
-        visual_inspection: '',
-        notes: ''
-      });
-      alert('Depuration Form submitted successfully!');
-      
-    } catch (error) {
-      console.error('Depuration form submission error:', error);
-      alert(`Error: ${error.message}`);
+
+      reset()
+      alert('Depuration form submitted successfully!')
+
+    } catch (error: any) {
+      console.error('❌ Depuration form submission error:', error)
+      setError(error.message || 'Failed to submit depuration form')
     } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false)
     }
-  };
+  }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white shadow-lg rounded-lg">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">Depuration Form</h2>
-      
-      <form onSubmit={handleSubmit(submitDepurationForm)} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Lot Selection */}
+    <div className="max-w-6xl mx-auto p-6 bg-white shadow-lg rounded-lg">
+      <div className="border-b border-gray-200 pb-4 mb-6">
+        <h2 className="text-2xl font-bold text-gray-800">Depuration Process Form</h2>
+        <p className="text-sm text-gray-600 mt-1">Initialize depuration process for clam purification</p>
+      </div>
+
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-800 text-sm">{error}</p>
+        </div>
+      )}
+
+      {/* Process Information */}
+      <div className="mb-6 p-4 bg-blue-50 rounded-lg">
+        <h3 className="text-lg font-semibold text-blue-800 mb-2">Depuration Process</h3>
+        <p className="text-blue-600 text-sm">
+          Depuration removes sand, grit, and impurities from clams using controlled water circulation. 
+          Typical process duration is 24-48 hours with continuous monitoring of water quality parameters.
+        </p>
+      </div>
+
+      <form onSubmit={handleSubmit(submitDepurationForm)} className="space-y-8">
+        {/* Basic Information */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="form-group">
             <label htmlFor="lot_id" className="block text-sm font-medium text-gray-700 mb-2">
               Lot *
@@ -184,7 +234,7 @@ const DepurationForm: React.FC<DepurationFormProps> = ({
               <option value="">Select Lot</option>
               {lots.map(lot => (
                 <option key={lot.id} value={lot.id}>
-                  {lot.lot_number}
+                  {lot.lot_number} ({lot.status})
                 </option>
               ))}
             </select>
@@ -193,204 +243,305 @@ const DepurationForm: React.FC<DepurationFormProps> = ({
             )}
           </div>
 
-          {/* Sample Extraction Selection */}
           <div className="form-group">
-            <label htmlFor="sample_extraction_id" className="block text-sm font-medium text-gray-700 mb-2">
-              Sample Extraction *
+            <label htmlFor="sample_id" className="block text-sm font-medium text-gray-700 mb-2">
+              Sample ID *
             </label>
             <select 
-              {...register("sample_extraction_id")} 
+              {...register("sample_id")} 
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              disabled={!watchedLotId}
             >
-              <option value="">Select Sample Extraction</option>
-              {sampleExtractions.map(sample => (
+              <option value="">Select Sample</option>
+              {availableSamples.map(sample => (
                 <option key={sample.id} value={sample.id}>
-                  Tank {sample.tank_number}
+                  {sample.id} - {sample.sample_type}
                 </option>
               ))}
             </select>
-            {errors.sample_extraction_id && (
-              <span className="text-red-500 text-sm mt-1">{errors.sample_extraction_id.message}</span>
+            {errors.sample_id && (
+              <span className="text-red-500 text-sm mt-1">{errors.sample_id.message}</span>
             )}
           </div>
 
-          {/* QC Lead Selection */}
           <div className="form-group">
-            <label htmlFor="qc_lead_id" className="block text-sm font-medium text-gray-700 mb-2">
-              QC Lead *
+            <label htmlFor="depuration_tank_id" className="block text-sm font-medium text-gray-700 mb-2">
+              Depuration Tank *
             </label>
             <select 
-              {...register("qc_lead_id")} 
+              {...register("depuration_tank_id")} 
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">Select QC Lead</option>
-              {qcLeads.map(lead => (
-                <option key={lead.id} value={lead.id}>
-                  {lead.full_name}
+              <option value="">Select Tank</option>
+              {tanks.filter(tank => tank.status === 'available').map(tank => (
+                <option key={tank.id} value={tank.id}>
+                  {tank.tank_number} (Capacity: {tank.capacity}L)
                 </option>
               ))}
             </select>
-            {errors.qc_lead_id && (
-              <span className="text-red-500 text-sm mt-1">{errors.qc_lead_id.message}</span>
+            {errors.depuration_tank_id && (
+              <span className="text-red-500 text-sm mt-1">{errors.depuration_tank_id.message}</span>
             )}
           </div>
+        </div>
 
-          {/* Depuration Start Time */}
+        {/* Timing Information */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="form-group">
-            <label htmlFor="depuration_start_time" className="block text-sm font-medium text-gray-700 mb-2">
-              Depuration Start Time *
+            <label htmlFor="start_time" className="block text-sm font-medium text-gray-700 mb-2">
+              Start Time *
             </label>
             <input 
-              {...register("depuration_start_time")} 
-              type="datetime-local" 
+              {...register("start_time")} 
+              type="datetime-local"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            {errors.depuration_start_time && (
-              <span className="text-red-500 text-sm mt-1">{errors.depuration_start_time.message}</span>
+            {errors.start_time && (
+              <span className="text-red-500 text-sm mt-1">{errors.start_time.message}</span>
+            )}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="planned_duration" className="block text-sm font-medium text-gray-700 mb-2">
+              Planned Duration (hours) *
+            </label>
+            <input 
+              {...register("planned_duration", { valueAsNumber: true })} 
+              type="number"
+              min="1"
+              max="72"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter duration in hours"
+            />
+            {errors.planned_duration && (
+              <span className="text-red-500 text-sm mt-1">{errors.planned_duration.message}</span>
             )}
           </div>
         </div>
 
-        {/* Test Results Section */}
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Test Results</h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* pH Level */}
+        {/* Water Quality Parameters */}
+        <div className="bg-green-50 p-6 rounded-lg">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Initial Water Quality Parameters</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="form-group">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                pH Level
+              <label htmlFor="initial_salinity" className="block text-sm font-medium text-gray-700 mb-2">
+                Initial Salinity (ppt) *
               </label>
               <input 
-                type="number" 
-                step="0.1"
-                value={testResults.ph_level}
-                onChange={(e) => setTestResults(prev => ({...prev, ph_level: e.target.value}))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="7.0"
-              />
-            </div>
-
-            {/* Salinity */}
-            <div className="form-group">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Salinity (%)
-              </label>
-              <input 
-                type="number" 
-                step="0.1"
-                value={testResults.salinity}
-                onChange={(e) => setTestResults(prev => ({...prev, salinity: e.target.value}))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="3.5"
-              />
-            </div>
-
-            {/* Temperature */}
-            <div className="form-group">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Temperature (°C)
-              </label>
-              <input 
-                type="number" 
-                step="0.1"
-                value={testResults.temperature}
-                onChange={(e) => setTestResults(prev => ({...prev, temperature: e.target.value}))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="15.0"
-              />
-            </div>
-
-            {/* Bacterial Count */}
-            <div className="form-group">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Bacterial Count (CFU/ml)
-              </label>
-              <input 
+                {...register("initial_salinity", { valueAsNumber: true })} 
                 type="number"
-                value={testResults.bacterial_count}
-                onChange={(e) => setTestResults(prev => ({...prev, bacterial_count: e.target.value}))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="100"
+                step="0.1"
+                min="25"
+                max="40"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                placeholder="e.g., 35.0"
               />
+              {errors.initial_salinity && (
+                <span className="text-red-500 text-sm mt-1">{errors.initial_salinity.message}</span>
+              )}
             </div>
 
-            {/* Contaminant Level */}
             <div className="form-group">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Contaminant Level (ppm)
+              <label htmlFor="initial_temperature" className="block text-sm font-medium text-gray-700 mb-2">
+                Initial Temperature (°C) *
               </label>
               <input 
-                type="number" 
-                step="0.01"
-                value={testResults.contaminant_level}
-                onChange={(e) => setTestResults(prev => ({...prev, contaminant_level: e.target.value}))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="0.05"
+                {...register("initial_temperature", { valueAsNumber: true })} 
+                type="number"
+                step="0.1"
+                min="4"
+                max="25"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                placeholder="e.g., 15.5"
               />
+              {errors.initial_temperature && (
+                <span className="text-red-500 text-sm mt-1">{errors.initial_temperature.message}</span>
+              )}
             </div>
 
-            {/* Visual Inspection */}
             <div className="form-group">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Visual Inspection
+              <label htmlFor="initial_ph" className="block text-sm font-medium text-gray-700 mb-2">
+                Initial pH *
               </label>
-              <select
-                value={testResults.visual_inspection}
-                onChange={(e) => setTestResults(prev => ({...prev, visual_inspection: e.target.value}))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select Result</option>
-                <option value="Pass">Pass</option>
-                <option value="Fail">Fail</option>
-                <option value="Conditional">Conditional</option>
-              </select>
+              <input 
+                {...register("initial_ph", { valueAsNumber: true })} 
+                type="number"
+                step="0.1"
+                min="6"
+                max="9"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                placeholder="e.g., 8.2"
+              />
+              {errors.initial_ph && (
+                <span className="text-red-500 text-sm mt-1">{errors.initial_ph.message}</span>
+              )}
             </div>
           </div>
+        </div>
 
-          {/* Notes */}
-          <div className="form-group mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Notes
+        {/* Water Treatment */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="form-group">
+            <label htmlFor="water_source" className="block text-sm font-medium text-gray-700 mb-2">
+              Water Source *
+            </label>
+            <select 
+              {...register("water_source")} 
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Select Water Source</option>
+              {waterSources.map(source => (
+                <option key={source} value={source}>
+                  {source}
+                </option>
+              ))}
+            </select>
+            {errors.water_source && (
+              <span className="text-red-500 text-sm mt-1">{errors.water_source.message}</span>
+            )}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="filtration_type" className="block text-sm font-medium text-gray-700 mb-2">
+              Filtration Type *
+            </label>
+            <select 
+              {...register("filtration_type")} 
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Select Filtration Type</option>
+              {filtrationTypes.map(type => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+            {errors.filtration_type && (
+              <span className="text-red-500 text-sm mt-1">{errors.filtration_type.message}</span>
+            )}
+          </div>
+        </div>
+
+        {/* Monitoring Parameters */}
+        <div className="bg-yellow-50 p-6 rounded-lg">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Monitoring Parameters</h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            <div className="flex items-center">
+              <input 
+                type="checkbox" 
+                {...register("monitoring_parameters.salinity_checks")}
+                className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <span className="text-sm">Salinity Checks</span>
+            </div>
+            <div className="flex items-center">
+              <input 
+                type="checkbox" 
+                {...register("monitoring_parameters.temperature_monitoring")}
+                className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <span className="text-sm">Temperature Monitoring</span>
+            </div>
+            <div className="flex items-center">
+              <input 
+                type="checkbox" 
+                {...register("monitoring_parameters.ph_monitoring")}
+                className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <span className="text-sm">pH Monitoring</span>
+            </div>
+            <div className="flex items-center">
+              <input 
+                type="checkbox" 
+                {...register("monitoring_parameters.turbidity_checks")}
+                className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <span className="text-sm">Turbidity Checks</span>
+            </div>
+            <div className="flex items-center">
+              <input 
+                type="checkbox" 
+                {...register("monitoring_parameters.bacterial_testing")}
+                className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <span className="text-sm">Bacterial Testing</span>
+            </div>
+          </div>
+        </div>
+
+        {/* QC Staff & Notes */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="form-group">
+            <label htmlFor="qc_staff_id" className="block text-sm font-medium text-gray-700 mb-2">
+              QC Staff *
+            </label>
+            <select 
+              {...register("qc_staff_id")} 
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Select QC Staff</option>
+              {qcStaff.map(staff => (
+                <option key={staff.id} value={staff.id}>
+                  {staff.full_name} ({staff.role})
+                </option>
+              ))}
+            </select>
+            {errors.qc_staff_id && (
+              <span className="text-red-500 text-sm mt-1">{errors.qc_staff_id.message}</span>
+            )}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-2">
+              Process Notes
             </label>
             <textarea 
-              value={testResults.notes}
-              onChange={(e) => setTestResults(prev => ({...prev, notes: e.target.value}))}
-              rows={3}
+              {...register("notes")} 
+              rows={4}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Additional observations or notes..."
+              placeholder="Enter any special notes about the depuration process..."
             />
           </div>
         </div>
 
-        {/* Depuration Form URL */}
-        <div className="form-group">
-          <label htmlFor="depuration_form_url" className="block text-sm font-medium text-gray-700 mb-2">
-            Depuration Form URL *
-          </label>
-          <input 
-            {...register("depuration_form_url")} 
-            type="url" 
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="https://example.com/depuration-form.pdf"
-          />
-          {errors.depuration_form_url && (
-            <span className="text-red-500 text-sm mt-1">{errors.depuration_form_url.message}</span>
-          )}
+        {/* Tank Status Display */}
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <h3 className="text-lg font-semibold text-gray-800 mb-3">Tank Status Overview</h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            {tanks.map(tank => (
+              <div 
+                key={tank.id} 
+                className={`p-3 rounded border text-center ${
+                  tank.status === 'available' 
+                    ? 'bg-green-100 border-green-300' 
+                    : tank.status === 'in_use'
+                    ? 'bg-yellow-100 border-yellow-300'
+                    : 'bg-red-100 border-red-300'
+                }`}
+              >
+                <div className="font-medium text-sm">{tank.tank_number}</div>
+                <div className="text-xs text-gray-600">{tank.capacity}L</div>
+                <div className={`text-xs font-medium ${
+                  tank.status === 'available' ? 'text-green-700' : 
+                  tank.status === 'in_use' ? 'text-yellow-700' : 'text-red-700'
+                }`}>
+                  {tank.status.replace('_', ' ')}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Submit Button */}
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full bg-purple-600 text-white py-3 px-4 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-lg font-semibold"
+          className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-lg font-semibold"
         >
-          {isSubmitting ? 'Submitting...' : 'Submit Depuration Form'}
+          {isSubmitting ? 'Starting Depuration Process...' : 'Start Depuration Process'}
         </button>
       </form>
     </div>
-  );
-};
+  )
+}
 
-export default DepurationForm;
+export default DepurationForm

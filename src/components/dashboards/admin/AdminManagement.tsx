@@ -2,14 +2,17 @@
 
 import React, { useState, useEffect } from 'react';
 import { clamflowAPI } from '../../../lib/clamflow-api';
-import { User } from '../../../types/auth';
+import { User, UserRole, ROLE_DISPLAY_NAMES } from '../../../types/auth';
 import { Card } from '../../ui/Card';
 import { Button } from '../../ui/Button';
 import { FormField } from '../../ui/FormField';
-import { FormSelect } from '../../ui/FormSelect';
 import { Badge } from '../../ui/Badge';
 import { Modal } from '../../ui/Modal';
 import { LoadingSpinner } from '../../ui/LoadingSpinner';
+
+interface AdminManagementProps {
+  currentUser: User | null;
+}
 
 interface AdminManagementState {
   users: User[];
@@ -20,7 +23,34 @@ interface AdminManagementState {
   showEditModal: boolean;
 }
 
-const AdminManagement: React.FC = () => {
+// FormSelect component definition (since it's not exported from the module)
+interface FormSelectProps {
+  label: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  options: Array<{ value: string; label: string }>;
+}
+
+const FormSelect: React.FC<FormSelectProps> = ({ label, value, onChange, options }) => {
+  return (
+    <div className="space-y-1">
+      <label className="block text-sm font-medium text-gray-700">{label}</label>
+      <select
+        value={value}
+        onChange={onChange}
+        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+};
+
+const AdminManagement: React.FC<AdminManagementProps> = ({ currentUser }) => {
   const [state, setState] = useState<AdminManagementState>({
     users: [],
     loading: true,
@@ -33,7 +63,7 @@ const AdminManagement: React.FC = () => {
   const [newUser, setNewUser] = useState({
     username: '',
     full_name: '',
-    role: 'Production Staff' as User['role'],
+    role: 'production_staff' as UserRole, // Fixed: use snake_case
     station: '',
     password: '',
   });
@@ -82,7 +112,7 @@ const AdminManagement: React.FC = () => {
         setNewUser({
           username: '',
           full_name: '',
-          role: 'Production Staff',
+          role: 'production_staff', // Fixed: use snake_case
           station: '',
           password: '',
         });
@@ -121,16 +151,16 @@ const AdminManagement: React.FC = () => {
     }
   };
 
-  const getRoleBadgeColor = (role: User['role']) => {
-    const colors = {
-      'Super Admin': 'bg-purple-100 text-purple-800',
-      'Admin': 'bg-blue-100 text-blue-800',
-      'Production Lead': 'bg-green-100 text-green-800',
-      'QC Lead': 'bg-orange-100 text-orange-800',
-      'Staff Lead': 'bg-indigo-100 text-indigo-800',
-      'QC Staff': 'bg-yellow-100 text-yellow-800',
-      'Production Staff': 'bg-gray-100 text-gray-800',
-      'Security Guard': 'bg-red-100 text-red-800',
+  const getRoleBadgeColor = (role: UserRole) => {
+    const colors: Record<UserRole, string> = {
+      'super_admin': 'bg-purple-100 text-purple-800',
+      'admin': 'bg-blue-100 text-blue-800',
+      'production_lead': 'bg-green-100 text-green-800',
+      'qc_lead': 'bg-orange-100 text-orange-800',
+      'staff_lead': 'bg-indigo-100 text-indigo-800',
+      'qc_staff': 'bg-yellow-100 text-yellow-800',
+      'production_staff': 'bg-gray-100 text-gray-800',
+      'security_guard': 'bg-red-100 text-red-800',
     };
     return colors[role] || 'bg-gray-100 text-gray-800';
   };
@@ -197,14 +227,14 @@ const AdminManagement: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <Badge className={getRoleBadgeColor(user.role)}>
-                      {user.role}
+                      {ROLE_DISPLAY_NAMES[user.role]}
                     </Badge>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {user.station || '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <Badge variant={user.is_active ? 'success' : 'destructive'}>
+                    <Badge variant={user.is_active ? 'default' : 'destructive'}>
                       {user.is_active ? 'Active' : 'Inactive'}
                     </Badge>
                   </td>
@@ -248,41 +278,35 @@ const AdminManagement: React.FC = () => {
           <FormField
             label="Username"
             value={newUser.username}
-            onChange={(e) => setNewUser(prev => ({ ...prev, username: e.target.value }))}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewUser(prev => ({ ...prev, username: e.target.value }))}
             placeholder="Enter username"
           />
           <FormField
             label="Full Name"
             value={newUser.full_name}
-            onChange={(e) => setNewUser(prev => ({ ...prev, full_name: e.target.value }))}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewUser(prev => ({ ...prev, full_name: e.target.value }))}
             placeholder="Enter full name"
           />
           <FormSelect
             label="Role"
             value={newUser.role}
-            onChange={(e) => setNewUser(prev => ({ ...prev, role: e.target.value as User['role'] }))}
-            options={[
-              { value: 'Super Admin', label: 'Super Admin' },
-              { value: 'Admin', label: 'Admin' },
-              { value: 'Production Lead', label: 'Production Lead' },
-              { value: 'QC Lead', label: 'QC Lead' },
-              { value: 'Staff Lead', label: 'Staff Lead' },
-              { value: 'QC Staff', label: 'QC Staff' },
-              { value: 'Production Staff', label: 'Production Staff' },
-              { value: 'Security Guard', label: 'Security Guard' },
-            ]}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setNewUser(prev => ({ ...prev, role: e.target.value as UserRole }))}
+            options={Object.entries(ROLE_DISPLAY_NAMES).map(([key, value]) => ({
+              value: key,
+              label: value
+            }))}
           />
           <FormField
             label="Station"
             value={newUser.station}
-            onChange={(e) => setNewUser(prev => ({ ...prev, station: e.target.value }))}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewUser(prev => ({ ...prev, station: e.target.value }))}
             placeholder="Enter station (optional)"
           />
           <FormField
             label="Password"
             type="password"
             value={newUser.password}
-            onChange={(e) => setNewUser(prev => ({ ...prev, password: e.target.value }))}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewUser(prev => ({ ...prev, password: e.target.value }))}
             placeholder="Enter password"
           />
           <div className="flex justify-end space-x-2">
@@ -307,8 +331,8 @@ const AdminManagement: React.FC = () => {
           <div className="space-y-4">
             <FormField
               label="Full Name"
-              value={state.selectedUser.full_name}
-              onChange={(e) => setState(prev => ({
+              value={state.selectedUser.full_name || ''}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setState(prev => ({
                 ...prev,
                 selectedUser: prev.selectedUser ? {
                   ...prev.selectedUser,
@@ -319,28 +343,22 @@ const AdminManagement: React.FC = () => {
             <FormSelect
               label="Role"
               value={state.selectedUser.role}
-              onChange={(e) => setState(prev => ({
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setState(prev => ({
                 ...prev,
                 selectedUser: prev.selectedUser ? {
                   ...prev.selectedUser,
-                  role: e.target.value as User['role']
+                  role: e.target.value as UserRole
                 } : null
               }))}
-              options={[
-                { value: 'Super Admin', label: 'Super Admin' },
-                { value: 'Admin', label: 'Admin' },
-                { value: 'Production Lead', label: 'Production Lead' },
-                { value: 'QC Lead', label: 'QC Lead' },
-                { value: 'Staff Lead', label: 'Staff Lead' },
-                { value: 'QC Staff', label: 'QC Staff' },
-                { value: 'Production Staff', label: 'Production Staff' },
-                { value: 'Security Guard', label: 'Security Guard' },
-              ]}
+              options={Object.entries(ROLE_DISPLAY_NAMES).map(([key, value]) => ({
+                value: key,
+                label: value
+              }))}
             />
             <FormField
               label="Station"
               value={state.selectedUser.station || ''}
-              onChange={(e) => setState(prev => ({
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setState(prev => ({
                 ...prev,
                 selectedUser: prev.selectedUser ? {
                   ...prev.selectedUser,

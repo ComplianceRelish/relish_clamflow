@@ -62,17 +62,17 @@ const SystemHealth: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const getStatusColor = (status: string | boolean): 'success' | 'warning' | 'destructive' | 'secondary' => {
+  const getStatusColor = (status: string | boolean): 'default' | 'destructive' | 'outline' | 'secondary' => {
     if (typeof status === 'boolean') {
-      return status ? 'success' : 'destructive';
+      return status ? 'default' : 'destructive';
     }
     
     switch (status) {
       case 'healthy':
       case 'connected':
-        return 'success';
+        return 'default'; // Changed from 'success' to 'default'
       case 'warning':
-        return 'warning';
+        return 'outline'; // Changed from 'warning' to 'outline'
       case 'critical':
       case 'disconnected':
         return 'destructive';
@@ -187,7 +187,7 @@ const SystemHealth: React.FC = () => {
                   <p className="text-sm font-medium text-gray-900">RFID Readers</p>
                   <p className="text-xs text-gray-500">Hardware connectivity status</p>
                 </div>
-                <Badge variant={state.health.services.hardware ? 'success' : 'destructive'}>
+                <Badge variant={state.health.services.hardware ? 'default' : 'destructive'}>
                   {state.health.services.hardware ? 'Connected' : 'Disconnected'}
                 </Badge>
               </div>
@@ -197,7 +197,7 @@ const SystemHealth: React.FC = () => {
                   <p className="text-sm font-medium text-gray-900">Biometric Devices</p>
                   <p className="text-xs text-gray-500">ClamFlowSecure authentication</p>
                 </div>
-                <Badge variant={state.health.services.hardware ? 'success' : 'destructive'}>
+                <Badge variant={state.health.services.hardware ? 'default' : 'destructive'}>
                   {state.health.services.hardware ? 'Connected' : 'Disconnected'}
                 </Badge>
               </div>
