@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -119,11 +119,21 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
     'Security Guard'
   ];
 
-  useEffect(() => {
-    loadUsers();
-  }, []);
+  const getRolePrefix = (role: string): string => {
+    const prefixMap: { [key: string]: string } = {
+      'Super Admin': 'SA',
+      'Admin': 'AD', 
+      'Production Lead': 'PL',
+      'QC Lead': 'QC',
+      'Staff Lead': 'SL',
+      'QC Staff': 'QS',
+      'Production Staff': 'PS',
+      'Security Guard': 'SG'
+    };
+    return prefixMap[role] || 'US';
+  };
 
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -143,7 +153,8 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
           return;
         }
       } catch (err) {
-  console.warn('API authentication failed, trying enterprise credentials:', err);
+        console.warn('API authentication failed, trying enterprise credentials:', err);
+      }
 
       // Fallback to local storage or mock data
       const storedUsers = localStorage.getItem('clamflow_users');
@@ -161,7 +172,11 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
 
   const createUser = async (userData: any) => {
     try {
@@ -201,7 +216,8 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
           return true;
         }
       } catch (err) {
-  console.warn('API authentication failed, trying enterprise credentials:', err);
+        console.warn('API authentication failed, trying enterprise credentials:', err);
+      }
 
       // Fallback to local storage
       const updatedUsers = [...users, newUser];
@@ -214,20 +230,6 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
       setFormError('Failed to create user');
       return false;
     }
-  };
-
-  const getRolePrefix = (role: string): string => {
-    const prefixMap: { [key: string]: string } = {
-      'Super Admin': 'SA',
-      'Admin': 'AD', 
-      'Production Lead': 'PL',
-      'QC Lead': 'QC',
-      'Staff Lead': 'SL',
-      'QC Staff': 'QS',
-      'Production Staff': 'PS',
-      'Security Guard': 'SG'
-    };
-    return prefixMap[role] || 'US';
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
