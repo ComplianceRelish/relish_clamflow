@@ -116,7 +116,7 @@ export interface FPFormCreate {
   expected_pack_configurations: PackSizeConfiguration[];
   priority_level?: 'low' | 'medium' | 'high' | 'critical';
   special_instructions?: string;
-  customer_requirements?: any;
+  customer_requirements?: Record<string, unknown>;
 }
 
 // Box Scanning Data (Step 2: In-Scans Boxes from PPC)
@@ -150,7 +150,7 @@ export interface FinalPackingData {
     humidity: number;
     recorded_at: string;
   };
-  customer_specific_requirements?: any;
+  customer_specific_requirements?: Record<string, unknown>;
 }
 
 // Label Generation Results
@@ -160,7 +160,7 @@ export interface LabelGenerationResult {
   label_data: {
     qr_code: string; // base64 image
     barcode?: string; // base64 image
-    label_content: any;
+    label_content: Record<string, unknown>;
   };
   label_format: string;
   generated_at: string;
@@ -198,9 +198,7 @@ export interface FPFormApproval {
   quality_rating?: number;
   rejection_reason?: string;
   corrective_actions?: string[];
-  quality_checklist?: {
-    [key: string]: boolean;
-  };
+  quality_checklist?: Record<string, boolean>;
   attachments?: string[];
   next_review_date?: string;
 }
@@ -214,7 +212,7 @@ export interface FPWorkflowHistory {
   performed_by_role: string;
   timestamp: string;
   comments?: string;
-  data?: any;
+  data?: Record<string, unknown>;
 }
 
 // Enhanced FP Form (Comprehensive)
@@ -274,7 +272,7 @@ export interface FPFormDetailed extends FPForm {
   scanned_boxes: BoxScanData[];
   packing_configurations: PackSizeConfiguration[];
   generated_labels: LabelGenerationResult[];
-  rejection_history: any[];
+  rejection_history: Record<string, unknown>[];
 }
 
 // Legacy FP Form Types (maintaining backward compatibility)
@@ -460,10 +458,10 @@ export interface FormField {
     min?: number
     max?: number
     pattern?: string
-    custom?: (value: any) => string | undefined
+    custom?: (value: unknown) => string | undefined
   }
   description?: string
-  defaultValue?: any
+  defaultValue?: unknown
 }
 
 export interface DynamicForm {
@@ -474,7 +472,7 @@ export interface DynamicForm {
   fields: FormField[]
   sections?: FormSection[]
   submission_endpoint: string
-  validation_rules?: Record<string, any>
+  validation_rules?: Record<string, unknown>
   created_at: string
   updated_at: string
   version: number
@@ -488,7 +486,7 @@ export interface FormSection {
   conditional?: {
     field: string
     operator: 'equals' | 'not_equals' | 'contains' | 'greater_than' | 'less_than'
-    value: any
+    value: unknown
   }
 }
 
@@ -498,7 +496,7 @@ export interface FormSubmission {
   form_id: string
   submitted_by: string
   submitted_at: string
-  data: Record<string, any>
+  data: Record<string, unknown>
   status: 'pending' | 'processing' | 'approved' | 'rejected' | 'requires_revision'
   reviewed_by?: string
   reviewed_at?: string

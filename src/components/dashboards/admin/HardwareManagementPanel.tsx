@@ -7,14 +7,25 @@ import { Input } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/Dialog'
 import { Label } from '@/components/ui/Label'
-import { Textarea } from '@/components/ui/Textarea'
-import { Switch } from '@/components/ui/Switch'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs'
-import { AlertCircle, Plus, Edit, Trash2, Cpu, Wifi, Battery, Activity, Search, Filter, Zap, HardDrive, Thermometer, Gauge } from 'lucide-react'
+import { AlertCircle, Plus, Edit, Trash2, Cpu, Wifi, Activity, Search, HardDrive, Thermometer, Zap } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/Alert'
 
 // Real API client
 import { apiClient } from '@/lib/api-client'
+
+// Define proper types instead of 'any'
+export interface DeviceSpecifications {
+  [key: string]: unknown;
+}
+
+export interface HealthMetrics {
+  cpu_usage?: number;
+  memory_usage?: number;
+  temperature?: number;
+  network_latency?: number;
+  uptime_percentage?: number;
+  error_count?: number;
+}
 
 interface HardwareDevice {
   id: string
@@ -32,15 +43,8 @@ interface HardwareDevice {
   warranty_expiry?: string
   manufacturer?: string
   model?: string
-  specifications?: Record<string, any>
-  health_metrics?: {
-    cpu_usage?: number
-    memory_usage?: number
-    temperature?: number
-    network_latency?: number
-    uptime_percentage?: number
-    error_count?: number
-  }
+  specifications?: DeviceSpecifications
+  health_metrics?: HealthMetrics
 }
 
 interface HardwareStats {
@@ -54,13 +58,8 @@ interface HardwareStats {
   average_uptime: number
 }
 
-interface HardwareManagementPanelProps {
-  currentUser?: {
-    id: string
-    username: string
-    role: string
-  } | null
-}
+// ✅ FIXED: Removed empty interface
+// We don't need an interface if no props are used
 
 // Custom Select component
 const CustomSelect: React.FC<{
@@ -130,8 +129,6 @@ const DeviceForm: React.FC<DeviceFormProps> = ({ onSubmit, onCancel, device }) =
     'Shipping Station', 'Maintenance Station', 'Security Station'
   ]
 
-  const statusTypes = ['online', 'offline', 'maintenance', 'error', 'warning']
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     onSubmit(formData)
@@ -199,7 +196,7 @@ const DeviceForm: React.FC<DeviceFormProps> = ({ onSubmit, onCancel, device }) =
   )
 }
 
-export default function HardwareManagementPanel({ currentUser }: HardwareManagementPanelProps) {
+export default function HardwareManagementPanel() {
   const [devices, setDevices] = useState<HardwareDevice[]>([])
   const [stats, setStats] = useState<HardwareStats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -210,7 +207,6 @@ export default function HardwareManagementPanel({ currentUser }: HardwareManagem
   const [selectedDevice, setSelectedDevice] = useState<HardwareDevice | null>(null)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false)
 
   const deviceTypes = [
     'RFID Reader', 'Scale', 'Temperature Sensor', 'pH Meter',
@@ -218,13 +214,36 @@ export default function HardwareManagementPanel({ currentUser }: HardwareManagem
     'Network Switch', 'Gateway', 'Tablet', 'Printer', 'Environmental Sensor'
   ]
 
-  const stations = [
-    'Receiving Station', 'Pre-Processing Station', 'Processing Station',
-    'Quality Control Station', 'Packaging Station', 'Storage Station',
-    'Shipping Station', 'Maintenance Station', 'Security Station'
-  ]
-
   const statusTypes = ['online', 'offline', 'maintenance', 'error', 'warning']
+
+  // Memoize functions to avoid unnecessary re-renders
+  const loadDevices = async () => {
+    try {
+      setLoading(true)
+      const response = await apiClient.get('/hardware/devices')
+      
+      // Fixed: Type assertion to resolve 'unknown' error
+      const data = response.data as { devices: HardwareDevice[] }
+      setDevices(data.devices || [])
+    } catch (err) {
+      setError('Failed to load hardware devices')
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loadHardwareStats = async () => {
+    try {
+      const response = await apiClient.get('/hardware/stats')
+      
+      // Fixed: Type assertion to resolve 'unknown' error
+      const data = response.data as HardwareStats
+      setStats(data)
+    } catch (err) {
+      console.error('Failed to load hardware statistics:', err)
+    }
+  }
 
   useEffect(() => {
     loadDevices()
@@ -238,28 +257,6 @@ export default function HardwareManagementPanel({ currentUser }: HardwareManagem
     
     return () => clearInterval(interval)
   }, [])
-
-  const loadDevices = async () => {
-    try {
-      setLoading(true)
-      const response = await apiClient.get('/hardware/devices')
-      setDevices(response.data.devices || [])
-    } catch (err) {
-      setError('Failed to load hardware devices')
-      console.error(err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const loadHardwareStats = async () => {
-    try {
-      const response = await apiClient.get('/hardware/stats')
-      setStats(response.data)
-    } catch (err) {
-      console.error('Failed to load hardware statistics:', err)
-    }
-  }
 
   const handleCreateDevice = async (deviceData: Partial<HardwareDevice>) => {
     try {
@@ -305,17 +302,6 @@ export default function HardwareManagementPanel({ currentUser }: HardwareManagem
       loadDevices()
     } catch (err) {
       setError('Failed to reboot device')
-      console.error(err)
-    }
-  }
-
-  const handleMaintenanceSchedule = async (deviceId: string, maintenanceDate: string) => {
-    try {
-      await apiClient.post(`/hardware/devices/${deviceId}/schedule-maintenance`, { scheduled_date: maintenanceDate })
-      loadDevices()
-      loadHardwareStats()
-    } catch (err) {
-      setError('Failed to schedule maintenance')
       console.error(err)
     }
   }

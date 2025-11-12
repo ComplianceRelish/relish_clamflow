@@ -1,20 +1,85 @@
-import axios, { AxiosInstance, AxiosResponse } from 'axios'
-import { supabase } from './supabase'
-import { ApiResponse, PaginatedResponse, ErrorResponse } from '../services/api';
+// src/lib/api-client.ts
+import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import { supabase } from './supabase';
 
 // Request configuration interface
 interface RequestConfig {
-  timeout?: number
-  headers?: Record<string, string>
-  params?: Record<string, any>
+  timeout?: number;
+  headers?: Record<string, string>;
+  params?: Record<string, unknown>;
+}
+
+// ✅ ADDED PROPER RESPONSE INTERFACES
+interface ApiResponse<T> {
+  success: boolean;
+  data: T | null;
+  error?: string;
+  message: string;
+  status?: number;
+}
+
+// ✅ ADDED SPECIFIC REQUEST INTERFACES
+interface CreateWeightNoteRequest {
+  lot_id: string;
+  supplier_id: string;
+  box_number: string;
+  weight: number;
+}
+
+interface CreatePPCFormRequest {
+  lot_id: string;
+  product_grade: string;
+  quality_notes?: string;
+}
+
+interface CreateFPFormRequest {
+  lot_id: string;
+  final_weight: number;
+  packaging_details: string;
+}
+
+interface GateControlRequest {
+  rfid_tags: string[];
+  timestamp?: string;
+}
+
+interface AttendanceRecordRequest {
+  employee_id: string;
+  method: 'face' | 'qr';
+  timestamp?: string;
+}
+
+interface DepurationResultRequest {
+  lot_id: string;
+  test_results: Record<string, unknown>;
+  approved: boolean;
+}
+
+interface StaffOnboardingRequest {
+  full_name: string;
+  email: string;
+  role: string;
+  department?: string;
+}
+
+interface SupplierOnboardingRequest {
+  name: string;
+  contact_info: Record<string, unknown>;
+  boat_details?: Record<string, unknown>;
+}
+
+interface VendorOnboardingRequest {
+  firm_name: string;
+  category: string;
+  contact_details: Record<string, unknown>;
 }
 
 // API Base URL
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://clamflowbackend-production.up.railway.app'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://clamflowbackend-production.up.railway.app';
 
 // Create axios instance
 class APIClient {
-  private client: AxiosInstance
+  private client: AxiosInstance;
 
   constructor() {
     this.client = axios.create({
@@ -23,45 +88,45 @@ class APIClient {
       headers: {
         'Content-Type': 'application/json',
       },
-    })
+    });
 
     // Request interceptor to add JWT token
     this.client.interceptors.request.use(
       async (config) => {
         try {
-          const { data: { session } } = await supabase.auth.getSession()
+          const { data: { session } } = await supabase.auth.getSession();
           
           if (session?.access_token) {
-            config.headers.Authorization = `Bearer ${session.access_token}`
+            config.headers.Authorization = `Bearer ${session.access_token}`;
           }
         } catch (error) {
-          console.error('Error getting auth token:', error)
+          console.error('Error getting auth token:', error);
         }
         
-        return config
+        return config;
       },
       (error) => {
-        return Promise.reject(error)
+        return Promise.reject(error);
       }
-    )
+    );
 
     // Response interceptor for error handling
     this.client.interceptors.response.use(
       (response: AxiosResponse) => response,
       async (error) => {
         if (error.response?.status === 401) {
-          console.error('Unauthorized access - redirecting to login')
-          await supabase.auth.signOut()
-          window.location.href = '/login'
+          console.error('Unauthorized access - redirecting to login');
+          await supabase.auth.signOut();
+          window.location.href = '/login';
         }
-        return Promise.reject(error)
+        return Promise.reject(error);
       }
-    )
+    );
   }
 
   // Health check
   async healthCheck() {
-    return this.client.get('/health')
+    return this.client.get('/health');
   }
 
   // ========================================
@@ -69,57 +134,44 @@ class APIClient {
   // ========================================
 
   // Weight Note Management
-  async createWeightNote(data: {
-    lot_id: string
-    supplier_id: string
-    box_number: string
-    weight: number
-  }) {
-    return this.client.post('/qa/weight-note', data)
+  async createWeightNote(data: CreateWeightNoteRequest) {
+    return this.client.post('/qa/weight-note', data);
   }
 
   async approveWeightNote(id: string) {
-    return this.client.put(`/qa/weight-note/${id}/approve`)
+    return this.client.put(`/qa/weight-note/${id}/approve`);
   }
 
   async getWeightNotes() {
-    return this.client.get('/qa/weight-notes')
+    return this.client.get('/qa/weight-notes');
   }
 
   // PPC Form Management
-  async createPPCForm(data: {
-    lot_id: string
-    product_grade: string
-    quality_notes?: string
-  }) {
-    return this.client.post('/qa/ppc-form', data)
+  async createPPCForm(data: CreatePPCFormRequest) {
+    return this.client.post('/qa/ppc-form', data);
   }
 
   async approvePPCForm(id: string) {
-    return this.client.put(`/qa/ppc-form/${id}/approve`)
+    return this.client.put(`/qa/ppc-form/${id}/approve`);
   }
 
   // FP Form Management
-  async createFPForm(data: {
-    lot_id: string
-    final_weight: number
-    packaging_details: string
-  }) {
-    return this.client.post('/qa/fp-form', data)
+  async createFPForm(data: CreateFPFormRequest) {
+    return this.client.post('/qa/fp-form', data);
   }
 
   async approveFPForm(id: string) {
-    return this.client.put(`/qa/fp-form/${id}/approve`)
+    return this.client.put(`/qa/fp-form/${id}/approve`);
   }
 
   // Sample Extraction
   async createSampleExtraction(data: {
-    lot_id: string
-    tank_location: string
-    sample_type: string
-    extracted_by: string
+    lot_id: string;
+    tank_location: string;
+    sample_type: string;
+    extracted_by: string;
   }) {
-    return this.client.post('/qa/sample-extraction', data)
+    return this.client.post('/qa/sample-extraction', data);
   }
 
   // ========================================
@@ -127,31 +179,21 @@ class APIClient {
   // ========================================
 
   // Gate Control
-  async recordGateExit(data: {
-    rfid_tags: string[]
-    timestamp?: string
-  }) {
-    return this.client.post('/secure/gate/exit', data)
+  async recordGateExit(data: GateControlRequest) {
+    return this.client.post('/secure/gate/exit', data);
   }
 
-  async recordGateEntry(data: {
-    rfid_tags: string[]
-    timestamp?: string
-  }) {
-    return this.client.post('/secure/gate/entry', data)
+  async recordGateEntry(data: GateControlRequest) {
+    return this.client.post('/secure/gate/entry', data);
   }
 
   async getBoxTally() {
-    return this.client.get('/secure/gate/tally')
+    return this.client.get('/secure/gate/tally');
   }
 
   // Attendance Tracking
-  async recordAttendance(data: {
-    employee_id: string
-    method: 'face' | 'qr'
-    timestamp?: string
-  }) {
-    return this.client.post('/secure/attendance', data)
+  async recordAttendance(data: AttendanceRecordRequest) {
+    return this.client.post('/secure/attendance', data);
   }
 
   // ========================================
@@ -159,17 +201,13 @@ class APIClient {
   // ========================================
 
   // Depuration Testing
-  async submitDepurationResult(data: {
-    lot_id: string
-    test_results: object
-    approved: boolean
-  }) {
-    return this.client.post('/qc-lead/depuration-result', data)
+  async submitDepurationResult(data: DepurationResultRequest) {
+    return this.client.post('/qc-lead/depuration-result', data);
   }
 
   // Microbiology Approval
   async approveMicrobiology(lotId: string) {
-    return this.client.put(`/qc-lead/lots/${lotId}/approve-microbiology`)
+    return this.client.put(`/qc-lead/lots/${lotId}/approve-microbiology`);
   }
 
   // ========================================
@@ -178,25 +216,25 @@ class APIClient {
 
   // Inventory Management
   async getInventory() {
-    return this.client.get('/inventory')
+    return this.client.get('/inventory');
   }
 
   // Lot Management
   async getLotDetails(id: string) {
-    return this.client.get(`/lots/${id}`)
+    return this.client.get(`/lots/${id}`);
   }
 
   // Data Access
   async getSuppliers() {
-    return this.client.get('/data/suppliers')
+    return this.client.get('/data/suppliers');
   }
 
   async getStaff() {
-    return this.client.get('/data/staff')
+    return this.client.get('/data/staff');
   }
 
   async getVendors() {
-    return this.client.get('/data/vendors')
+    return this.client.get('/data/vendors');
   }
 
   // ========================================
@@ -204,38 +242,25 @@ class APIClient {
   // ========================================
 
   // Entity Submission
-  async submitStaffOnboarding(data: {
-    full_name: string
-    email: string
-    role: string
-    department?: string
-  }) {
-    return this.client.post('/onboarding/staff', data)
+  async submitStaffOnboarding(data: StaffOnboardingRequest) {
+    return this.client.post('/onboarding/staff', data);
   }
 
-  async submitSupplierOnboarding(data: {
-    name: string
-    contact_info: object
-    boat_details?: object
-  }) {
-    return this.client.post('/onboarding/supplier', data)
+  async submitSupplierOnboarding(data: SupplierOnboardingRequest) {
+    return this.client.post('/onboarding/supplier', data);
   }
 
-  async submitVendorOnboarding(data: {
-    firm_name: string
-    category: string
-    contact_details: object
-  }) {
-    return this.client.post('/onboarding/vendor', data)
+  async submitVendorOnboarding(data: VendorOnboardingRequest) {
+    return this.client.post('/onboarding/vendor', data);
   }
 
   // Approval Management
   async approveOnboarding(id: string) {
-    return this.client.put(`/onboarding/${id}/approve`)
+    return this.client.put(`/onboarding/${id}/approve`);
   }
 
   async rejectOnboarding(id: string) {
-    return this.client.put(`/onboarding/${id}/reject`)
+    return this.client.put(`/onboarding/${id}/reject`);
   }
 
   // ========================================
@@ -243,110 +268,101 @@ class APIClient {
   // ========================================
 
   // Generic request method for internal use
-  private async request<T = any>(
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH',
-    endpoint: string,
-    data?: any,
-    config?: RequestConfig
-  ): Promise<ApiResponse<T>> {
-    try {
-      const response = await this.client.request({
-        method,
-        url: endpoint,
-        data,
-        ...config,
-      })
-      
-      return {
-        success: true,
-        data: response.data,
-        message: 'Request successful',
-        status: response.status
-      }
-    } catch (error: any) {
-      // ✅ FIXED: Return proper ApiResponse with optional data
+private async request<T = unknown>(
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH',
+  endpoint: string,
+  data?: unknown,
+  config?: RequestConfig
+): Promise<ApiResponse<T>> {
+  try {
+    const response = await this.client.request({
+      method,
+      url: endpoint,
+      data,
+      ...config,
+    });
+    
+    return {
+      success: true,
+      data: response.data as T,
+      message: 'Request successful',
+      status: response.status
+    };
+  } catch (error: unknown) {
+    // Handle error with proper typing
+    if (error instanceof Error) {
       return {
         success: false,
-        data: null as T, // ✅ FIX: Provide data as null with proper type
-        error: error.response?.data?.error || error.message,
-        message: error.response?.data?.message || 'Request failed',
-        status: error.response?.status
-      }
+        data: null as T,
+        error: error.message,
+        message: 'Request failed',
+        status: 500
+      };
     }
+    
+    return {
+      success: false,
+      data: null as T,
+      error: 'Unknown error occurred',
+      message: 'Request failed',
+      status: 500
+    };
   }
-
+}
   // Generic GET method
-  async get<T = any>(endpoint: string, config?: RequestConfig): Promise<ApiResponse<T>> {
-    return this.request<T>('GET', endpoint, undefined, config)
+  async get<T = unknown>(endpoint: string, config?: RequestConfig): Promise<ApiResponse<T>> {
+    return this.request<T>('GET', endpoint, undefined, config);
   }
 
   // Generic POST method
-  async post<T = any>(endpoint: string, data?: any, config?: RequestConfig): Promise<ApiResponse<T>> {
-    return this.request<T>('POST', endpoint, data, config)
+  async post<T = unknown>(endpoint: string, data?: unknown, config?: RequestConfig): Promise<ApiResponse<T>> {
+    return this.request<T>('POST', endpoint, data, config);
   }
 
   // Generic PUT method
-  async put<T = any>(endpoint: string, data?: any, config?: RequestConfig): Promise<ApiResponse<T>> {
-    return this.request<T>('PUT', endpoint, data, config)
+  async put<T = unknown>(endpoint: string, data?: unknown, config?: RequestConfig): Promise<ApiResponse<T>> {
+    return this.request<T>('PUT', endpoint, data, config);
   }
 
   // Generic DELETE method
-  async delete<T = any>(endpoint: string, config?: RequestConfig): Promise<ApiResponse<T>> {
-    return this.request<T>('DELETE', endpoint, undefined, config)
+  async delete<T = unknown>(endpoint: string, config?: RequestConfig): Promise<ApiResponse<T>> {
+    return this.request<T>('DELETE', endpoint, undefined, config);
   }
 
   // Generic PATCH method
-  async patch<T = any>(endpoint: string, data?: any, config?: RequestConfig): Promise<ApiResponse<T>> {
-    return this.request<T>('PATCH', endpoint, data, config)
+  async patch<T = unknown>(endpoint: string, data?: unknown, config?: RequestConfig): Promise<ApiResponse<T>> {
+    return this.request<T>('PATCH', endpoint, data, config);
   }
 }
 
 // Create singleton instance
-export const apiClient = new APIClient()
+export const apiClient = new APIClient();
 
 // Export individual API modules for better organization
 export const weightNotesAPI = {
-  create: (data: any) => apiClient.createWeightNote(data),
+  create: (data: CreateWeightNoteRequest) => apiClient.createWeightNote(data),
   approve: (id: string) => apiClient.approveWeightNote(id),
   getAll: () => apiClient.getWeightNotes(),
-}
+};
 
 export const ppcFormsAPI = {
-  create: (data: any) => apiClient.createPPCForm(data),
+  create: (data: CreatePPCFormRequest) => apiClient.createPPCForm(data),
   approve: (id: string) => apiClient.approvePPCForm(id),
-}
+};
 
 export const fpFormsAPI = {
-  create: (data: any) => apiClient.createFPForm(data),
+  create: (data: CreateFPFormRequest) => apiClient.createFPForm(data),
   approve: (id: string) => apiClient.approveFPForm(id),
-}
+};
 
 export const secureAPI = {
-  recordExit: (data: any) => apiClient.recordGateExit(data),
-  recordEntry: (data: any) => apiClient.recordGateEntry(data),
+  recordExit: (data: GateControlRequest) => apiClient.recordGateExit(data),
+  recordEntry: (data: GateControlRequest) => apiClient.recordGateEntry(data),
   getTally: () => apiClient.getBoxTally(),
-  recordAttendance: (data: any) => apiClient.recordAttendance(data),
-}
+  recordAttendance: (data: AttendanceRecordRequest) => apiClient.recordAttendance(data),
+};
 
 export const qcLeadAPI = {
-  submitDepuration: (data: any) => apiClient.submitDepurationResult(data),
+  submitDepuration: (data: DepurationResultRequest) => apiClient.submitDepurationResult(data),
   approveMicrobiology: (lotId: string) => apiClient.approveMicrobiology(lotId),
-}
-
-export const dataAPI = {
-  suppliers: () => apiClient.getSuppliers(),
-  staff: () => apiClient.getStaff(),
-  vendors: () => apiClient.getVendors(),
-  inventory: () => apiClient.getInventory(),
-  lotDetails: (id: string) => apiClient.getLotDetails(id),
-}
-
-export const onboardingAPI = {
-  submitStaff: (data: any) => apiClient.submitStaffOnboarding(data),
-  submitSupplier: (data: any) => apiClient.submitSupplierOnboarding(data),
-  submitVendor: (data: any) => apiClient.submitVendorOnboarding(data),
-  approve: (id: string) => apiClient.approveOnboarding(id),
-  reject: (id: string) => apiClient.rejectOnboarding(id),
-}
-
-export default apiClient
+};

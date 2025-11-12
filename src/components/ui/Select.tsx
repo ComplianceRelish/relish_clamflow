@@ -1,4 +1,4 @@
-// src/components/ui/Select.tsx - Full Implementation
+// src/components/ui/Select.tsx - Full Implementation with Accessibility Fixes
 import * as React from 'react'
 
 const Select = React.forwardRef<
@@ -21,12 +21,17 @@ const SelectTrigger = React.forwardRef<
   HTMLButtonElement,
   React.ButtonHTMLAttributes<HTMLButtonElement>
 >(({ className, children, ...props }, ref) => {
+  // Generate a unique ID for the combobox
+  const [id] = React.useState(() => `select-trigger-${Math.random().toString(36).substr(2, 9)}`)
+  
   return (
     <button
       ref={ref}
       role="combobox"
       aria-expanded="false"
       aria-haspopup="listbox"
+      aria-controls={`${id}-content`} // ✅ Added aria-controls
+      id={id} // ✅ Added id to link with content
       className={`flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className || ''}`}
       {...props}
     >
@@ -55,11 +60,15 @@ const SelectContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, children, ...props }, ref) => {
+  // Get the ID of the trigger to link it with content
+  const triggerId = React.useId() // ✅ Use React.useId() for consistent IDs
+  
   return (
     <div
       ref={ref}
       className={`relative z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 ${className || ''}`}
       {...props}
+      id={`${triggerId}-content`} // ✅ Link content to trigger via ID
     >
       {children}
     </div>

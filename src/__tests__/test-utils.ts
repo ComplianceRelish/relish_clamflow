@@ -53,7 +53,11 @@ export const createTestPPCForm = (overrides = {}) => ({
 })
 
 // API mocking helpers
-export const mockSuccessfulAPI = (data: any) => {
+export interface MockAPIData {
+  [key: string]: unknown;
+}
+
+export const mockSuccessfulAPI = (data: MockAPIData) => {
   return Promise.resolve({
     ok: true,
     json: () => Promise.resolve({
@@ -76,7 +80,7 @@ export const mockFailedAPI = (error: string) => {
 }
 
 // Utility functions
-export const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+export const wait = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms))
 
 export const generateId = () => `test-id-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 
@@ -88,7 +92,8 @@ export const TEST_CONSTANTS = {
   API_BASE_URL: 'https://test-api.railway.app',
 }
 
-export default {
+// Named export instead of default anonymous object
+export const TestUtilities = {
   createTestUser,
   createTestWeightNote,
   createTestPPCForm,
@@ -98,3 +103,5 @@ export default {
   generateId,
   TEST_CONSTANTS
 }
+
+export default TestUtilities;

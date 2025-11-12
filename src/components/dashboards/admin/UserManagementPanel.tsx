@@ -142,9 +142,8 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
           setUsers(data);
           return;
         }
-      } catch (apiError) {
-        console.warn('API not available, using fallback data');
-      }
+      } catch (err) {
+  console.warn('API authentication failed, trying enterprise credentials:', err);
 
       // Fallback to local storage or mock data
       const storedUsers = localStorage.getItem('clamflow_users');
@@ -201,9 +200,8 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
           setUsers(prev => [...prev, createdUser]);
           return true;
         }
-      } catch (apiError) {
-        console.warn('API create failed, using local storage');
-      }
+      } catch (err) {
+  console.warn('API authentication failed, trying enterprise credentials:', err);
 
       // Fallback to local storage
       const updatedUsers = [...users, newUser];

@@ -1,5 +1,5 @@
 // Jest configuration for ClamFlow Frontend
-const nextJest = require('next/jest')
+import nextJest from 'next/jest'
 
 const createJestConfig = nextJest({
   // Provide the path to your Next.js app to load next.config.js and .env files
@@ -13,7 +13,7 @@ const customJestConfig = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   
   // Module path mapping (matching tsconfig.json paths)
-  moduleNameMapping: {
+  moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@components/(.*)$': '<rootDir>/src/components/$1',
     '^@lib/(.*)$': '<rootDir>/src/lib/$1',
@@ -22,6 +22,9 @@ const customJestConfig = {
     '^@services/(.*)$': '<rootDir>/src/services/$1',
     '^@context/(.*)$': '<rootDir>/src/context/$1',
     '^@utils/(.*)$': '<rootDir>/src/lib/utils',
+    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
+    '\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$':
+      '<rootDir>/src/__mocks__/fileMock.js',
   },
 
   // Test file patterns
@@ -41,14 +44,6 @@ const customJestConfig = {
   // Transform files
   transform: {
     '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { presets: ['next/babel'] }],
-  },
-
-  // Mock static assets
-  moduleNameMapping: {
-    ...customJestConfig.moduleNameMapping,
-    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
-    '\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$':
-      '<rootDir>/src/__mocks__/fileMock.js',
   },
 
   // Coverage configuration
@@ -133,4 +128,4 @@ const customJestConfig = {
 }
 
 // Create and export the Jest config
-module.exports = createJestConfig(customJestConfig)
+export default createJestConfig(customJestConfig)

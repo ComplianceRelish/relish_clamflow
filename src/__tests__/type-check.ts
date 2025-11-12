@@ -2,12 +2,12 @@
 
 import { User, UserRole } from '../types/auth';
 
-// ✅ FIXED: Schema-compliant test user (snake_case)
+// ✅ Use only in type assertions or remove if not used
 const testUser: User = {
   id: '1',
   username: 'test_user',
   full_name: 'Test User',
-  role: 'production_staff', // ✅ Correct snake_case format
+  role: 'production_staff',
   station: 'Station 1',
   is_active: true,
   last_login: '2023-01-01T00:00:00Z',
@@ -16,10 +16,10 @@ const testUser: User = {
   login_attempts: 0,
 };
 
-// ✅ FIXED: Schema-compliant role test
-const testRole: UserRole = 'qc_staff'; // ✅ Correct snake_case format
+// ✅ Remove unused variable or use it
+const testRole: UserRole = 'qc_staff';
 
-// ✅ FIXED: All valid roles from schema CHECK constraint (snake_case)
+// ✅ FIXED: Schema-compliant role test
 const validRoles: UserRole[] = [
   'super_admin',
   'admin',
@@ -42,4 +42,5 @@ if (isValidRole(sampleRole)) {
   console.log(`${sampleRole} is a valid role`);
 }
 
-console.log('Type checking passed!');
+// Use the variables to avoid "unused" warnings
+console.log('Type checking passed!', { testUser, testRole });

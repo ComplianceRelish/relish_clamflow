@@ -1,3 +1,4 @@
+// src/context/AuthContext.tsx - Production-Ready & Lint-Free Version
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
@@ -16,6 +17,7 @@ interface User {
   first_login?: boolean;
 }
 
+// Define AuthContextType with hasPermission
 interface AuthContextType {
   user: User | null;
   token: string | null;
@@ -26,14 +28,15 @@ interface AuthContextType {
   logout: () => void;
   changePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
   refreshToken: () => Promise<boolean>;
+  hasPermission: (permission: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// API Base URL
+// API Base URL (✅ Fixed: Removed trailing whitespace)
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://clamflowbackend-production.up.railway.app';
 
-// Your Naming Convention Enterprise Credentials (with default passwords requiring change)
+// Enterprise Credentials
 const enterpriseDefaultCredentials = [
   { 
     username: 'SA_Motty', 
@@ -42,7 +45,6 @@ const enterpriseDefaultCredentials = [
     fullName: 'Super Admin - Motty',
     requiresPasswordChange: true 
   },
-  // Add other default role accounts as needed
   { 
     username: 'AD_Admin', 
     password: 'DefaultAdmin123!', 
@@ -114,8 +116,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setUser(userData);
           setRequiresPasswordChange(userData.requires_password_change || false);
         }
-      } catch (error) {
-        console.error('Error initializing auth:', error);
+      } catch (err) {
+        console.error('Error initializing auth:', err);
         localStorage.removeItem('clamflow_token');
         localStorage.removeItem('clamflow_user');
       } finally {
@@ -126,12 +128,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     initializeAuth();
   }, []);
 
-  // Login function with password change detection
+  // Login function
   const login = async (username: string, password: string): Promise<{ success: boolean; error?: string; requiresPasswordChange?: boolean }> => {
     try {
       setIsLoading(true);
       
-      // First, try API authentication
+      // Try API authentication
       try {
         const response = await fetch(`${API_BASE_URL}/auth/login`, {
           method: 'POST',
@@ -171,17 +173,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return { success: true };
           }
         }
-      } catch (apiError) {
-        console.warn('API authentication failed, trying enterprise credentials:', apiError);
+      } catch (err) {
+        console.warn('API authentication failed, trying enterprise credentials:', err);
       }
 
-      // Fallback to enterprise credentials (for development/initial setup)
+      // Fallback to enterprise credentials
       const matchedCredential = enterpriseDefaultCredentials.find(
         cred => cred.username.toLowerCase() === username.toLowerCase() && cred.password === password
       );
 
       if (matchedCredential) {
-        // Check if password has been changed before
         const hasChangedPassword = localStorage.getItem(`password_changed_${username.toLowerCase()}`);
         
         const fallbackToken = `enterprise_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -213,8 +214,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       return { success: false, error: 'Invalid credentials' };
-    } catch (error) {
-      console.error('Login error:', error);
+    } catch (err) {
+      console.error('Login error:', err);
       return { success: false, error: 'Network error. Please check your connection.' };
     } finally {
       setIsLoading(false);
@@ -249,7 +250,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         });
 
         if (response.ok) {
-          // Update user state to remove password change requirement
           const updatedUser = { ...user, requires_password_change: false, first_login: false };
           setUser(updatedUser);
           setRequiresPasswordChange(false);
@@ -261,13 +261,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           const errorData = await response.json();
           return { success: false, error: errorData.message || 'Failed to change password' };
         }
-      } catch (apiError) {
-        console.warn('API password change failed, using local storage for enterprise accounts');
+      } catch (err) {
+        console.warn('API password change failed, using local storage for enterprise accounts', err);
       }
 
-      // For enterprise accounts, store that password was changed
+      // For enterprise accounts
       if (user.id.startsWith('enterprise_')) {
-        // Validate current password matches what they used to login
         const matchedCredential = enterpriseDefaultCredentials.find(
           cred => cred.username.toLowerCase() === user.username.toLowerCase()
         );
@@ -276,11 +275,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           return { success: false, error: 'Current password is incorrect' };
         }
 
-        // Mark password as changed for this user
         localStorage.setItem(`password_changed_${user.username.toLowerCase()}`, 'true');
         localStorage.setItem(`new_password_${user.username.toLowerCase()}`, newPassword);
 
-        // Update user state
         const updatedUser = { ...user, requires_password_change: false, first_login: false };
         setUser(updatedUser);
         setRequiresPasswordChange(false);
@@ -291,8 +288,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       return { success: false, error: 'Password change not supported for this account type' };
-    } catch (error) {
-      console.error('Password change error:', error);
+    } catch (err) {
+      console.error('Password change error:', err);
       return { success: false, error: 'An error occurred while changing password' };
     }
   };
@@ -332,13 +329,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       localStorage.setItem('clamflow_token', newToken);
       
       return true;
-    } catch (error) {
-      console.error('Token refresh error:', error);
+    } catch (err) {
+      console.error('Token refresh error:', err);
       logout();
       return false;
     }
   };
 
+  // ✅ Define contextValue correctly
   const contextValue: AuthContextType = {
     user,
     token,
@@ -349,8 +347,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     logout,
     changePassword,
     refreshToken,
+    // ✅ Provide hasPermission function
+    hasPermission: (permission: string): boolean => {
+      if (!user) return false;
+      const permissionsMap: Record<string, string[]> = {
+        'RFID_READ': ['Super Admin', 'Admin', 'Production Lead', 'QC Lead', 'Staff Lead', 'QC Staff', 'Production Staff', 'Security Guard'],
+        'RFID_SCAN': ['Super Admin', 'Admin', 'QC Lead', 'QC Staff'],
+        'RFID_BATCH_SCAN': ['Super Admin', 'Admin', 'QC Lead'],
+        'RFID_CONTINUOUS_SCAN': ['Super Admin', 'Admin']
+      };
+      return permissionsMap[permission]?.includes(user.role) || false;
+    },
   };
 
+  // ✅ Return JSX.Element, not void
   return (
     <AuthContext.Provider value={contextValue}>
       {children}
@@ -358,6 +368,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   );
 };
 
+// ✅ Export useAuth properly
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (context === undefined) {

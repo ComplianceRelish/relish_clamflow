@@ -43,12 +43,12 @@ class APIClient {
     return this.client.get<T>(url, config);
   }
 
-  post<T>(url: string, data: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-    return this.client.post<T>(url, data, config); // Fixed: pass 'data'
+  post<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    return this.client.post<T>(url, data, config);
   }
 
-  put<T>(url: string, data: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-    return this.client.put<T>(url, data, config); // Fixed: pass 'data'
+  put<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    return this.client.put<T>(url, data, config);
   }
 
   delete<T>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {

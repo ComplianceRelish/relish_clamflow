@@ -37,7 +37,7 @@ export interface SecurityEvent {
   userId?: string;
   deviceId?: string;
   timestamp: string;
-  details: any;
+  details: Record<string, unknown>; // ✅ Fixed: Replaced 'any' with 'Record<string, unknown>'
   severity: 'low' | 'medium' | 'high' | 'critical';
 }
 

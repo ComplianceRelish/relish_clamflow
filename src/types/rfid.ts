@@ -1,13 +1,62 @@
 // RFID Integration and Tracking Types
 import { BaseEntity } from './index'
 
+// === Type Definitions (Ordered: Dependencies First) ===
+
+// Reader Status Type
+export type ReaderStatus = 'online' | 'offline' | 'error' | 'maintenance'
+
+// Location History Entry (used in BoxTracking)
+export interface LocationHistoryEntry {
+  location: string
+  reader_id: string
+  timestamp: string
+  duration_minutes?: number
+  moved_by?: string
+  reason?: string
+}
+
+// Handling Event (used in BoxTracking)
+export interface HandlingEvent {
+  event_type: 'received' | 'moved' | 'processed' | 'inspected' | 'packaged' | 'shipped'
+  timestamp: string
+  operator_id: string
+  location: string
+  parameters?: Record<string, unknown>
+  quality_impact?: 'positive' | 'negative' | 'neutral'
+  notes?: string
+}
+
+// Box Quality Check (used in BoxTracking)
+export interface BoxQualityCheck {
+  inspector_id: string
+  check_time: string
+  check_type: 'visual' | 'temperature' | 'weight' | 'documentation'
+  results: Record<string, unknown>
+  passed: boolean
+  corrective_actions?: string[]
+  next_check_due?: string
+}
+
+// Chain of Custody Entry (used in BoxTracking)
+export interface ChainOfCustodyEntry {
+  transferred_from: string
+  transferred_to: string
+  timestamp: string
+  authorization_method: string
+  witness?: string
+  documentation?: string[]
+  condition_notes?: string
+}
+
+// RFID Tag Interface
 export interface RFIDTag extends BaseEntity {
   tag_id: string
   tag_type: 'box' | 'employee' | 'vehicle' | 'equipment' | 'visitor'
   technology: 'UHF' | 'HF' | 'LF' | 'NFC'
   frequency: string
   read_range_meters: number
-  entity_type: 'inventory_item' | 'employee' | 'vehicle' | 'equipment' | 'visitor_pass'
+  entity_type: 'inventory_box' | 'employee' | 'vehicle' | 'equipment' | 'visitor_pass'
   entity_id: string
   status: 'active' | 'inactive' | 'lost' | 'damaged' | 'decommissioned'
   assigned_date: string
@@ -17,30 +66,10 @@ export interface RFIDTag extends BaseEntity {
   firmware_version?: string
   encryption_enabled: boolean
   access_permissions: string[]
-  custom_data?: Record<string, any>
+  custom_data?: Record<string, unknown>
 }
 
-export interface RFIDReader extends BaseEntity {
-  id: string
-  name: string
-  location: string // Changed from ReaderLocation enum to string
-  ip_address: string
-  port: number
-  status: ReaderStatus
-  read_range?: number // Add this property
-  last_seen: string
-  firmware_version?: string
-  // Legacy fields for backward compatibility
-  reader_id?: string
-  model?: string
-  mac_address?: string
-  supported_frequencies?: string[]
-  antenna_count?: number
-  last_heartbeat?: string
-  configuration?: ReaderConfiguration
-  statistics?: ReaderStatistics
-}
-
+// Reader Location
 export interface ReaderLocation {
   plant_id: string
   zone: string
@@ -54,6 +83,7 @@ export interface ReaderLocation {
   access_level: 'public' | 'restricted' | 'secure'
 }
 
+// Reader Configuration
 export interface ReaderConfiguration {
   read_power_dbm: number
   session_flag: 0 | 1 | 2 | 3
@@ -66,15 +96,17 @@ export interface ReaderConfiguration {
   output_settings: OutputSettings
 }
 
+// RFID Filter
 export interface RFIDFilter {
   memory_bank: 'EPC' | 'TID' | 'USER' | 'RESERVED'
   start_address: number
   data_length: number
-  filter_data: string
+  filter_data: string // ✅ Fixed: Was 'filter_ string'
   filter_action: 'include' | 'exclude'
   enabled: boolean
 }
 
+// Trigger Settings
 export interface TriggerSettings {
   auto_read: boolean
   gpio_trigger: boolean
@@ -82,6 +114,7 @@ export interface TriggerSettings {
   scheduled_reads: ScheduledRead[]
 }
 
+// Scheduled Read
 export interface ScheduledRead {
   id: string
   name: string
@@ -91,15 +124,17 @@ export interface ScheduledRead {
   tag_filters?: RFIDFilter[]
 }
 
+// Output Settings
 export interface OutputSettings {
   real_time_streaming: boolean
   batch_mode: boolean
   batch_size: number
   batch_timeout_seconds: number
   output_format: 'json' | 'xml' | 'csv'
-  include_metadata: boolean
+  include_metadata: boolean // ✅ Fixed: Was 'include_meta boolean'
 }
 
+// Reader Statistics
 export interface ReaderStatistics {
   total_reads_today: number
   unique_tags_today: number
@@ -111,6 +146,28 @@ export interface ReaderStatistics {
   data_throughput_kbps: number
 }
 
+// RFID Reader
+export interface RFIDReader extends BaseEntity {
+  id: string
+  name: string
+  location: string
+  ip_address: string
+  port: number
+  status: ReaderStatus
+  read_range?: number
+  last_seen: string
+  firmware_version?: string
+  reader_id?: string
+  model?: string
+  mac_address?: string
+  supported_frequencies?: string[]
+  antenna_count?: number
+  last_heartbeat?: string
+  configuration?: ReaderConfiguration
+  statistics?: ReaderStatistics
+}
+
+// RFID Scan Data
 export interface RFIDScanData {
   scan_id: string
   tag_id: string
@@ -132,6 +189,7 @@ export interface RFIDScanData {
   associated_records?: AssociatedRecord[]
 }
 
+// Scan Context
 export interface ScanContext {
   operation_type: 'gate_entry' | 'gate_exit' | 'attendance' | 'inventory_check' | 'process_tracking' | 'quality_control'
   operator_id?: string
@@ -142,9 +200,10 @@ export interface ScanContext {
     humidity: number
     interference_level: number
   }
-  additional_data?: Record<string, any>
+  additional_data?: Record<string, unknown>
 }
 
+// Associated Record
 export interface AssociatedRecord {
   record_type: 'inventory_movement' | 'attendance_log' | 'gate_log' | 'quality_check' | 'process_step'
   record_id: string
@@ -152,7 +211,7 @@ export interface AssociatedRecord {
   error_message?: string
 }
 
-// RFID Events and Alerts
+// RFID Event
 export interface RFIDEvent extends BaseEntity {
   event_type: 'tag_read' | 'tag_lost' | 'reader_offline' | 'unauthorized_read' | 'system_error' | 'maintenance_required'
   severity: 'info' | 'warning' | 'error' | 'critical'
@@ -160,7 +219,7 @@ export interface RFIDEvent extends BaseEntity {
   source_id: string
   title: string
   description: string
-  event_data?: Record<string, any>
+  event_data?: Record<string, unknown>
   acknowledged: boolean
   acknowledged_by?: string
   acknowledged_at?: string
@@ -170,6 +229,7 @@ export interface RFIDEvent extends BaseEntity {
   resolution_notes?: string
 }
 
+// RFID Alert
 export interface RFIDAlert extends RFIDEvent {
   alert_rule_id?: string
   notification_sent: boolean
@@ -179,22 +239,7 @@ export interface RFIDAlert extends RFIDEvent {
   correlation_id?: string
 }
 
-// RFID System Configuration
-export interface RFIDSystemSettings {
-  system_id: string
-  plant_id: string
-  enabled: boolean
-  default_read_power: number
-  global_filters: RFIDFilter[]
-  data_retention_days: number
-  real_time_processing: boolean
-  backup_enabled: boolean
-  encryption_required: boolean
-  audit_logging: boolean
-  integration_endpoints: IntegrationEndpoint[]
-  alert_rules: AlertRule[]
-}
-
+// Integration Endpoint
 export interface IntegrationEndpoint {
   name: string
   url: string
@@ -212,6 +257,7 @@ export interface IntegrationEndpoint {
   enabled: boolean
 }
 
+// Alert Rule
 export interface AlertRule {
   rule_id: string
   name: string
@@ -225,6 +271,7 @@ export interface AlertRule {
   escalation_rules?: EscalationRule[]
 }
 
+// Escalation Rule
 export interface EscalationRule {
   delay_minutes: number
   severity: 'info' | 'warning' | 'error' | 'critical'
@@ -232,7 +279,23 @@ export interface EscalationRule {
   notification_channels: ('email' | 'sms' | 'push' | 'webhook')[]
 }
 
-// Business Logic Integration
+// RFID System Settings
+export interface RFIDSystemSettings {
+  system_id: string
+  plant_id: string
+  enabled: boolean
+  default_read_power: number
+  global_filters: RFIDFilter[]
+  data_retention_days: number
+  real_time_processing: boolean
+  backup_enabled: boolean
+  encryption_required: boolean
+  audit_logging: boolean
+  integration_endpoints: IntegrationEndpoint[]
+  alert_rules: AlertRule[]
+}
+
+// Attendance Record
 export interface AttendanceRecord extends BaseEntity {
   employee_id: string
   rfid_tag_id: string
@@ -245,11 +308,13 @@ export interface AttendanceRecord extends BaseEntity {
   overtime_hours?: number
   status: 'clocked_in' | 'clocked_out' | 'on_break' | 'overtime'
   location: string
+  verified_by_face_recognition: boolean
   approved: boolean
   approved_by?: string
   notes?: string
 }
 
+// Gate Log
 export interface GateLog extends BaseEntity {
   gate_id: string
   direction: 'entry' | 'exit'
@@ -268,8 +333,9 @@ export interface GateLog extends BaseEntity {
   notes?: string
 }
 
+// Cargo Details
 export interface CargoDetails {
-  product_type: string
+  product_type: 'whole_clam' | 'clam_meat' | 'processed_clam'
   quantity: number
   weight_kg: number
   destination?: string
@@ -279,6 +345,7 @@ export interface CargoDetails {
   special_handling?: string[]
 }
 
+// Box Tracking
 export interface BoxTracking extends BaseEntity {
   box_id: string
   rfid_tag_id: string
@@ -290,98 +357,17 @@ export interface BoxTracking extends BaseEntity {
   chain_of_custody: ChainOfCustodyEntry[]
 }
 
-export interface LocationHistoryEntry {
-  location: string
-  reader_id: string
-  timestamp: string
-  duration_minutes?: number
-  moved_by?: string
-  reason?: string
-}
-
-export interface HandlingEvent {
-  event_type: 'received' | 'moved' | 'processed' | 'inspected' | 'packaged' | 'shipped'
-  timestamp: string
-  operator_id: string
-  location: string
-  parameters?: Record<string, any>
-  quality_impact?: 'positive' | 'negative' | 'neutral'
-  notes?: string
-}
-
-export interface BoxQualityCheck {
-  inspector_id: string
-  check_time: string
-  check_type: 'visual' | 'temperature' | 'weight' | 'documentation'
-  results: Record<string, any>
-  passed: boolean
-  corrective_actions?: string[]
-  next_check_due?: string
-}
-
-export interface ChainOfCustodyEntry {
-  transferred_from: string
-  transferred_to: string
-  timestamp: string
-  authorization_method: string
-  witness?: string
-  documentation?: string[]
-  condition_notes?: string
-}
-
-// Analytics and Reporting
-export interface RFIDAnalytics {
-  time_period: {
-    start: string
-    end: string
-  }
-  total_reads: number
-  unique_tags: number
-  reader_utilization: ReaderUtilization[]
-  tag_movement_patterns: TagMovementPattern[]
-  system_performance: SystemPerformance
-  business_insights: BusinessInsight[]
-}
-
-export interface ReaderUtilization {
-  reader_id: string
-  reader_name: string
-  total_reads: number
-  unique_tags: number
-  uptime_percentage: number
-  average_reads_per_hour: number
-  peak_usage_hour: string
-  error_rate_percentage: number
-}
-
-export interface TagMovementPattern {
-  zone_from: string
-  zone_to: string
-  movement_count: number
-  average_duration_minutes: number
-  peak_movement_hour: string
-  associated_processes: string[]
-}
-
-export interface SystemPerformance {
-  overall_uptime_percentage: number
-  average_response_time_ms: number
-  data_processing_rate: number
-  error_rate_percentage: number
-  storage_utilization_percentage: number
-  network_throughput_mbps: number
-}
-
+// Business Insight
 export interface BusinessInsight {
   insight_type: 'efficiency' | 'compliance' | 'security' | 'inventory' | 'quality'
   title: string
   description: string
   impact_score: number
   recommendation: string
-  supporting_data: Record<string, any>
+  supporting_data: Record<string, unknown> // ✅ Fixed: Was 'supporting_ Record<string, unknown>'
 }
 
-// Mobile and Handheld Device Integration
+// Handheld Reader Config
 export interface HandheldReaderConfig {
   device_id: string
   user_id: string
@@ -394,27 +380,29 @@ export interface HandheldReaderConfig {
   location_tracking_enabled: boolean
 }
 
+// Offline Operation
 export interface OfflineOperation {
   operation_id: string
   device_id: string
   operation_type: 'scan' | 'update' | 'create' | 'delete'
   timestamp: string
-  data: Record<string, any>
+  data: Record<string, unknown> // ✅ Fixed: Was invalid syntax
   synced: boolean
   sync_timestamp?: string
   conflicts?: SyncConflict[]
 }
 
+// Sync Conflict
 export interface SyncConflict {
   field: string
-  local_value: any
-  server_value: any
+  local_value: Record<string, unknown>
+  server_value: Record<string, unknown>
   resolution: 'use_local' | 'use_server' | 'manual_merge'
   resolved_by?: string
   resolved_at?: string
 }
 
-// Security and Compliance
+// RFID Security Log
 export interface RFIDSecurityLog extends BaseEntity {
   event_type: 'unauthorized_access' | 'data_breach' | 'tampering_detected' | 'encryption_failure' | 'audit_log_access'
   severity: 'low' | 'medium' | 'high' | 'critical'
@@ -430,6 +418,7 @@ export interface RFIDSecurityLog extends BaseEntity {
   resolution_summary?: string
 }
 
+// Compliance Audit
 export interface ComplianceAudit {
   audit_id: string
   audit_type: 'internal' | 'external' | 'regulatory'
@@ -445,6 +434,7 @@ export interface ComplianceAudit {
   certificate_expiry?: string
 }
 
+// Audit Finding
 export interface AuditFinding {
   finding_id: string
   category: 'data_integrity' | 'security' | 'process' | 'documentation' | 'technology'
@@ -458,24 +448,17 @@ export interface AuditFinding {
   status: 'open' | 'in_progress' | 'closed' | 'deferred'
 }
 
-// ========================================
-// ADDITIONAL RFID TYPES
-// ========================================
-
-// Reader Status Type
-export type ReaderStatus = 'online' | 'offline' | 'error' | 'maintenance'
-
-// RFID Scan Result Interface
+// RFID Scan Result
 export interface RFIDScanResult {
   tagId: string
   readerId: string
   timestamp: string
   rssi: number
   location: string
-  data?: Record<string, any>
+  data?: Record<string, unknown>
 }
 
-// Batch Scan Operation Interface
+// Batch Scan Operation
 export interface BatchScanOperation {
   readerIds: string[]
   duration: number

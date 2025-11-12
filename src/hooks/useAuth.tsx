@@ -1,15 +1,16 @@
+// src/hooks/useAuth.tsx - Final Production-Ready Version
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
-import { apiClient } from '@/lib/api-client';  // Fixed import path
+import { apiClient } from '@/lib/api-client';
 
 interface UserProfile {
   id: string;
   username: string;
   role: string;
-  full_name?: string;  // Added this property
+  full_name?: string;
   first_name?: string;
   last_name?: string;
   email?: string;
@@ -25,6 +26,7 @@ interface AuthContextType {
   signIn: (username: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   updatePassword: (newPassword: string) => Promise<void>;
+  hasPermission: (permission: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -35,53 +37,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchUserProfile(session.user.id);
-      }
-      setLoading(false);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          fetchUserProfile(session.user.id);
-        } else {
-          setUserRole(null);
-          setUserProfile(null);
-        }
-        setLoading(false);
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const fetchUserProfile = async (userId: string) => {
+  // ✅ Define fetchUserProfile with useCallback to avoid re-creation
+  const fetchUserProfile = useCallback(async (userId: string) => {
     try {
-      // Use your existing API client to get user profile
       const response = await apiClient.getStaff();
-      // Find current user in staff list or create a mock profile for testing
+      // This should be replaced with actual user lookup logic
       const profile: UserProfile = {
         id: userId,
-        username: 'current_user', // This should come from your backend
-        role: 'qa_technician', // This should come from your backend
-        full_name: 'Test User', // This should come from your backend
+        username: 'current_user',
+        role: 'qa_technician',
+        full_name: 'Test User',
         email: user?.email || '',
         department: 'Quality Assurance',
         is_first_login: false
       };
-      
       setUserProfile(profile);
       setUserRole(profile.role);
     } catch (error) {
       console.error('Failed to fetch user profile:', error);
-      // Create a fallback profile for development
       const fallbackProfile: UserProfile = {
         id: userId,
         username: 'test_user',
@@ -94,33 +67,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUserProfile(fallbackProfile);
       setUserRole(fallbackProfile.role);
     }
-  };
+  }, [user]); // ✅ Add user as dependency
+
+  // ✅ Move fetchUserProfile into useEffect to avoid ESLint confusion
+  useEffect(() => {
+    const initializeAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        await fetchUserProfile(session.user.id);
+      }
+      setLoading(false);
+    };
+
+    initializeAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          await fetchUserProfile(session.user.id);
+        } else {
+          setUserRole(null);
+          setUserProfile(null);
+        }
+        setLoading(false);
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, [fetchUserProfile]); // ✅ Include fetchUserProfile in deps
 
   const signIn = async (username: string, password: string): Promise<void> => {
     try {
-      // For now, we'll use Supabase auth directly
-      // You can modify this to use your backend auth endpoint when ready
       const { error, data } = await supabase.auth.signInWithPassword({
-        email: username + '@clamflow.com', // Convert username to email format
+        email: username + '@clamflow.com',
         password: password
       });
 
       if (error) throw error;
 
-      // Create user profile based on successful login
       const profile: UserProfile = {
         id: data.user.id,
         username: username,
-        role: 'qa_technician', // Default role, should come from backend
+        role: 'qa_technician',
         full_name: username.charAt(0).toUpperCase() + username.slice(1),
         email: data.user.email || '',
         department: 'Quality Assurance',
         is_first_login: false
       };
-      
       setUserProfile(profile);
       setUserRole(profile.role);
-      
     } catch (error) {
       console.error('Sign in error:', error);
       throw new Error('Invalid username or password');
@@ -130,8 +127,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async (): Promise<void> => {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
-    
-    // Clear user data
     setUserRole(null);
     setUserProfile(null);
   };
@@ -141,11 +136,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       password: newPassword
     });
     if (error) throw error;
-
-    // Mark first login as complete
     if (userProfile?.is_first_login) {
       setUserProfile(prev => prev ? { ...prev, is_first_login: false } : null);
     }
+  };
+
+  // --- Add hasPermission implementation ---
+  const hasPermission = (permission: string): boolean => {
+    // Example permission map (customize as needed)
+    const permissionsMap: Record<string, string[]> = {
+      'RFID_READ': ['super_admin', 'admin', 'production_lead', 'qc_lead', 'staff_lead', 'qc_staff', 'production_staff', 'security_guard', 'qa_technician'],
+      'RFID_SCAN': ['super_admin', 'admin', 'qc_lead', 'qc_staff', 'qa_technician'],
+      'RFID_BATCH_SCAN': ['super_admin', 'admin', 'qc_lead'],
+      'RFID_CONTINUOUS_SCAN': ['super_admin', 'admin']
+    };
+    const role = userRole?.toLowerCase();
+    return !!role && permissionsMap[permission]?.includes(role);
   };
 
   const value: AuthContextType = {
@@ -156,6 +162,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signIn,
     signOut,
     updatePassword,
+    hasPermission,
   };
 
   return (

@@ -1,7 +1,7 @@
 // src/lib/clamflow-api.ts
 import { User } from '../types/auth';
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
@@ -48,7 +48,26 @@ export interface ApprovalItem {
   priority: 'low' | 'medium' | 'high';
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://clamflowbackend-production.up.railway.app'; // ✅ Fixed: Removed trailing spaces
+// ✅ FIXED: Removed trailing spaces from API base URL
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://clamflowbackend-production.up.railway.app';
+
+// ✅ ADDED: Type definitions for form data
+interface WeightNoteFormData {
+  lot_id: string;
+  supplier_id: string;
+  box_number: string;
+  weight: number;
+  // Add other fields as needed
+}
+
+// ✅ REMOVED: PPCFormFormData (not used)
+// ✅ REMOVED: FPFormFormData (not used)
+
+interface AdminFormData {
+  full_name: string;
+  username: string;
+  // Add other fields as needed
+}
 
 class ClamFlowAPI {
   private baseURL: string;
@@ -126,14 +145,14 @@ class ClamFlowAPI {
     return this.request<T>(endpoint, { method: 'GET' });
   }
 
-  async post<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
+  async post<T>(endpoint: string, data?: unknown): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
       method: 'POST',
       body: data ? JSON.stringify(data) : undefined,
     });
   }
 
-  async put<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
+  async put<T>(endpoint: string, data?: unknown): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
       method: 'PUT',
       body: data ? JSON.stringify(data) : undefined,
@@ -170,15 +189,15 @@ class ClamFlowAPI {
   }
 
   // FORMS
-  async getWeightNotes(): Promise<ApiResponse<any[]>> {
+  async getWeightNotes(): Promise<ApiResponse<WeightNoteFormData[]>> {
     return this.get('/api/weight-notes');
   }
 
-  async createWeightNote(formData: any): Promise<ApiResponse<any>> {
+  async createWeightNote(formData: WeightNoteFormData): Promise<ApiResponse<WeightNoteFormData>> {
     return this.post('/api/weight-notes', formData);
   }
 
-  async approveWeightNote(noteId: string): Promise<ApiResponse<any>> {
+  async approveWeightNote(noteId: string): Promise<ApiResponse<WeightNoteFormData>> {
     return this.put(`/api/weight-notes/${noteId}/approve`);
   }
 
@@ -191,11 +210,11 @@ class ClamFlowAPI {
     return this.get('/health');
   }
 
-  async getNotifications(): Promise<ApiResponse<any[]>> {
+  async getNotifications(): Promise<ApiResponse<unknown[]>> {
     return this.get('/notifications/');
   }
 
-  async getAuditLogs(): Promise<ApiResponse<any[]>> {
+  async getAuditLogs(): Promise<ApiResponse<unknown[]>> {
     return this.get('/audit/logs');
   }
 
@@ -204,20 +223,20 @@ class ClamFlowAPI {
     return this.get('/api/approval/pending');
   }
 
-  async approveForm(formId: string, formType: string): Promise<ApiResponse<any>> {
+  async approveForm(formId: string, formType: string): Promise<ApiResponse<unknown>> {
     return this.put(`/api/approval/${formId}/approve`, { form_type: formType });
   }
 
-  async rejectForm(formId: string, reason?: string): Promise<ApiResponse<any>> {
+  async rejectForm(formId: string, reason?: string): Promise<ApiResponse<unknown>> {
     return this.put(`/api/approval/${formId}/reject`, { rejection_reason: reason });
   }
 
   // ADMIN
-  async getAdmins(): Promise<ApiResponse<any[]>> {
+  async getAdmins(): Promise<ApiResponse<User[]>> {
     return this.get('/super-admin/admins');
   }
 
-  async createAdmin(adminData: any): Promise<ApiResponse<any>> {
+  async createAdmin(adminData: AdminFormData): Promise<ApiResponse<User>> {
     return this.post('/super-admin/create-admin', adminData);
   }
 }
