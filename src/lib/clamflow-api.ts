@@ -48,25 +48,44 @@ export interface ApprovalItem {
   priority: 'low' | 'medium' | 'high';
 }
 
-// ✅ FIXED: Removed trailing spaces from API base URL
+export interface Notification {
+  id: string;
+  type: 'info' | 'warning' | 'error' | 'approval_required';
+  title: string;
+  message: string;
+  priority: 'low' | 'medium' | 'high';
+  created_at: string;
+  read: boolean;
+}
+
+export interface AuditLog {
+  id: string;
+  action: string;
+  user_id: string;
+  username: string;
+  full_name: string;
+  role: string;
+  timestamp: string;
+  ip_address: string;
+  status: string;
+}
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://clamflowbackend-production.up.railway.app';
 
-// ✅ ADDED: Type definitions for form data
 interface WeightNoteFormData {
   lot_id: string;
   supplier_id: string;
   box_number: string;
   weight: number;
-  // Add other fields as needed
 }
 
-// ✅ REMOVED: PPCFormFormData (not used)
-// ✅ REMOVED: FPFormFormData (not used)
-
 interface AdminFormData {
-  full_name: string;
   username: string;
-  // Add other fields as needed
+  full_name: string;
+  email: string;
+  password: string;
+  role: string;
+  station: string;
 }
 
 class ClamFlowAPI {
@@ -201,7 +220,7 @@ class ClamFlowAPI {
     return this.put(`/api/weight-notes/${noteId}/approve`);
   }
 
-  // DASHBOARD
+  // DASHBOARD - Updated to match backend
   async getDashboardMetrics(): Promise<ApiResponse<DashboardMetrics>> {
     return this.get('/dashboard/metrics');
   }
@@ -210,11 +229,11 @@ class ClamFlowAPI {
     return this.get('/health');
   }
 
-  async getNotifications(): Promise<ApiResponse<unknown[]>> {
+  async getNotifications(): Promise<ApiResponse<Notification[]>> {
     return this.get('/notifications/');
   }
 
-  async getAuditLogs(): Promise<ApiResponse<unknown[]>> {
+  async getAuditLogs(): Promise<ApiResponse<AuditLog[]>> {
     return this.get('/audit/logs');
   }
 
@@ -231,13 +250,21 @@ class ClamFlowAPI {
     return this.put(`/api/approval/${formId}/reject`, { rejection_reason: reason });
   }
 
-  // ADMIN
+  // SUPER ADMIN
   async getAdmins(): Promise<ApiResponse<User[]>> {
     return this.get('/super-admin/admins');
   }
 
   async createAdmin(adminData: AdminFormData): Promise<ApiResponse<User>> {
     return this.post('/super-admin/create-admin', adminData);
+  }
+
+  async deleteAdmin(adminId: string): Promise<ApiResponse<void>> {
+    return this.delete(`/super-admin/admins/${adminId}`);
+  }
+
+  async getApiMonitoring(): Promise<ApiResponse<unknown>> {
+    return this.get('/super-admin/api-monitoring');
   }
 }
 
@@ -248,10 +275,10 @@ export function hasPermission(userRole: string, requiredRoles: string[]): boolea
 
 export function canAccessModule(userRole: string, module: string): boolean {
   const permissions: Record<string, string[]> = {
-    'production_forms': ["super_admin", "admin", "production_lead", "production_staff"],
-    'quality_control': ["super_admin", "admin", "production_lead", "qc_lead", "qc_staff"],
-    'hr_management': ["super_admin", "admin", "staff_lead"],
-    'gate_control': ["super_admin", "admin", "production_lead", "security_guard"]
+    'production_forms': ["Super Admin", "Admin", "Production Lead", "Production Staff"],
+    'quality_control': ["Super Admin", "Admin", "Production Lead", "QC Lead", "QC Staff"],
+    'hr_management': ["Super Admin", "Admin", "Staff Lead"],
+    'gate_control': ["Super Admin", "Admin", "Production Lead", "Security Guard"]
   };
   
   return hasPermission(userRole, permissions[module] || []);
@@ -259,11 +286,11 @@ export function canAccessModule(userRole: string, module: string): boolean {
 
 export function canApproveForm(userRole: string, formType: string): boolean {
   const approvalPermissions: { [key: string]: string[] } = {
-    'weight_note': ["super_admin", "admin", "production_lead"],
-    'ppc_form': ["super_admin", "admin", "production_lead"],
-    'fp_form': ["super_admin", "admin", "production_lead"],
-    'qc_form': ["super_admin", "admin", "qc_lead"],
-    'depuration_form': ["super_admin", "admin", "qc_lead"]
+    'weight_note': ["Super Admin", "Admin", "Production Lead"],
+    'ppc_form': ["Super Admin", "Admin", "Production Lead"],
+    'fp_form': ["Super Admin", "Admin", "Production Lead"],
+    'qc_form': ["Super Admin", "Admin", "QC Lead"],
+    'depuration_form': ["Super Admin", "Admin", "QC Lead"]
   };
   
   return hasPermission(userRole, approvalPermissions[formType] || []);
