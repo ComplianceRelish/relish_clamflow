@@ -1,7 +1,10 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css';
+import '../styles/brand-colors.css'; // ✅ ADD THIS LINE
 import { Inter } from 'next/font/google';
 import { AuthProvider } from '../context/AuthContext';
+
+// ... rest stays the same
 
 const inter = Inter({ subsets: ['latin'] });
 

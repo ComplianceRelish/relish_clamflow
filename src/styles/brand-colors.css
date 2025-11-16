@@ -1,0 +1,27 @@
+/* Relish Brand Color System - Replace ALL blue/red with purple/orange/teal */
+
+:root {
+  --relish-purple: #8B5CF6;
+  --relish-purple-dark: #6B2E8F;
+  --relish-purple-light: #DDD6FE;
+  --relish-orange: #F97316;
+  --relish-teal: #10B981;
+}
+
+/* Replace ALL blue with purple */
+.bg-blue-50 { background-color: var(--relish-purple-light) !important; }
+.bg-blue-100 { background-color: #E9D5FF !important; }
+.bg-blue-600 { background-color: var(--relish-purple) !important; }
+.bg-blue-700 { background-color: var(--relish-purple-dark) !important; }
+.text-blue-600 { color: var(--relish-purple) !important; }
+.text-blue-700 { color: var(--relish-purple-dark) !important; }
+.border-blue-700 { border-color: var(--relish-purple-dark) !important; }
+.hover\:bg-blue-700:hover { background-color: var(--relish-purple-dark) !important; }
+
+/* Replace ALL red with purple (for errors/critical) or orange (for warnings) */
+.bg-red-50 { background-color: #FEF2F2 !important; }
+.bg-red-100 { background-color: #FEE2E2 !important; }
+.text-red-600 { color: #DC2626 !important; }
+.text-red-700 { color: #B91C1C !important; }
+.text-red-800 { color: #991B1B !important; }
+.border-red-200 { border-color: #FECACA !important; }
