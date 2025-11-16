@@ -26,8 +26,8 @@ const DashboardPage: React.FC = () => {
         if (storedUser) {
           const userData = JSON.parse(storedUser);
 
-          // ✅ FIXED: Check using snake_case roles
-          if (!['super_admin', 'admin'].includes(userData.role)) {
+          // ✅ FIXED: Check using Title Case with spaces (matching AuthContext)
+          if (!['Super Admin', 'Admin'].includes(userData.role)) {
             setError(`Access denied. Role "${userData.role}" does not have dashboard access privileges.`);
             return;
           }
@@ -97,15 +97,15 @@ const DashboardPage: React.FC = () => {
     );
   }
 
-  // ✅ FIXED: Role-based routing using snake_case values
+  // ✅ FIXED: Role-based routing using Title Case with spaces (matching AuthContext)
   switch (user.role) {
-    case 'super_admin':
+    case 'Super Admin':
       return <SuperAdminDashboard currentUser={user} />;
     
-    case 'admin':
+    case 'Admin':
       return <AdminDashboard currentUser={user} />;
     
-    case 'production_lead':
+    case 'Production Lead':
       return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="text-center max-w-md">
@@ -116,7 +116,7 @@ const DashboardPage: React.FC = () => {
               </p>
               <button
                 onClick={() => {
-                  const tempUser: User = { ...user, role: 'admin' };
+                  const tempUser: User = { ...user, role: 'Admin' };
                   setUser(tempUser);
                 }}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
