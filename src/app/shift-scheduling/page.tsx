@@ -1,6 +1,6 @@
-export const dynamic = 'force-dynamic';
-
 'use client'
+
+export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -12,7 +12,6 @@ export default function ShiftSchedulingPage() {
   const router = useRouter()
   const [isAuthorized, setIsAuthorized] = useState(false)
 
-  // Helper function to determine department from role
   const getDepartmentFromRole = (role: string): string => {
     switch (role) {
       case 'Production Lead':
@@ -39,7 +38,6 @@ export default function ShiftSchedulingPage() {
         return
       }
 
-      // Check if user has permission for shift scheduling
       const authorizedRoles = ['Production Lead', 'QC Lead', 'Admin', 'Super Admin']
       const hasPermission = authorizedRoles.includes(user.role)
       
@@ -54,7 +52,6 @@ export default function ShiftSchedulingPage() {
 
   const handleShiftUpdate = async (shift: any) => {
     try {
-      // Send shift update to Railway backend
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/scheduling/shifts`, {
         method: 'POST',
         headers: {
@@ -70,19 +67,13 @@ export default function ShiftSchedulingPage() {
 
       const result = await response.json()
       console.log('Shift updated successfully:', result)
-      
-      // TODO: Show success notification
-      
     } catch (error) {
       console.error('Error updating shift:', error)
-      // TODO: Show error notification
     }
   }
 
   const handleConflictDetected = (conflicts: any[]) => {
     console.warn('Shift conflicts detected:', conflicts)
-    
-    // TODO: Show conflict resolution modal
     alert(`Shift conflict detected! ${conflicts.length} conflicting shifts found. Please resolve before saving.`)
   }
 
@@ -108,7 +99,6 @@ export default function ShiftSchedulingPage() {
     )
   }
 
-  // Map user to the expected format for InteractiveShiftCalendar
   const currentUser = user ? {
     role: user.role,
     department: getDepartmentFromRole(user.role)

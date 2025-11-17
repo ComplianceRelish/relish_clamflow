@@ -1,6 +1,6 @@
-export const dynamic = 'force-dynamic';
-
 'use client';
+
+export const dynamic = 'force-dynamic';
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -29,7 +29,6 @@ const LoginPage: React.FC = () => {
     error: null,
   });
 
-  // ✅ FIXED: All hooks called unconditionally at the top
   useEffect(() => {
     if (isAuthenticated && !isLoading && !requiresPasswordChange) {
       router.push('/dashboard');
@@ -76,12 +75,10 @@ const LoginPage: React.FC = () => {
     }));
   };
 
-  // Show password change form if needed
   if (user && requiresPasswordChange) {
     return <PasswordChangeForm />;
   }
 
-  // Show loading spinner while checking authentication
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -90,7 +87,6 @@ const LoginPage: React.FC = () => {
     );
   }
 
-  // Don't render login form if already authenticated
   if (isAuthenticated && !requiresPasswordChange) {
     return null;
   }

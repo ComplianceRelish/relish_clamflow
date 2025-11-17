@@ -1,6 +1,6 @@
-export const dynamic = 'force-dynamic';
-
 'use client'
+
+export const dynamic = 'force-dynamic';
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
@@ -35,7 +35,6 @@ export default function WeightNotesPage() {
   const [weightNotes, setWeightNotes] = useState<WeightNote[]>([])
   const [loading, setLoading] = useState(true)
 
-  // ✅ FIXED: Use useCallback to memoize loadWeightNotes
   const loadWeightNotes = useCallback(async () => {
     const { data } = await supabase
       .from('weight_notes')
@@ -46,7 +45,6 @@ export default function WeightNotesPage() {
     setWeightNotes(data || [])
   }, [supabase])
 
-  // ✅ FIXED: Include all dependencies
   useEffect(() => {
     const getCurrentUser = async () => {
       const { data: { user } } = await supabase.auth.getUser()
