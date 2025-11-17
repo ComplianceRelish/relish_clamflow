@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -27,12 +29,7 @@ const LoginPage: React.FC = () => {
     error: null,
   });
 
-  // Show password change form if user is logged in but needs to change password
-  if (user && requiresPasswordChange) {
-    return <PasswordChangeForm />;
-  }
-
-  // Redirect if already authenticated and doesn't need password change
+  // ✅ FIXED: All hooks called unconditionally at the top
   useEffect(() => {
     if (isAuthenticated && !isLoading && !requiresPasswordChange) {
       router.push('/dashboard');
@@ -59,10 +56,8 @@ const LoginPage: React.FC = () => {
           error: result.error || 'Invalid username or password',
         }));
       } else if (result.requiresPasswordChange) {
-        // Password change form will be shown automatically by the conditional render above
         setState(prev => ({ ...prev, loading: false }));
       }
-      // If successful and no password change needed, AuthContext handles redirect
     } catch (error) {
       console.error('Login error:', error);
       setState(prev => ({
@@ -77,9 +72,14 @@ const LoginPage: React.FC = () => {
     setState(prev => ({
       ...prev,
       [field]: value,
-      error: null, // Clear error when user starts typing
+      error: null,
     }));
   };
+
+  // Show password change form if needed
+  if (user && requiresPasswordChange) {
+    return <PasswordChangeForm />;
+  }
 
   // Show loading spinner while checking authentication
   if (isLoading) {
@@ -98,7 +98,6 @@ const LoginPage: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
-        {/* Header */}
         <div className="text-center">
           <div className="flex justify-center mb-4">
             <img 
@@ -111,7 +110,6 @@ const LoginPage: React.FC = () => {
           <p className="mt-2 text-sm text-gray-600">Quality • Productivity • Assured</p>
         </div>
 
-        {/* Login Form */}
         <Card className="p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
@@ -140,14 +138,12 @@ const LoginPage: React.FC = () => {
               />
             </div>
 
-            {/* Error Message */}
             {state.error && (
               <div className="bg-red-50 border border-red-200 rounded-md p-3">
                 <p className="text-sm text-red-600">{state.error}</p>
               </div>
             )}
 
-            {/* Submit Button */}
             <div>
               <Button
                 type="submit"
@@ -165,23 +161,20 @@ const LoginPage: React.FC = () => {
               </Button>
             </div>
 
-            {/* Face Recognition Option */}
             <div className="text-center">
               <button
                 type="button"
                 className="text-sm text-blue-600 hover:text-blue-500 disabled:opacity-50"
                 disabled={state.loading}
                 onClick={() => {
-                  // Future: Implement face recognition
                   alert('Face Recognition will be available soon!');
                 }}
               >
-                🔍 Use Face Recognition Instead
+                🔐 Use Face Recognition Instead
               </button>
             </div>
           </form>
 
-          {/* Enterprise Credentials Helper */}
           <div className="mt-6 p-4 bg-blue-50 rounded-lg">
             <h4 className="font-medium text-blue-900 mb-2">Enterprise Login</h4>
             <div className="text-xs text-blue-700 space-y-1">
@@ -195,7 +188,6 @@ const LoginPage: React.FC = () => {
           </div>
         </Card>
 
-        {/* Footer */}
         <div className="text-center">
           <p className="text-xs text-gray-500">
             Powered by ClamFlow Enterprise Platform

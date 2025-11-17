@@ -1,8 +1,10 @@
+export const dynamic = 'force-dynamic';
+
 'use client';
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Header from '@/components/layout/Header'; // ✅ USE EXISTING HEADER
+import Header from '@/components/layout/Header';
 import SuperAdminDashboard from '@/components/dashboards/SuperAdminDashboard';
 import AdminDashboard from '@/components/dashboards/AdminDashboard';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -75,13 +77,11 @@ const DashboardPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* ✅ USE EXISTING HEADER */}
       <Header 
         pageTitle={user.role === 'Super Admin' ? 'Super Admin Dashboard' : 'Admin Dashboard'}
         pageSubtitle={`Welcome back, ${user.full_name}`}
       />
       
-      {/* ✅ RENDER DASHBOARD WITHOUT DUPLICATE HEADER */}
       {user.role === 'Super Admin' ? (
         <SuperAdminDashboard currentUser={user} />
       ) : (

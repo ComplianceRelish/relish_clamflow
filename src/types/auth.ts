@@ -174,3 +174,9 @@ export function hasPermission(userRole: UserRole, permission: Permission): boole
   const rolePermissions = ROLE_PERMISSIONS[userRole] || [];
   return rolePermissions.includes(permission);
 }
+
+// ✅ ADD THIS - Convert role format (not needed since already in correct format)
+export function toApiRole(role: UserRole): UserRole {
+  // Role is already in correct Title Case format
+  return role;
+}

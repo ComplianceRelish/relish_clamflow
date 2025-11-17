@@ -1,13 +1,15 @@
+export const dynamic = 'force-dynamic';
+
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import WeightNoteForm from '@/components/forms/WeightNoteForm'
 import WeightNotesList from '@/components/forms/WeightNotesList'
 import WeightNotePrintable from '@/components/weightnote/WeightNotePrintable'
 import AuthenticationWorkflow from '@/components/weightnote/AuthenticationWorkflow'
-import { User, UserRole, toApiRole } from '@/types/auth'
+import { User } from '@/types/auth'
 
 type WeightNote = {
   id: string;
@@ -33,6 +35,18 @@ export default function WeightNotesPage() {
   const [weightNotes, setWeightNotes] = useState<WeightNote[]>([])
   const [loading, setLoading] = useState(true)
 
+  // ✅ FIXED: Use useCallback to memoize loadWeightNotes
+  const loadWeightNotes = useCallback(async () => {
+    const { data } = await supabase
+      .from('weight_notes')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(20)
+
+    setWeightNotes(data || [])
+  }, [supabase])
+
+  // ✅ FIXED: Include all dependencies
   useEffect(() => {
     const getCurrentUser = async () => {
       const { data: { user } } = await supabase.auth.getUser()
@@ -48,18 +62,15 @@ export default function WeightNotesPage() {
         .single()
 
       if (profile) {
-        // ✅ Create full User object with all required fields
         const fullUser: User = {
           id: profile.id,
           full_name: profile.full_name,
           username: profile.username || profile.id,
-          role: toApiRole(profile.role), // Convert display name → snake_case
+          role: profile.role,
           station: profile.station || undefined,
           is_active: profile.is_active ?? true,
           created_at: profile.created_at || new Date().toISOString(),
-          last_login: undefined,
-          password_reset_required: undefined,
-          login_attempts: undefined
+          last_login: undefined
         };
         setCurrentUser(fullUser);
       }
@@ -69,17 +80,7 @@ export default function WeightNotesPage() {
     }
 
     getCurrentUser()
-  }, [])
-
-  const loadWeightNotes = async () => {
-    const { data } = await supabase
-      .from('weight_notes')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(20)
-
-    setWeightNotes(data || [])
-  }
+  }, [router, supabase, loadWeightNotes])
 
   const handleFormSubmit = async (weightNoteId: string) => {
     const { data } = await supabase
