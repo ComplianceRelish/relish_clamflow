@@ -23,7 +23,6 @@ interface AdminManagementState {
   showEditModal: boolean;
 }
 
-// FormSelect component definition (since it's not exported from the module)
 interface FormSelectProps {
   label: string;
   value: string;
@@ -63,12 +62,11 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ currentUser }) => {
   const [newUser, setNewUser] = useState({
     username: '',
     full_name: '',
-    role: 'production_staff' as UserRole, // Fixed: use snake_case
+    role: 'Production Staff' as UserRole, // ✅ FIXED: Use Title Case
     station: '',
     password: '',
   });
 
-  // Fetch users
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -112,7 +110,7 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ currentUser }) => {
         setNewUser({
           username: '',
           full_name: '',
-          role: 'production_staff', // Fixed: use snake_case
+          role: 'Production Staff' as UserRole, // ✅ FIXED: Use Title Case
           station: '',
           password: '',
         });
@@ -152,15 +150,16 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ currentUser }) => {
   };
 
   const getRoleBadgeColor = (role: UserRole) => {
+    // ✅ FIXED: Use Title Case role names
     const colors: Record<UserRole, string> = {
-      'super_admin': 'bg-purple-100 text-purple-800',
-      'admin': 'bg-blue-100 text-blue-800',
-      'production_lead': 'bg-green-100 text-green-800',
-      'qc_lead': 'bg-orange-100 text-orange-800',
-      'staff_lead': 'bg-indigo-100 text-indigo-800',
-      'qc_staff': 'bg-yellow-100 text-yellow-800',
-      'production_staff': 'bg-gray-100 text-gray-800',
-      'security_guard': 'bg-red-100 text-red-800',
+      'Super Admin': 'bg-purple-100 text-purple-800',
+      'Admin': 'bg-blue-100 text-blue-800',
+      'Production Lead': 'bg-green-100 text-green-800',
+      'QC Lead': 'bg-orange-100 text-orange-800',
+      'Staff Lead': 'bg-indigo-100 text-indigo-800',
+      'QC Staff': 'bg-yellow-100 text-yellow-800',
+      'Production Staff': 'bg-gray-100 text-gray-800',
+      'Security Guard': 'bg-red-100 text-red-800',
     };
     return colors[role] || 'bg-gray-100 text-gray-800';
   };
