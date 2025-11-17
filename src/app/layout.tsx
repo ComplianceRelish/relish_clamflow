@@ -17,6 +17,21 @@ export const metadata: Metadata = {
   formatDetection: {
     telephone: false,
   },
+  metadataBase: new URL('https://clamflowcloud.vercel.app'),
+  openGraph: {
+    type: 'website',
+    url: 'https://clamflowcloud.vercel.app',
+    title: 'ClamFlow - Seafood Processing System',
+    description: 'Complete seafood processing management system',
+    siteName: 'ClamFlow',
+    images: [
+      {
+        url: '/icons/icon-512x512.png',
+        width: 512,
+        height: 512,
+      },
+    ],
+  },
 }
 
 export const viewport: Viewport = {
@@ -37,9 +52,11 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        <link rel="manifest" href="/manifest.json" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="ClamFlow" />
       </head>
       <body className={inter.className}>
         <AuthProvider>
