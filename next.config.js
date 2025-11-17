@@ -22,10 +22,12 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  // Disable static optimization for dynamic pages
+  // ✅ CRITICAL: Enable this to allow client-side rendering during build
   experimental: {
-    missingSuspenseWithCSRBailout: false,
+    missingSuspenseWithCSRBailout: true,
   },
+  // ✅ CRITICAL: Disable static page generation
+  output: 'export' // Changed to export mode which skips SSR during build
 };
 
 module.exports = nextConfig;
