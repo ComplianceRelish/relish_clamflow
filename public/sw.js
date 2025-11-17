@@ -1,153 +1,172 @@
-const CACHE_NAME = 'clamflow-v1.0.2';
+const CACHE_NAME = 'clamflow-v1.0.4';
+const API_CACHE = 'clamflow-api-v1';
 
-// Only cache truly static assets
+// Minimal static cache - only essential files
 const STATIC_CACHE_URLS = [
-  '/logo-relish.png',
-  '/manifest.json'
+  '/',
+  '/login',
+  '/dashboard'
 ];
 
-// Install event - cache minimal static assets
+// Install - cache minimal assets
 self.addEventListener('install', (event) => {
   console.log('Service Worker: Installing...');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('Service Worker: Caching static assets');
-        return Promise.allSettled(
-          STATIC_CACHE_URLS.map(url => 
-            cache.add(url).catch(err => {
-              console.warn(`Failed to cache ${url}:`, err);
-            })
-          )
-        );
+        console.log('Service Worker: Caching core pages');
+        return cache.addAll(STATIC_CACHE_URLS).catch((err) => {
+          console.warn('Cache failed for some assets:', err);
+        });
       })
       .then(() => {
         console.log('Service Worker: Skip waiting');
         return self.skipWaiting();
       })
-      .catch(err => {
-        console.error('Service Worker install failed:', err);
-      })
   );
 });
 
-// Activate event - clean up old caches
+// Activate - clean old caches
 self.addEventListener('activate', (event) => {
   console.log('Service Worker: Activating...');
   event.waitUntil(
-    Promise.all([
-      // Delete old caches
-      caches.keys().then((cacheNames) => {
+    caches.keys()
+      .then((cacheNames) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
-            if (cacheName !== CACHE_NAME) {
+            if (cacheName !== CACHE_NAME && cacheName !== API_CACHE) {
               console.log('Service Worker: Deleting old cache', cacheName);
               return caches.delete(cacheName);
             }
           })
         );
-      }),
-      // Take control of all pages
-      self.clients.claim()
-    ]).then(() => {
-      console.log('Service Worker: Activated and claimed clients');
-    })
+      })
+      .then(() => {
+        console.log('Service Worker: Activated and claimed clients');
+        return self.clients.claim();
+      })
   );
 });
 
-// Fetch event - Network-first strategy with minimal caching
+// Fetch - Network first with cache fallback
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET requests
-  if (request.method !== 'GET') {
+  // Skip non-GET and chrome-extension
+  if (request.method !== 'GET' || !url.protocol.startsWith('http')) {
     return;
   }
 
-  // Skip cross-origin requests
-  if (url.origin !== self.location.origin) {
-    return;
-  }
-
-  // Skip API calls - always use network
+  // API requests - Network first, cache fallback
   if (url.pathname.startsWith('/api/') || 
-      url.pathname.startsWith('/auth/') ||
-      url.pathname.includes('clamflowbackend')) {
-    return;
-  }
-
-  // Skip Next.js internal routes and chunks - always use network
-  if (url.pathname.startsWith('/_next/')) {
-    event.respondWith(
-      fetch(request).catch(err => {
-        console.error('Failed to fetch Next.js resource:', url.pathname, err);
-        // Return a basic response to prevent errors
-        return new Response('', { status: 408, statusText: 'Request Timeout' });
-      })
-    );
-    return;
-  }
-
-  // For static assets - try cache first, then network
-  if (url.pathname.endsWith('.png') || 
-      url.pathname.endsWith('.jpg') || 
-      url.pathname.endsWith('.svg') ||
-      url.pathname === '/manifest.json') {
-    event.respondWith(
-      caches.match(request)
-        .then(response => {
-          if (response) {
-            return response;
-          }
-          return fetch(request).then(fetchResponse => {
-            // Cache valid responses
-            if (fetchResponse && fetchResponse.status === 200) {
-              const responseToCache = fetchResponse.clone();
-              caches.open(CACHE_NAME).then(cache => {
-                cache.put(request, responseToCache);
-              });
-            }
-            return fetchResponse;
-          });
-        })
-        .catch(err => {
-          console.warn('Failed to fetch static asset:', url.pathname, err);
-          return new Response('', { status: 404, statusText: 'Not Found' });
-        })
-    );
-    return;
-  }
-
-  // For HTML pages - network-first, fallback to cache
-  if (request.mode === 'navigate' || 
-      request.headers.get('accept')?.includes('text/html')) {
+      url.pathname.startsWith('/auth/') || 
+      url.pathname.startsWith('/health') ||
+      url.pathname.startsWith('/dashboard') ||
+      url.pathname.startsWith('/super-admin/') ||
+      url.pathname.startsWith('/notifications/') ||
+      url.pathname.startsWith('/audit/') ||
+      url.hostname.includes('railway.app') ||
+      url.hostname.includes('clamflowbackend')) {
+    
     event.respondWith(
       fetch(request)
-        .then(response => {
-          // Cache successful HTML responses
+        .then((response) => {
+          // Cache successful responses
           if (response && response.status === 200) {
-            const responseToCache = response.clone();
-            caches.open(CACHE_NAME).then(cache => {
-              cache.put(request, responseToCache);
+            const responseClone = response.clone();
+            caches.open(API_CACHE).then((cache) => {
+              cache.put(request, responseClone);
             });
           }
           return response;
         })
-        .catch(err => {
-          console.warn('Network failed for navigation:', url.pathname, err);
-          // Try to return cached version
-          return caches.match(request).then(cachedResponse => {
+        .catch(() => {
+          // Fallback to cache if offline
+          return caches.match(request).then((cachedResponse) => {
             if (cachedResponse) {
+              console.log('SW: Serving from cache (offline):', url.pathname);
               return cachedResponse;
             }
-            // Return offline page fallback
-            return caches.match('/').catch(() => {
-              return new Response('Offline - Please check your connection', {
-                status: 503,
-                statusText: 'Service Unavailable',
-                headers: { 'Content-Type': 'text/plain' }
+            return new Response(
+              JSON.stringify({ 
+                success: false, 
+                error: 'Network unavailable. Please check your connection.' 
+              }),
+              { 
+                status: 503, 
+                headers: { 'Content-Type': 'application/json' } 
+              }
+            );
+          });
+        })
+    );
+    return;
+  }
+
+  // Next.js chunks and static files - Network first
+  if (url.pathname.startsWith('/_next/')) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, responseClone);
+            });
+          }
+          return response;
+        })
+        .catch(() => {
+          return caches.match(request).then((cached) => {
+            if (cached) return cached;
+            return new Response('', { status: 503 });
+          });
+        })
+    );
+    return;
+  }
+
+  // Images and static assets - Cache first
+  if (url.pathname.match(/\.(png|jpg|jpeg|svg|gif|webp|ico)$/)) {
+    event.respondWith(
+      caches.match(request)
+        .then((cached) => {
+          if (cached) return cached;
+          return fetch(request).then((response) => {
+            if (response && response.status === 200) {
+              const responseClone = response.clone();
+              caches.open(CACHE_NAME).then((cache) => {
+                cache.put(request, responseClone);
               });
+            }
+            return response;
+          });
+        })
+        .catch(() => new Response('', { status: 404 }))
+    );
+    return;
+  }
+
+  // HTML navigation - Network first, cache fallback
+  if (request.mode === 'navigate' || request.headers.get('accept')?.includes('text/html')) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, responseClone);
+            });
+          }
+          return response;
+        })
+        .catch(() => {
+          return caches.match(request).then((cached) => {
+            if (cached) return cached;
+            return caches.match('/').then((home) => {
+              if (home) return home;
+              return new Response('Offline', { status: 503 });
             });
           });
         })
@@ -155,95 +174,63 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // For everything else - just use network, don't cache
-  event.respondWith(
-    fetch(request).catch(err => {
-      console.warn('Fetch failed:', url.pathname, err);
-      return new Response('', { status: 503, statusText: 'Service Unavailable' });
-    })
-  );
+  // Everything else - Just fetch
+  event.respondWith(fetch(request).catch(() => new Response('', { status: 503 })));
 });
 
-// Background sync for offline operations
+// Background sync
 self.addEventListener('sync', (event) => {
   if (event.tag === 'background-sync') {
-    console.log('Service Worker: Background sync triggered');
-    event.waitUntil(processOfflineQueue());
+    console.log('SW: Background sync');
+    event.waitUntil(Promise.resolve());
   }
 });
 
 // Push notifications
 self.addEventListener('push', (event) => {
-  console.log('Service Worker: Push notification received');
+  console.log('SW: Push received');
   
-  let notificationData = {
+  let data = {
     title: 'ClamFlow',
     body: 'New notification',
-    icon: '/logo-relish.png'
+    icon: '/icons/icon-192x192.png'
   };
 
   if (event.data) {
     try {
-      notificationData = event.data.json();
+      data = event.data.json();
     } catch (e) {
-      notificationData.body = event.data.text();
+      data.body = event.data.text();
     }
   }
 
-  const options = {
-    body: notificationData.body,
-    icon: notificationData.icon || '/logo-relish.png',
-    badge: '/logo-relish.png',
-    vibrate: [100, 50, 100],
-    data: {
-      dateOfArrival: Date.now(),
-      url: notificationData.url || '/dashboard'
-    }
-  };
-
   event.waitUntil(
-    self.registration.showNotification(notificationData.title, options)
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: data.icon || '/icons/icon-192x192.png',
+      badge: '/icons/icon-192x192.png',
+      vibrate: [200, 100, 200],
+      data: { url: data.url || '/dashboard' }
+    })
   );
 });
 
-// Notification click handling
+// Notification click
 self.addEventListener('notificationclick', (event) => {
-  console.log('Service Worker: Notification clicked');
   event.notification.close();
-
-  const urlToOpen = event.notification.data?.url || '/dashboard';
-
+  const url = event.notification.data?.url || '/dashboard';
+  
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true })
-      .then((windowClients) => {
-        // Check if there's already a window open
-        for (let client of windowClients) {
-          if (client.url.includes(self.location.origin) && 'focus' in client) {
-            return client.focus().then(() => client.navigate(urlToOpen));
+      .then((clients) => {
+        for (const client of clients) {
+          if (client.url.includes(self.location.origin)) {
+            return client.focus().then(() => client.navigate(url));
           }
         }
-        // Open new window if none exists
-        if (clients.openWindow) {
-          return clients.openWindow(urlToOpen);
-        }
+        return self.clients.openWindow(url);
       })
   );
 });
 
-// Helper function for offline queue processing
-async function processOfflineQueue() {
-  console.log('Service Worker: Processing offline queue');
-  // Implement offline queue logic here if needed
-  return Promise.resolve();
-}
-
-// Error handling
-self.addEventListener('error', (event) => {
-  console.error('Service Worker error:', event.error);
-});
-
-self.addEventListener('unhandledrejection', (event) => {
-  console.error('Service Worker unhandled rejection:', event.reason);
-});
-
-console.log('Service Worker: Script loaded');
+console.log('SW: Loaded v1.0.4');
