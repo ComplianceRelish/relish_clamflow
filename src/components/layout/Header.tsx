@@ -79,7 +79,7 @@ export default function Header({ pageTitle, pageSubtitle }: HeaderProps) {
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold text-gray-900">ClamFlow</h1>
-                  <p className="text-xs text-gray-600">Quality • Productivity</p>
+                  <p className="text-xs text-gray-600">Quality • Productivity • Assured</p>
                 </div>
               </Link>
             </div>
