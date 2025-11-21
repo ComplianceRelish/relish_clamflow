@@ -1,8 +1,7 @@
 'use client';
-
-export const dynamic = 'force-dynamic'
-export const fetchCache = 'force-no-store'
-
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;  // ✅ ADDED: disables static/prerender
+export const fetchCache = 'force-no-store';
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
