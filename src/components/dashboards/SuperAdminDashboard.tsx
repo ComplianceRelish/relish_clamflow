@@ -26,13 +26,30 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ currentUser }
 
   const loadDashboardData = async () => {
     try {
+      const token = localStorage.getItem('clamflow_token');
+      const user = localStorage.getItem('clamflow_user');
+      
+      console.log('🔄 Loading dashboard data from:', process.env.NEXT_PUBLIC_API_BASE_URL)
+      console.log('🔑 Auth Token exists?', !!token)
+      console.log('👤 Current User:', user ? JSON.parse(user) : 'No user')
+      
+      if (!token) {
+        console.error('❌ No authentication token found!')
+        setLoading(false);
+        return;
+      }
+      
       const results = await Promise.allSettled([
         clamflowAPI.getDashboardMetrics(),
         clamflowAPI.getSystemHealth(),
       ])
 
+      console.log('📊 Dashboard Metrics Result:', results[0])
+      console.log('🏥 System Health Result:', results[1])
+
       if (results[0].status === 'fulfilled' && results[0].value.success && results[0].value.data) {
         const backendData = results[0].value.data as any;
+        console.log('✅ Dashboard data received:', backendData)
         setDashboardData({
           totalUsers: backendData.totalUsers || backendData.total_users || 0,
           activeUsers: backendData.activeUsers || backendData.active_users || 0,
@@ -41,13 +58,22 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ currentUser }
           systemHealth: backendData.systemHealth || 'healthy',
           lastUpdated: backendData.lastUpdated || backendData.last_updated || new Date().toISOString()
         })
+      } else if (results[0].status === 'rejected') {
+        console.error('❌ Dashboard metrics failed:', results[0].reason)
+      } else {
+        console.warn('⚠️ Dashboard metrics returned unsuccessfully:', results[0].value)
       }
 
       if (results[1].status === 'fulfilled' && results[1].value.success && results[1].value.data) {
+        console.log('✅ System health received:', results[1].value.data)
         setSystemHealth(results[1].value.data)
+      } else if (results[1].status === 'rejected') {
+        console.error('❌ System health failed:', results[1].reason)
+      } else {
+        console.warn('⚠️ System health returned unsuccessfully:', results[1].value)
       }
     } catch (err) {
-      console.error('Failed to load dashboard:', err)
+      console.error('❌ Critical error loading dashboard:', err)
     } finally {
       setLoading(false)
     }
