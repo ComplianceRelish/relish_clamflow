@@ -10,18 +10,23 @@ const STATIC_CACHE_URLS = [
 
 // Install - cache minimal assets
 self.addEventListener('install', (event) => {
-  console.log('Service Worker: Installing...');
+  console.log('Service Worker: Installing... v1.0.4');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('Service Worker: Caching core pages');
         return cache.addAll(STATIC_CACHE_URLS).catch((err) => {
-          console.warn('Cache failed for some assets:', err);
+          console.warn('⚠️ Cache failed for some assets (this is OK on first load):', err.message);
+          // Don't fail installation if cache.addAll fails
+          return Promise.resolve();
         });
       })
       .then(() => {
-        console.log('Service Worker: Skip waiting');
+        console.log('✅ Service Worker: Skip waiting and take control');
         return self.skipWaiting();
+      })
+      .catch((error) => {
+        console.error('❌ Service Worker: Installation error:', error);
       })
   );
 });

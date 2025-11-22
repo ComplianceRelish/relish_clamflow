@@ -1,6 +1,6 @@
 // src/types/auth.ts - Fixed Type Definitions
 
-// ✅ FIXED: UserRole now matches AuthContext format (Title Case with spaces)
+// ✅ FIXED: UserRole now matches Supabase schema format (Title Case with spaces)
 export type UserRole = 
   | 'Super Admin'
   | 'Admin'
@@ -20,11 +20,8 @@ export interface User {
   is_active: boolean;
   last_login?: string;
   created_at?: string;
-  requires_password_change?: boolean;
-  first_login?: boolean;
-  plant_id?: string;
-  department?: string;
-  permissions?: string[];
+  // ✅ REMOVED: requires_password_change, first_login, plant_id, department, permissions
+  // These are not in Supabase user_profiles schema
 }
 
 export interface AuthContextType {
@@ -56,7 +53,7 @@ export const ROLE_DISPLAY_NAMES: Record<UserRole, string> = {
   'Staff Lead': 'Staff Lead',
   'QC Staff': 'QC Staff',
   'Production Staff': 'Production Staff',
-  'Security Guard': 'Security Guard'
+  'Security Guard': 'Security Guard',
 };
 
 // Role Hierarchy (for permission checking)
@@ -68,7 +65,7 @@ export const ROLE_HIERARCHY: Record<UserRole, number> = {
   'Staff Lead': 5,
   'QC Staff': 4,
   'Production Staff': 3,
-  'Security Guard': 2
+  'Security Guard': 2,
 };
 
 // Helper function to check if user has required role level
@@ -122,7 +119,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'FORM_REJECT',
     'SYSTEM_SETTINGS',
     'VIEW_REPORTS',
-    'EXPORT_DATA'
+    'EXPORT_DATA',
   ],
   'Admin': [
     'RFID_READ',
@@ -134,13 +131,13 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'FORM_REJECT',
     'SYSTEM_SETTINGS',
     'VIEW_REPORTS',
-    'EXPORT_DATA'
+    'EXPORT_DATA',
   ],
   'Production Lead': [
     'RFID_READ',
     'RFID_SCAN',
     'VIEW_REPORTS',
-    'EXPORT_DATA'
+    'EXPORT_DATA',
   ],
   'QC Lead': [
     'RFID_READ',
@@ -149,24 +146,24 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'FORM_APPROVE',
     'FORM_REJECT',
     'VIEW_REPORTS',
-    'EXPORT_DATA'
+    'EXPORT_DATA',
   ],
   'Staff Lead': [
     'RFID_READ',
-    'VIEW_REPORTS'
+    'VIEW_REPORTS',
   ],
   'QC Staff': [
     'RFID_READ',
     'RFID_SCAN',
-    'VIEW_REPORTS'
+    'VIEW_REPORTS',
   ],
   'Production Staff': [
     'RFID_READ',
-    'VIEW_REPORTS'
+    'VIEW_REPORTS',
   ],
   'Security Guard': [
-    'RFID_READ'
-  ]
+    'RFID_READ',
+  ],
 };
 
 // Check if user has specific permission
@@ -175,8 +172,4 @@ export function hasPermission(userRole: UserRole, permission: Permission): boole
   return rolePermissions.includes(permission);
 }
 
-// ✅ ADD THIS - Convert role format (not needed since already in correct format)
-export function toApiRole(role: UserRole): UserRole {
-  // Role is already in correct Title Case format
-  return role;
-}
+// ✅ REMOVED: toApiRole function - not needed since role is already in correct format

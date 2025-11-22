@@ -9,10 +9,10 @@ export * from './rfid';
 export interface BaseEntity {
   id: string;
   created_at: string;
-  updated_at: string;
+  // ✅ REMOVED: updated_at - NOT in Supabase schema
 }
 
-// User role type definition
+// User role type definition - EXACT schema values
 export type UserRole = 'Super Admin' | 'Admin' | 'Production Lead' | 'QC Lead' | 'Staff Lead' | 'QC Staff' | 'Production Staff' | 'Security Guard';
 
 export interface BiometricAuthRequest {
@@ -37,7 +37,7 @@ export interface SecurityEvent {
   userId?: string;
   deviceId?: string;
   timestamp: string;
-  details: Record<string, unknown>; // ✅ Fixed: Replaced 'any' with 'Record<string, unknown>'
+  details: Record<string, unknown>;
   severity: 'low' | 'medium' | 'high' | 'critical';
 }
 
