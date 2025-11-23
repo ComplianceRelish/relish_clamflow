@@ -31,13 +31,14 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
 
-  // ✅ KEEP THIS
+  // 🔥 CRITICAL: Experimental settings to fix cache issues
   experimental: {
     missingSuspenseWithCSRBailout: true,
+    isrMemoryCacheSize: 0,  // 🔥 Disable ISR cache completely
   },
 
-  // ❌ REMOVE THIS LINE - IT BREAKS MOBILE PWA
-  // output: 'export',
+  // 🔥 CRITICAL: Ensure static export is disabled
+  output: undefined,
 
   // ✅ PWA Headers
   async headers() {
@@ -88,9 +89,9 @@ const nextConfig = {
   compress: true,
   poweredByHeader: false,
   
-  // Generate unique build IDs
+  // 🔥 Generate unique build IDs to bypass cache
   generateBuildId: async () => {
-    return `clamflow-mobile-${Date.now()}`;
+    return `clamflow-build-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   },
 };
 
