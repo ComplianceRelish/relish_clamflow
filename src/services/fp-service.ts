@@ -18,7 +18,7 @@ class FPFormsService {
   private backendUrl = 'https://clamflowbackend-production.up.railway.app';
 
   private getAuthHeaders(): HeadersInit {
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('clamflow_token');
     return {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'

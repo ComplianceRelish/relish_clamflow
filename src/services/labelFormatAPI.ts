@@ -17,7 +17,7 @@ const getHeaders = (includeAuth: boolean = true): HeadersInit => {
   };
 
   if (includeAuth) {
-    const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    const token = localStorage.getItem('clamflow_token') || sessionStorage.getItem('clamflow_token');
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }

@@ -68,7 +68,7 @@ const SystemConfigurationPanel: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem('clamflow_token');
       
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/hardware/configurations`, {
         headers: {
@@ -94,7 +94,7 @@ const SystemConfigurationPanel: React.FC = () => {
 
   const loadSystemStatus = async () => {
     try {
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem('clamflow_token');
       
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/hardware/status`, {
         headers: {
@@ -132,7 +132,7 @@ const SystemConfigurationPanel: React.FC = () => {
   const handleConfigSave = async (configId: string) => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem('clamflow_token');
       
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/hardware/configurations/${configId}`, {
         method: 'PUT',

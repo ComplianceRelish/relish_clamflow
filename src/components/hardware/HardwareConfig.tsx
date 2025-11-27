@@ -48,7 +48,7 @@ export const HardwareConfig: React.FC<HardwareConfigProps> = ({ hardwareType }) 
   const loadHardwareConfig = async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem('clamflow_token');
       const response = await fetch(`https://clamflowbackend-production.up.railway.app/admin/hardware/configurations/${hardwareType}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -67,7 +67,7 @@ export const HardwareConfig: React.FC<HardwareConfigProps> = ({ hardwareType }) 
   const saveHardwareConfig = async () => {
     setIsSaving(true);
     try {
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem('clamflow_token');
       const response = await fetch('https://clamflowbackend-production.up.railway.app/admin/hardware/configurations', {
         method: 'POST',
         headers: {

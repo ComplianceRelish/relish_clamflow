@@ -72,7 +72,7 @@ const AdminPermissionsPanel: React.FC = () => {
   const loadPermissions = async () => {
     try {
       setError(null);
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem('clamflow_token');
       
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/permissions`, {
         headers: {
@@ -98,7 +98,7 @@ const AdminPermissionsPanel: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem('clamflow_token');
       
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/roles`, {
         headers: {
@@ -125,7 +125,7 @@ const AdminPermissionsPanel: React.FC = () => {
   const loadUserRoles = async () => {
     try {
       setError(null);
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem('clamflow_token');
       
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/user-roles`, {
         headers: {
@@ -150,7 +150,7 @@ const AdminPermissionsPanel: React.FC = () => {
   const handleCreateRole = async (roleData: Partial<Role>) => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem('clamflow_token');
       
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/roles`, {
         method: 'POST',
@@ -179,7 +179,7 @@ const AdminPermissionsPanel: React.FC = () => {
   const handleUpdateRole = async (roleId: string, roleData: Partial<Role>) => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem('clamflow_token');
       
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/roles/${roleId}`, {
         method: 'PUT',
@@ -210,7 +210,7 @@ const AdminPermissionsPanel: React.FC = () => {
     if (confirm('Are you sure you want to delete this role? This action cannot be undone.')) {
       try {
         setLoading(true);
-        const token = localStorage.getItem('authToken');
+        const token = localStorage.getItem('clamflow_token');
         
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/roles/${roleId}`, {
           method: 'DELETE',

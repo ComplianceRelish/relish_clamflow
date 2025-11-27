@@ -1,5 +1,12 @@
 // src/services/auth-service.ts  
-import { apiClient, type ApiResponse } from './api';
+import { apiClient } from '../types/api';
+
+// Define ApiResponse interface for wrapped responses
+interface ApiResponse<T> {
+  data: T;
+  message?: string;
+  status?: number;
+}
 
 export interface LoginCredentials {
   email: string;
@@ -37,16 +44,15 @@ export class AuthService {
     try {
       const response = await apiClient.post<ApiResponse<AuthResponse>>(
         `${this.baseUrl}/login`, 
-        credentials,
-        { skipAuth: true } // Skip auth for login endpoint
+        credentials
       );
       
       const authData = response.data.data;
       
       // Store tokens (your API client will auto-inject them)
-      localStorage.setItem('auth_token', authData.access_token);
+      localStorage.setItem('clamflow_token', authData.access_token);
       localStorage.setItem('refresh_token', authData.refresh_token);
-      localStorage.setItem('user', JSON.stringify(authData.user));
+      localStorage.setItem('clamflow_user', JSON.stringify(authData.user));
       
       return authData;
     } catch (error: any) {
@@ -59,15 +65,14 @@ export class AuthService {
     try {
       const response = await apiClient.post<ApiResponse<AuthResponse>>(
         `${this.baseUrl}/biometric-login`, 
-        biometricData,
-        { skipAuth: true }
+        biometricData
       );
       
       const authData = response.data.data;
       
-      localStorage.setItem('auth_token', authData.access_token);
+      localStorage.setItem('clamflow_token', authData.access_token);
       localStorage.setItem('refresh_token', authData.refresh_token);
-      localStorage.setItem('user', JSON.stringify(authData.user));
+      localStorage.setItem('clamflow_user', JSON.stringify(authData.user));
       
       return authData;
     } catch (error: any) {
@@ -85,12 +90,11 @@ export class AuthService {
 
       const response = await apiClient.post<ApiResponse<AuthResponse>>(
         `${this.baseUrl}/refresh`, 
-        { refresh_token },
-        { skipAuth: true }
+        { refresh_token }
       );
       
       const authData = response.data.data;
-      localStorage.setItem('auth_token', authData.access_token);
+      localStorage.setItem('clamflow_token', authData.access_token);
       localStorage.setItem('refresh_token', authData.refresh_token);
       
       return authData;
@@ -111,9 +115,9 @@ export class AuthService {
       console.error('Logout request failed:', error);
     } finally {
       // Clear all auth data (your API client interceptor will handle this)
-      localStorage.removeItem('auth_token');
+      localStorage.removeItem('clamflow_token');
       localStorage.removeItem('refresh_token');
-      localStorage.removeItem('user');
+      localStorage.removeItem('clamflow_user');
     }
   }
 
@@ -129,12 +133,12 @@ export class AuthService {
 
   // Utility methods
   getAccessToken(): string | null {
-    return localStorage.getItem('auth_token');
+    return localStorage.getItem('clamflow_token');
   }
 
   getCurrentUserFromStorage(): User | null {
     try {
-      const userStr = localStorage.getItem('user');
+      const userStr = localStorage.getItem('clamflow_user');
       return userStr ? JSON.parse(userStr) : null;
     } catch {
       return null;

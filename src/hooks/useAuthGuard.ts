@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { UserRole } from '@/types/auth';
 
@@ -24,8 +24,8 @@ export const useAuthGuard = (props: UseAuthGuardProps): UseAuthGuardReturn => {
     const checkAuth = () => {
       try {
         // Get user and token from localStorage (matches your auth system)
-        const storedUser = localStorage.getItem('user');
-        const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+        const storedUser = localStorage.getItem('clamflow_user');
+        const token = localStorage.getItem('clamflow_token');
         
         if (storedUser && token) {
           const userData = JSON.parse(storedUser);

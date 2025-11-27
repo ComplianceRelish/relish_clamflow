@@ -25,7 +25,7 @@ export const HardwareTest: React.FC = () => {
     setIsRunningTests(prev => ({ ...prev, [hardwareType]: true }));
     
     try {
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem('clamflow_token');
       const response = await fetch(`https://clamflowbackend-production.up.railway.app/admin/hardware/test/${hardwareType}`, {
         method: 'POST',
         headers: {

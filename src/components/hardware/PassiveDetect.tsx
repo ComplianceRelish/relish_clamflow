@@ -50,7 +50,7 @@ export const PassiveDetect: React.FC = () => {
 
   const loadPassiveDetectionConfig = async () => {
     try {
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem('clamflow_token');
       
       // Load cameras
       const camerasResponse = await fetch('https://clamflowbackend-production.up.railway.app/admin/hardware/passive-detection/cameras', {
@@ -79,7 +79,7 @@ export const PassiveDetect: React.FC = () => {
 
   const addCamera = async () => {
     try {
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem('clamflow_token');
       
       const response = await fetch('https://clamflowbackend-production.up.railway.app/admin/hardware/passive-detection/cameras', {
         method: 'POST',
@@ -112,7 +112,7 @@ export const PassiveDetect: React.FC = () => {
 
   const addMonitor = async () => {
     try {
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem('clamflow_token');
       
       const response = await fetch('https://clamflowbackend-production.up.railway.app/admin/hardware/passive-detection/monitors', {
         method: 'POST',
@@ -149,7 +149,7 @@ export const PassiveDetect: React.FC = () => {
 
   const assignMonitorToCamera = async (cameraId: string, monitorId: string) => {
     try {
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem('clamflow_token');
       
       await fetch('https://clamflowbackend-production.up.railway.app/admin/hardware/passive-detection/assign', {
         method: 'POST',

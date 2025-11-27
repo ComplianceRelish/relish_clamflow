@@ -98,7 +98,7 @@ export const FaceCapture: React.FC<FaceCaptureProps> = ({
 
         if (result.authenticated) {
           // Record attendance
-          const token = localStorage.getItem('authToken');
+          const token = localStorage.getItem('clamflow_token');
           await fetch('https://clamflowbackend-production.up.railway.app/secure/attendance/face', {
             method: 'POST',
             headers: {

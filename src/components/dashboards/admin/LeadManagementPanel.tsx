@@ -88,7 +88,7 @@ const LeadManagementPanel: React.FC<LeadManagementPanelProps> = ({ onClose }) =>
       try {
         const response = await fetch('/api/admin/leads', {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+            'Authorization': `Bearer ${localStorage.getItem('clamflow_token')}`
           }
         });
 

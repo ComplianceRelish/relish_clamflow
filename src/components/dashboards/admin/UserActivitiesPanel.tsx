@@ -100,7 +100,7 @@ const UserActivitiesPanel: React.FC<UserActivitiesPanelProps> = ({ onClose }) =>
       try {
         const response = await fetch(`/api/admin/user-activities?range=${dateRange}`, {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+            'Authorization': `Bearer ${localStorage.getItem('clamflow_token')}`
           }
         });
 
