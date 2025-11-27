@@ -56,14 +56,21 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
       const response = await clamflowAPI.getAdmins();
       
       if (response.success && response.data) {
-        setAdmins(response.data as any);
+        // Handle different response formats
+        const adminData = Array.isArray(response.data) 
+          ? response.data 
+          : (response.data as any).admins || [];
+        
+        setAdmins(adminData);
         setError('');
       } else {
         setError('Failed to load admin list');
+        setAdmins([]); // Set empty array on error
       }
     } catch (err: any) {
       console.error('Failed to load admins:', err);
       setError('Failed to load admin list');
+      setAdmins([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
@@ -291,9 +298,11 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {admins.length === 0 ? (
+              {!Array.isArray(admins) || admins.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500">No admins found</td>
+                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                    {loading ? 'Loading admins...' : 'No admins found'}
+                  </td>
                 </tr>
               ) : (
                 admins.map((admin) => (
