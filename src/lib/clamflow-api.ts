@@ -252,7 +252,18 @@ class ClamFlowAPI {
 
   // SUPER ADMIN
   async getAdmins(): Promise<ApiResponse<User[]>> {
-    return this.get('/super-admin/admins');
+    // Try multiple endpoints to find admins
+    try {
+      const response = await this.get('/super-admin/admins');
+      if (response.success && response.data) {
+        return response;
+      }
+    } catch (err) {
+      console.warn('Failed to get from /super-admin/admins, trying /api/users');
+    }
+    
+    // Fallback to general users endpoint filtered by admin roles
+    return this.get('/api/users');
   }
 
   async createAdmin(adminData: AdminFormData): Promise<ApiResponse<User>> {

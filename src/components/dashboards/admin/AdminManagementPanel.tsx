@@ -53,17 +53,32 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
   const loadAdmins = async () => {
     try {
       setLoading(true);
-      const response = await clamflowAPI.getAdmins();
+      
+      // Try the specific admin endpoint first
+      let response = await clamflowAPI.getAdmins();
+      
+      // If that fails or returns empty, try getting all users
+      if (!response.success || !response.data || (Array.isArray(response.data) && response.data.length === 0)) {
+        console.log('Trying getAllUsers endpoint...');
+        response = await clamflowAPI.getAllUsers();
+      }
       
       if (response.success && response.data) {
         // Handle different response formats
-        const adminData = Array.isArray(response.data) 
+        let adminData = Array.isArray(response.data) 
           ? response.data 
-          : (response.data as any).admins || [];
+          : (response.data as any).admins || (response.data as any).users || [];
         
+        // Filter for admin roles only
+        adminData = adminData.filter((user: Admin) => 
+          user.role === 'Super Admin' || user.role === 'Admin'
+        );
+        
+        console.log('Loaded admins:', adminData);
         setAdmins(adminData);
         setError('');
       } else {
+        console.error('No admin data received');
         setError('Failed to load admin list');
         setAdmins([]); // Set empty array on error
       }
