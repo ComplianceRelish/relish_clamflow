@@ -55,12 +55,19 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
       setLoading(true);
       
       // Try the specific admin endpoint first
+      console.log('🔍 Fetching admins from /super-admin/admins...');
       let response = await clamflowAPI.getAdmins();
+      
+      console.log('📦 Raw response:', JSON.stringify(response, null, 2));
+      console.log('✅ Response success:', response.success);
+      console.log('📊 Response data type:', typeof response.data, Array.isArray(response.data) ? 'Array' : 'Object');
+      console.log('📋 Response data:', response.data);
       
       // If that fails or returns empty, try getting all users
       if (!response.success || !response.data || (Array.isArray(response.data) && response.data.length === 0)) {
-        console.log('Trying getAllUsers endpoint...');
+        console.log('⚠️ First attempt failed or empty, trying getAllUsers endpoint...');
         response = await clamflowAPI.getAllUsers();
+        console.log('📦 Fallback response:', JSON.stringify(response, null, 2));
       }
       
       if (response.success && response.data) {
@@ -69,21 +76,25 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
           ? response.data 
           : (response.data as any).admins || (response.data as any).users || [];
         
+        console.log('🔧 Extracted admin data (before filtering):', adminData);
+        console.log('📏 Admin data length:', adminData.length);
+        
         // Filter for admin roles only
         adminData = adminData.filter((user: Admin) => 
           user.role === 'Super Admin' || user.role === 'Admin'
         );
         
-        console.log('Loaded admins:', adminData);
+        console.log('✨ Filtered admins:', adminData);
+        console.log('👥 Number of admins found:', adminData.length);
         setAdmins(adminData);
         setError('');
       } else {
-        console.error('No admin data received');
+        console.error('❌ No admin data received - response:', response);
         setError('Failed to load admin list');
         setAdmins([]); // Set empty array on error
       }
     } catch (err: any) {
-      console.error('Failed to load admins:', err);
+      console.error('💥 Failed to load admins:', err);
       setError('Failed to load admin list');
       setAdmins([]); // Set empty array on error
     } finally {
