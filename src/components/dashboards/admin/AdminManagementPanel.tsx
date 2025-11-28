@@ -71,13 +71,27 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
       }
       
       if (response.success && response.data) {
-        // Handle different response formats
-        let adminData = Array.isArray(response.data) 
-          ? response.data 
-          : (response.data as any).data || (response.data as any).admins || (response.data as any).users || [];
+        // Handle different response formats - backend returns double-wrapped response
+        let adminData;
+        
+        // Check if response.data has nested success/data structure
+        if ((response.data as any).success && (response.data as any).data) {
+          console.log('🔓 Unwrapping double-wrapped response...');
+          adminData = (response.data as any).data;
+        } else if (Array.isArray(response.data)) {
+          adminData = response.data;
+        } else {
+          adminData = (response.data as any).admins || (response.data as any).users || [];
+        }
         
         console.log('🔧 Extracted admin data (before filtering):', adminData);
-        console.log('📏 Admin data length:', adminData.length);
+        console.log('📏 Admin data length:', Array.isArray(adminData) ? adminData.length : 0);
+        
+        // Ensure adminData is an array
+        if (!Array.isArray(adminData)) {
+          console.error('❌ Admin data is not an array:', adminData);
+          adminData = [];
+        }
         
         // Filter for admin roles only
         adminData = adminData.filter((user: Admin) => 
