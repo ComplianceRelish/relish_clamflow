@@ -74,7 +74,7 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
         // Handle different response formats
         let adminData = Array.isArray(response.data) 
           ? response.data 
-          : (response.data as any).admins || (response.data as any).users || [];
+          : (response.data as any).data || (response.data as any).admins || (response.data as any).users || [];
         
         console.log('🔧 Extracted admin data (before filtering):', adminData);
         console.log('📏 Admin data length:', adminData.length);
