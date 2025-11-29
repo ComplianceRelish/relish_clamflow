@@ -4,12 +4,13 @@ import React, { useState, useEffect } from 'react'
 import clamflowAPI, { DashboardMetrics, SystemHealthData } from '../../lib/clamflow-api'
 import { User } from '../../types/auth'
 import AdminManagementPanel from './admin/AdminManagementPanel'
+import LiveOperationsMonitor from './operations/LiveOperationsMonitor'
 
 interface SuperAdminDashboardProps {
   currentUser: User | null
 }
 
-type SuperAdminView = 'overview' | 'admins' | 'monitoring' | 'security' | 'backup'
+type SuperAdminView = 'overview' | 'admins' | 'operations' | 'vehicles' | 'security' | 'analytics' | 'staff' | 'inventory'
 
 const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ currentUser }) => {
   const [activeView, setActiveView] = useState<SuperAdminView>('overview')
@@ -82,9 +83,12 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ currentUser }
   const navigationItems = [
     { id: 'overview', label: 'System Overview', icon: '⚡' },
     { id: 'admins', label: 'Admin Management', icon: '👑' },
-    { id: 'monitoring', label: 'System Monitoring', icon: '📡' },
-    { id: 'security', label: 'Security Center', icon: '🛡️' },
-    { id: 'backup', label: 'Disaster Recovery', icon: '🚨' }
+    { id: 'operations', label: 'Live Operations', icon: '🔴' },
+    { id: 'vehicles', label: 'Gate & Vehicles', icon: '🚛' },
+    { id: 'security', label: 'Security & Surveillance', icon: '📹' },
+    { id: 'analytics', label: 'Production Analytics', icon: '📊' },
+    { id: 'staff', label: 'Staff Management', icon: '👥' },
+    { id: 'inventory', label: 'Inventory & Shipments', icon: '📦' }
   ]
 
   const handleNavClick = (view: SuperAdminView) => {
@@ -277,24 +281,42 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ currentUser }
             <AdminManagementPanel currentUser={currentUser} />
           )}
 
-          {activeView === 'monitoring' && (
+          {activeView === 'operations' && (
+            <LiveOperationsMonitor />
+          )}
+
+          {activeView === 'vehicles' && (
             <div className="bg-white p-4 md:p-6 rounded-xl shadow-lg">
-              <h3 className="text-base md:text-lg font-semibold mb-4 text-gray-900">System Monitoring</h3>
-              <p className="text-sm md:text-base text-gray-600">Real-time monitoring dashboard coming soon...</p>
+              <h3 className="text-base md:text-lg font-semibold mb-4 text-gray-900">🚛 Gate & Vehicle Management</h3>
+              <p className="text-sm md:text-base text-gray-600">Vehicle entry/exit logs, supplier tracking, and RFID monitoring coming soon...</p>
             </div>
           )}
 
           {activeView === 'security' && (
             <div className="bg-white p-4 md:p-6 rounded-xl shadow-lg">
-              <h3 className="text-base md:text-lg font-semibold mb-4 text-gray-900">Security Center</h3>
-              <p className="text-sm md:text-base text-gray-600">Security management panel coming soon...</p>
+              <h3 className="text-base md:text-lg font-semibold mb-4 text-gray-900">📹 Security & Surveillance</h3>
+              <p className="text-sm md:text-base text-gray-600">Camera status, face detection events, and security monitoring coming soon...</p>
             </div>
           )}
 
-          {activeView === 'backup' && (
+          {activeView === 'analytics' && (
             <div className="bg-white p-4 md:p-6 rounded-xl shadow-lg">
-              <h3 className="text-base md:text-lg font-semibold mb-4 text-gray-900">Disaster Recovery</h3>
-              <p className="text-sm md:text-base text-gray-600">Backup and recovery tools coming soon...</p>
+              <h3 className="text-base md:text-lg font-semibold mb-4 text-gray-900">📊 Production Analytics</h3>
+              <p className="text-sm md:text-base text-gray-600">Throughput metrics, efficiency tracking, and QC analytics coming soon...</p>
+            </div>
+          )}
+
+          {activeView === 'staff' && (
+            <div className="bg-white p-4 md:p-6 rounded-xl shadow-lg">
+              <h3 className="text-base md:text-lg font-semibold mb-4 text-gray-900">👥 Staff Management</h3>
+              <p className="text-sm md:text-base text-gray-600">Live attendance, staff location tracking, and performance metrics coming soon...</p>
+            </div>
+          )}
+
+          {activeView === 'inventory' && (
+            <div className="bg-white p-4 md:p-6 rounded-xl shadow-lg">
+              <h3 className="text-base md:text-lg font-semibold mb-4 text-gray-900">📦 Inventory & Shipments</h3>
+              <p className="text-sm md:text-base text-gray-600">Finished products, test results, and shipment readiness tracking coming soon...</p>
             </div>
           )}
         </div>
