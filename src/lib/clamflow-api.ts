@@ -277,6 +277,113 @@ class ClamFlowAPI {
   async getApiMonitoring(): Promise<ApiResponse<unknown>> {
     return this.get('/super-admin/api-monitoring');
   }
+
+  // OPERATIONS MONITOR
+  async getStations(): Promise<ApiResponse<unknown[]>> {
+    return this.get('/api/operations/stations');
+  }
+
+  async getActiveLots(): Promise<ApiResponse<unknown[]>> {
+    return this.get('/api/operations/active-lots');
+  }
+
+  async getBottlenecks(): Promise<ApiResponse<unknown[]>> {
+    return this.get('/api/operations/bottlenecks');
+  }
+
+  // GATE & VEHICLES
+  async getVehicles(): Promise<ApiResponse<unknown[]>> {
+    return this.get('/api/gate/vehicles');
+  }
+
+  async getActiveVehicles(): Promise<ApiResponse<unknown[]>> {
+    return this.get('/api/gate/active');
+  }
+
+  async getSuppliers(): Promise<ApiResponse<unknown[]>> {
+    return this.get('/api/gate/suppliers');
+  }
+
+  // SECURITY & SURVEILLANCE
+  async getSecurityCameras(): Promise<ApiResponse<unknown[]>> {
+    return this.get('/api/security/cameras');
+  }
+
+  async getSecurityEvents(): Promise<ApiResponse<unknown[]>> {
+    return this.get('/api/security/events');
+  }
+
+  async getFaceDetectionEvents(): Promise<ApiResponse<unknown[]>> {
+    return this.get('/api/security/face-detection');
+  }
+
+  // PRODUCTION ANALYTICS
+  async getProductionThroughput(): Promise<ApiResponse<unknown>> {
+    return this.get('/api/analytics/throughput');
+  }
+
+  async getEfficiencyMetrics(): Promise<ApiResponse<unknown>> {
+    return this.get('/api/analytics/efficiency');
+  }
+
+  async getQualityMetrics(): Promise<ApiResponse<unknown>> {
+    return this.get('/api/analytics/quality');
+  }
+
+  // STAFF MANAGEMENT
+  async getStaffAttendance(): Promise<ApiResponse<unknown[]>> {
+    return this.get('/api/staff/attendance');
+  }
+
+  async getStaffLocations(): Promise<ApiResponse<unknown[]>> {
+    return this.get('/api/staff/locations');
+  }
+
+  async getStaffPerformance(): Promise<ApiResponse<unknown[]>> {
+    return this.get('/api/staff/performance');
+  }
+
+  // INVENTORY & SHIPMENTS
+  async getFinishedProducts(): Promise<ApiResponse<unknown[]>> {
+    return this.get('/api/inventory/finished-products');
+  }
+
+  async getInventoryItems(): Promise<ApiResponse<unknown[]>> {
+    return this.get('/api/inventory/items');
+  }
+
+  async getTestResults(): Promise<ApiResponse<unknown[]>> {
+    return this.get('/api/inventory/test-results');
+  }
+
+  // QA/QC FORMS - Required by QAFlowDashboard and QCFlowDashboard
+  async getPPCForms(): Promise<ApiResponse<unknown[]>> {
+    return this.get('/api/ppc-forms');
+  }
+
+  async getFPForms(): Promise<ApiResponse<unknown[]>> {
+    return this.get('/api/fp-forms');
+  }
+
+  async getQCForms(): Promise<ApiResponse<unknown[]>> {
+    return this.get('/api/qc-forms');
+  }
+
+  async getDepurationForms(): Promise<ApiResponse<unknown[]>> {
+    return this.get('/api/depuration-forms');
+  }
+
+  async getLots(): Promise<ApiResponse<unknown[]>> {
+    return this.get('/api/lots');
+  }
+
+  async getStaff(): Promise<ApiResponse<unknown[]>> {
+    return this.get('/api/staff');
+  }
+
+  async createQCForm(formData: unknown): Promise<ApiResponse<unknown>> {
+    return this.post('/api/qc-forms', formData);
+  }
 }
 
 // PERMISSION UTILITIES

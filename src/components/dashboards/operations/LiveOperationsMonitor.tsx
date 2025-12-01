@@ -45,79 +45,24 @@ const LiveOperationsMonitor: React.FC = () => {
 
   const loadOperationsData = async () => {
     try {
-      // TODO: Replace with actual backend endpoints
-      // For now, using mock data
-      setStations([
-        {
-          stationId: '1',
-          stationName: 'Weight Station',
-          currentOperator: 'John Doe',
-          currentLot: 'LOT-2025-001',
-          status: 'active',
-          efficiency: 92
-        },
-        {
-          stationId: '2',
-          stationName: 'PPC Station',
-          currentOperator: 'Jane Smith',
-          currentLot: 'LOT-2025-002',
-          status: 'active',
-          efficiency: 88
-        },
-        {
-          stationId: '3',
-          stationName: 'FP Station',
-          currentOperator: null,
-          currentLot: null,
-          status: 'idle',
-          efficiency: 0
-        },
-        {
-          stationId: '4',
-          stationName: 'QC Station',
-          currentOperator: 'Mike Johnson',
-          currentLot: 'LOT-2025-003',
-          status: 'active',
-          efficiency: 95
-        }
+      // Fetch real data from backend
+      const [stationsRes, lotsRes, bottlenecksRes] = await Promise.all([
+        clamflowAPI.getStations(),
+        clamflowAPI.getActiveLots(),
+        clamflowAPI.getBottlenecks()
       ]);
 
-      setActiveLots([
-        {
-          lotId: 'LOT-2025-001',
-          currentStage: 'Weight',
-          location: 'Weight Station',
-          startTime: new Date(Date.now() - 30 * 60000).toISOString(),
-          estimatedCompletion: new Date(Date.now() + 120 * 60000).toISOString(),
-          supplier: 'Supplier A'
-        },
-        {
-          lotId: 'LOT-2025-002',
-          currentStage: 'PPC',
-          location: 'PPC Station',
-          startTime: new Date(Date.now() - 45 * 60000).toISOString(),
-          estimatedCompletion: new Date(Date.now() + 90 * 60000).toISOString(),
-          supplier: 'Supplier B'
-        },
-        {
-          lotId: 'LOT-2025-003',
-          currentStage: 'QC',
-          location: 'QC Station',
-          startTime: new Date(Date.now() - 120 * 60000).toISOString(),
-          estimatedCompletion: new Date(Date.now() + 30 * 60000).toISOString(),
-          supplier: 'Supplier C'
-        }
-      ]);
+      if (stationsRes.success && stationsRes.data) {
+        setStations(stationsRes.data as StationStatus[]);
+      }
 
-      setBottlenecks([
-        {
-          id: '1',
-          stationName: 'PPC Station',
-          lotId: 'LOT-2025-002',
-          delayMinutes: 15,
-          severity: 'medium'
-        }
-      ]);
+      if (lotsRes.success && lotsRes.data) {
+        setActiveLots(lotsRes.data as LotInProgress[]);
+      }
+
+      if (bottlenecksRes.success && bottlenecksRes.data) {
+        setBottlenecks(bottlenecksRes.data as BottleneckAlert[]);
+      }
 
       setLastUpdated(new Date().toLocaleTimeString());
       setLoading(false);

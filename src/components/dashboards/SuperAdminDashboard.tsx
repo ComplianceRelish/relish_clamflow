@@ -5,6 +5,11 @@ import clamflowAPI, { DashboardMetrics, SystemHealthData } from '../../lib/clamf
 import { User } from '../../types/auth'
 import AdminManagementPanel from './admin/AdminManagementPanel'
 import LiveOperationsMonitor from './operations/LiveOperationsMonitor'
+import GateVehicleManagement from './operations/GateVehicleManagement'
+import SecuritySurveillance from './operations/SecuritySurveillance'
+import ProductionAnalytics from './operations/ProductionAnalytics'
+import StaffManagementDashboard from './operations/StaffManagementDashboard'
+import InventoryShipmentsDashboard from './operations/InventoryShipmentsDashboard'
 
 interface SuperAdminDashboardProps {
   currentUser: User | null
@@ -286,38 +291,23 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ currentUser }
           )}
 
           {activeView === 'vehicles' && (
-            <div className="bg-white p-4 md:p-6 rounded-xl shadow-lg">
-              <h3 className="text-base md:text-lg font-semibold mb-4 text-gray-900">🚛 Gate & Vehicle Management</h3>
-              <p className="text-sm md:text-base text-gray-600">Vehicle entry/exit logs, supplier tracking, and RFID monitoring coming soon...</p>
-            </div>
+            <GateVehicleManagement />
           )}
 
           {activeView === 'security' && (
-            <div className="bg-white p-4 md:p-6 rounded-xl shadow-lg">
-              <h3 className="text-base md:text-lg font-semibold mb-4 text-gray-900">📹 Security & Surveillance</h3>
-              <p className="text-sm md:text-base text-gray-600">Camera status, face detection events, and security monitoring coming soon...</p>
-            </div>
+            <SecuritySurveillance />
           )}
 
           {activeView === 'analytics' && (
-            <div className="bg-white p-4 md:p-6 rounded-xl shadow-lg">
-              <h3 className="text-base md:text-lg font-semibold mb-4 text-gray-900">📊 Production Analytics</h3>
-              <p className="text-sm md:text-base text-gray-600">Throughput metrics, efficiency tracking, and QC analytics coming soon...</p>
-            </div>
+            <ProductionAnalytics />
           )}
 
           {activeView === 'staff' && (
-            <div className="bg-white p-4 md:p-6 rounded-xl shadow-lg">
-              <h3 className="text-base md:text-lg font-semibold mb-4 text-gray-900">👥 Staff Management</h3>
-              <p className="text-sm md:text-base text-gray-600">Live attendance, staff location tracking, and performance metrics coming soon...</p>
-            </div>
+            <StaffManagementDashboard />
           )}
 
           {activeView === 'inventory' && (
-            <div className="bg-white p-4 md:p-6 rounded-xl shadow-lg">
-              <h3 className="text-base md:text-lg font-semibold mb-4 text-gray-900">📦 Inventory & Shipments</h3>
-              <p className="text-sm md:text-base text-gray-600">Finished products, test results, and shipment readiness tracking coming soon...</p>
-            </div>
+            <InventoryShipmentsDashboard />
           )}
         </div>
       </div>
