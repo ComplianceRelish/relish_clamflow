@@ -2,54 +2,35 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 import Header from '@/components/layout/Header';
 import SuperAdminDashboard from '@/components/dashboards/SuperAdminDashboard';
 import AdminDashboard from '@/components/dashboards/AdminDashboard';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { User } from '@/types/auth';
 
 const DashboardPage: React.FC = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, isAuthenticated, isLoading } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
-    const validateAndLoadUser = async () => {
-      try {
-        const token = localStorage.getItem('clamflow_token');
-        if (!token) {
-          router.push('/login');
-          return;
-        }
+    // Wait for auth to finish loading
+    if (isLoading) return;
 
-        const storedUser = localStorage.getItem('clamflow_user');
-        if (storedUser) {
-          const userData = JSON.parse(storedUser);
-          
-          if (!['Super Admin', 'Admin'].includes(userData.role)) {
-            setError(`Access denied. Role "${userData.role}" does not have dashboard access.`);
-            return;
-          }
+    // If not authenticated, redirect to login
+    if (!isAuthenticated || !user) {
+      router.push('/login');
+      return;
+    }
 
-          setUser(userData);
-          return;
-        }
+    // Check if user has dashboard access
+    if (!['Super Admin', 'Admin'].includes(user.role)) {
+      setError(`Access denied. Role "${user.role}" does not have dashboard access.`);
+      return;
+    }
+  }, [isAuthenticated, isLoading, user, router]);
 
-        router.push('/login');
-      } catch (err) {
-        console.error('Auth error:', err);
-        setError('Authentication failed. Please log in again.');
-        setTimeout(() => router.push('/login'), 3000);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    validateAndLoadUser();
-  }, [router]);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <LoadingSpinner size="lg" />
@@ -57,7 +38,7 @@ const DashboardPage: React.FC = () => {
     );
   }
 
-  if (error || !user) {
+  if (error || !user || !isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
