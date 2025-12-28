@@ -169,6 +169,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           if (userData.requires_password_change) {
             return { success: true, requiresPasswordChange: true };
           } else {
+            // Add small delay to ensure state propagation before navigation
+            await new Promise(resolve => setTimeout(resolve, 100));
             router.push('/dashboard');
             return { success: true };
           }
@@ -208,6 +210,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (userData.requires_password_change) {
           return { success: true, requiresPasswordChange: true };
         } else {
+          // Add small delay to ensure state propagation before navigation
+          await new Promise(resolve => setTimeout(resolve, 100));
           router.push('/dashboard');
           return { success: true };
         }
@@ -255,6 +259,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setRequiresPasswordChange(false);
           localStorage.setItem('clamflow_user', JSON.stringify(updatedUser));
           
+          // Add small delay to ensure state propagation before navigation
+          await new Promise(resolve => setTimeout(resolve, 100));
           router.push('/dashboard');
           return { success: true };
         } else {
@@ -283,6 +289,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setRequiresPasswordChange(false);
         localStorage.setItem('clamflow_user', JSON.stringify(updatedUser));
 
+        // Add small delay to ensure state propagation before navigation
+        await new Promise(resolve => setTimeout(resolve, 100));
         router.push('/dashboard');
         return { success: true };
       }
