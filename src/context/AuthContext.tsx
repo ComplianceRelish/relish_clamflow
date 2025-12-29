@@ -140,6 +140,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       setIsLoading(true);
       
+      // CRITICAL: Clear old localStorage data to force fresh backend data
+      localStorage.removeItem('clamflow_token');
+      localStorage.removeItem('clamflow_user');
+      console.log('🧹 Cleared old localStorage data before login');
+      
       // Try API authentication
       try {
         const response = await fetch(`${API_BASE_URL}/auth/login`, {
@@ -152,6 +157,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         if (response.ok) {
           const data = await response.json();
+          console.log('✅ Backend login response:', data);
           
           const authToken = data.access_token;
           const userData: User = {
@@ -165,6 +171,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             requires_password_change: data.user.requires_password_change || false,
             first_login: data.user.first_login || false
           };
+
+          console.log('📝 Setting user with requires_password_change:', userData.requires_password_change);
 
           setToken(authToken);
           setUser(userData);
