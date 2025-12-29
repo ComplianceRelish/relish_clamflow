@@ -170,8 +170,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setUser(userData);
           setRequiresPasswordChange(userData.requires_password_change || false);
 
-          localStorage.setItem('clamflow_token', authToken);
-          localStorage.setItem('clamflow_user', JSON.stringify(userData));
+          // Try to save to localStorage with error handling
+          try {
+            localStorage.setItem('clamflow_token', authToken);
+            localStorage.setItem('clamflow_user', JSON.stringify(userData));
+            console.log('✅ AuthContext: Successfully saved token and user to localStorage');
+          } catch (err) {
+            console.error('❌ AuthContext: Failed to save to localStorage:', err);
+            // Continue anyway - state is set, auth will work for session
+          }
 
           if (userData.requires_password_change) {
             return { success: true, requiresPasswordChange: true };
@@ -211,8 +218,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setUser(userData);
         setRequiresPasswordChange(userData.requires_password_change || false);
 
-        localStorage.setItem('clamflow_token', fallbackToken);
-        localStorage.setItem('clamflow_user', JSON.stringify(userData));
+        // Try to save to localStorage with error handling
+        try {
+          localStorage.setItem('clamflow_token', fallbackToken);
+          localStorage.setItem('clamflow_user', JSON.stringify(userData));
+          console.log('✅ AuthContext: Successfully saved enterprise token and user to localStorage');
+        } catch (err) {
+          console.error('❌ AuthContext: Failed to save enterprise credentials to localStorage:', err);
+          // Continue anyway - state is set, auth will work for session
+        }
 
         if (userData.requires_password_change) {
           return { success: true, requiresPasswordChange: true };
@@ -264,7 +278,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           const updatedUser = { ...user, requires_password_change: false, first_login: false };
           setUser(updatedUser);
           setRequiresPasswordChange(false);
-          localStorage.setItem('clamflow_user', JSON.stringify(updatedUser));
+          
+          // Try to save updated user to localStorage
+          try {
+            localStorage.setItem('clamflow_user', JSON.stringify(updatedUser));
+            console.log('✅ AuthContext: Successfully updated user in localStorage after password change');
+          } catch (err) {
+            console.error('❌ AuthContext: Failed to update user in localStorage:', err);
+          }
           
           // Add small delay to ensure state propagation before navigation
           await new Promise(resolve => setTimeout(resolve, 100));
@@ -288,13 +309,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           return { success: false, error: 'Current password is incorrect' };
         }
 
-        localStorage.setItem(`password_changed_${user.username.toLowerCase()}`, 'true');
-        localStorage.setItem(`new_password_${user.username.toLowerCase()}`, newPassword);
+        // Try to save password change to localStorage
+        try {
+          localStorage.setItem(`password_changed_${user.username.toLowerCase()}`, 'true');
+          localStorage.setItem(`new_password_${user.username.toLowerCase()}`, newPassword);
+          console.log('✅ AuthContext: Successfully saved enterprise password change');
+        } catch (err) {
+          console.error('❌ AuthContext: Failed to save enterprise password change:', err);
+        }
 
         const updatedUser = { ...user, requires_password_change: false, first_login: false };
         setUser(updatedUser);
         setRequiresPasswordChange(false);
-        localStorage.setItem('clamflow_user', JSON.stringify(updatedUser));
+        
+        try {
+          localStorage.setItem('clamflow_user', JSON.stringify(updatedUser));
+          console.log('✅ AuthContext: Successfully updated enterprise user in localStorage');
+        } catch (err) {
+          console.error('❌ AuthContext: Failed to update enterprise user in localStorage:', err);
+        }
 
         // Add small delay to ensure state propagation before navigation
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -314,8 +347,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setUser(null);
     setToken(null);
     setRequiresPasswordChange(false);
-    localStorage.removeItem('clamflow_token');
-    localStorage.removeItem('clamflow_user');
+    
+    // Try to remove from localStorage
+    try {
+      localStorage.removeItem('clamflow_token');
+      localStorage.removeItem('clamflow_user');
+      console.log('✅ AuthContext: Successfully cleared localStorage on logout');
+    } catch (err) {
+      console.error('❌ AuthContext: Failed to clear localStorage on logout:', err);
+    }
+    
     router.push('/login');
   };
 
