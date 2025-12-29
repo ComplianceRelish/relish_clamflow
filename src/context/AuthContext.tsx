@@ -210,7 +210,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           station: 'Enterprise',
           is_active: true,
           last_login: new Date().toISOString(),
-          requires_password_change: !hasChangedPassword || matchedCredential.requiresPasswordChange,
+          requires_password_change: hasChangedPassword ? false : matchedCredential.requiresPasswordChange,
           first_login: !hasChangedPassword
         };
 

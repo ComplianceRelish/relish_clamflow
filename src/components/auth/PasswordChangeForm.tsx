@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -10,7 +11,8 @@ import { useAuth } from '@/context/AuthContext';
 import { Eye, EyeOff, Lock, Shield } from 'lucide-react';
 
 export default function PasswordChangeForm() {
-  const { user, changePassword } = useAuth();
+  const { user, changePassword, requiresPasswordChange } = useAuth();
+  const router = useRouter();
   const [formData, setFormData] = useState({
     currentPassword: '',
     newPassword: '',
@@ -23,6 +25,10 @@ export default function PasswordChangeForm() {
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  const handleSkip = () => {
+    router.push('/dashboard');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -148,13 +154,27 @@ export default function PasswordChangeForm() {
               </div>
             </div>
 
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isLoading}
-            >
-              {isLoading ? 'Changing Password...' : 'Change Password'}
-            </Button>
+            <div className="space-y-2">
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Changing Password...' : 'Change Password'}
+              </Button>
+              
+              {!requiresPasswordChange && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleSkip}
+                  disabled={isLoading}
+                >
+                  Skip for Now
+                </Button>
+              )}
+            </div>
           </form>
 
           {/* Role-based naming convention info */}
