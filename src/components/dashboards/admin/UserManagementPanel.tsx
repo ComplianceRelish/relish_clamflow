@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/Label';
 import { Alert, AlertDescription } from '@/components/ui/Alert';
 import { Badge } from '@/components/ui/Badge';
 import { Search, Plus, Edit2, Trash2, UserPlus, AlertTriangle } from 'lucide-react';
+import { sendWelcomeMessage } from '@/services/whatsapp-service';
 import { useAuth } from '@/context/AuthContext';
 
 // Custom Select component
@@ -104,9 +105,11 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
     full_name: '',
     role: 'Production Staff',
     station: '',
-    password: ''
+    password: '',
+    phone_number: ''
   });
   const [formError, setFormError] = useState('');
+  const [whatsappStatus, setWhatsappStatus] = useState<string>('');
 
   const roles = [
     'Super Admin',
@@ -124,9 +127,9 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
       'Super Admin': 'SA',
       'Admin': 'AD', 
       'Production Lead': 'PL',
-      'QC Lead': 'QC',
+      'QC Lead': 'QA',
       'Staff Lead': 'SL',
-      'QC Staff': 'QS',
+      'QC Staff': 'QC',
       'Production Staff': 'PS',
       'Security Guard': 'SG'
     };
@@ -180,10 +183,13 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
 
   const createUser = async (userData: any) => {
     try {
-      // Generate username based on role and name
+      // Generate username based on role and name (following naming protocol)
       const rolePrefix = getRolePrefix(userData.role);
       const firstName = userData.full_name.split(' ')[0];
       const username = `${rolePrefix}_${firstName}`;
+
+      // Generate secure random password
+      const generatedPassword = userData.password || `Clam${Math.random().toString(36).slice(2, 10)}!`;
 
       const newUser: User = {
         id: `user_${Date.now()}`,
@@ -206,23 +212,63 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
           },
           body: JSON.stringify({
             ...userData,
-            username
+            username,
+            password: generatedPassword
           })
         });
 
         if (response.ok) {
           const createdUser = await response.json();
           setUsers(prev => [...prev, createdUser]);
+          
+          // 🔔 Send WhatsApp welcome message
+          if (userData.phone_number) {
+            setWhatsappStatus('Sending WhatsApp welcome message...');
+            const whatsappResult = await sendWelcomeMessage({
+              username,
+              password: generatedPassword,
+              full_name: userData.full_name,
+              role: userData.role,
+              phone_number: userData.phone_number
+            });
+            
+            if (whatsappResult.success) {
+              setWhatsappStatus('✅ WhatsApp welcome message sent successfully!');
+              console.log('✅ Welcome message sent to:', userData.phone_number);
+            } else {
+              setWhatsappStatus(`⚠️ User created but WhatsApp failed: ${whatsappResult.error}`);
+              console.warn('WhatsApp delivery failed:', whatsappResult.error);
+            }
+          }
+          
           return true;
         }
       } catch (err) {
-        console.warn('API authentication failed, trying enterprise credentials:', err);
+        console.warn('API failed, using local fallback:', err);
       }
 
       // Fallback to local storage
       const updatedUsers = [...users, newUser];
       setUsers(updatedUsers);
       localStorage.setItem('clamflow_users', JSON.stringify(updatedUsers));
+      
+      // 🔔 Send WhatsApp for fallback users too
+      if (userData.phone_number) {
+        setWhatsappStatus('Sending WhatsApp welcome message...');
+        const whatsappResult = await sendWelcomeMessage({
+          username,
+          password: generatedPassword,
+          full_name: userData.full_name,
+          role: userData.role,
+          phone_number: userData.phone_number
+        });
+        
+        if (whatsappResult.success) {
+          setWhatsappStatus('✅ WhatsApp welcome message sent!');
+        } else {
+          setWhatsappStatus(`⚠️ User created but WhatsApp failed: ${whatsappResult.error}`);
+        }
+      }
       
       return true;
     } catch (err) {
@@ -442,7 +488,27 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
                     placeholder="••••••••"
                     required
                   />
+                  <p className="text-xs text-gray-500 mt-1">Leave blank to auto-generate</p>
                 </div>
+
+                <div>
+                  <Label htmlFor="phone_number">Phone Number (WhatsApp) *</Label>
+                  <Input
+                    id="phone_number"
+                    type="tel"
+                    value={formData.phone_number}
+                    onChange={(e) => setFormData(prev => ({ ...prev, phone_number: e.target.value }))}
+                    placeholder="+91 XXXXXXXXXX"
+                    required
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Login credentials will be sent via WhatsApp</p>
+                </div>
+
+                {whatsappStatus && (
+                  <Alert>
+                    <AlertDescription>{whatsappStatus}</AlertDescription>
+                  </Alert>
+                )}
 
                 <div className="flex gap-2 pt-4">
                   <Button

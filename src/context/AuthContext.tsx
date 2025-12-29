@@ -53,7 +53,7 @@ const enterpriseDefaultCredentials = [
     requiresPasswordChange: true 
   },
   { 
-    username: 'QC_Lead', 
+    username: 'QA_Lead', 
     password: 'DefaultQC123!', 
     role: 'QC Lead' as const, 
     fullName: 'QC Lead - Default',
@@ -74,7 +74,7 @@ const enterpriseDefaultCredentials = [
     requiresPasswordChange: true 
   },
   { 
-    username: 'QS_Staff', 
+    username: 'QC_Staff', 
     password: 'DefaultQS123!', 
     role: 'QC Staff' as const, 
     fullName: 'QC Staff - Default',

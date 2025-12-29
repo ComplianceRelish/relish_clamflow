@@ -164,9 +164,9 @@ export default function PasswordChangeForm() {
               <div><strong>SA_</strong> = Super Admin</div>
               <div><strong>AD_</strong> = Admin</div>
               <div><strong>PL_</strong> = Production Lead</div>
-              <div><strong>QC_</strong> = QC Lead</div>
+              <div><strong>QA_</strong> = QC Lead (Quality Assurance)</div>
               <div><strong>SL_</strong> = Staff Lead</div>
-              <div><strong>QS_</strong> = QC Staff</div>
+              <div><strong>QC_</strong> = QC Staff (Quality Control)</div>
               <div><strong>PS_</strong> = Production Staff</div>
               <div><strong>SG_</strong> = Security Guard</div>
             </div>
