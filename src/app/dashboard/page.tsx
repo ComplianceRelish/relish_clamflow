@@ -14,11 +14,15 @@ const DashboardPage: React.FC = () => {
   const router = useRouter();
 
   useEffect(() => {
+    // Debug logging
+    console.log('Dashboard Auth Check:', { isLoading, isAuthenticated, user: user?.username });
+    
     // Wait for auth to finish loading
     if (isLoading) return;
 
     // If not authenticated, redirect to login
     if (!isAuthenticated || !user) {
+      console.log('Redirecting to login - not authenticated');
       router.push('/login');
       return;
     }

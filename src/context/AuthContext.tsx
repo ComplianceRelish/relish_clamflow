@@ -107,14 +107,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     const initializeAuth = () => {
       try {
+        console.log('AuthContext: Initializing from localStorage');
         const storedToken = localStorage.getItem('clamflow_token');
         const storedUser = localStorage.getItem('clamflow_user');
+
+        console.log('AuthContext: Found stored data:', { hasToken: !!storedToken, hasUser: !!storedUser });
 
         if (storedToken && storedUser) {
           const userData = JSON.parse(storedUser);
           setToken(storedToken);
           setUser(userData);
           setRequiresPasswordChange(userData.requires_password_change || false);
+          console.log('AuthContext: Auth state restored for user:', userData.username);
+        } else {
+          console.log('AuthContext: No stored auth data found');
         }
       } catch (err) {
         console.error('Error initializing auth:', err);
@@ -122,6 +128,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         localStorage.removeItem('clamflow_user');
       } finally {
         setIsLoading(false);
+        console.log('AuthContext: Initialization complete');
       }
     };
 
