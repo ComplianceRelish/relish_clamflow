@@ -53,6 +53,7 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
   const loadAdmins = async () => {
     try {
       setLoading(true);
+      setAdmins([]); // Reset to empty array to prevent stale data
       
       // Try the specific admin endpoint first
       console.log('🔍 Fetching admins from /super-admin/admins...');
@@ -72,7 +73,7 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
       
       if (response.success && response.data) {
         // Handle different response formats - backend returns double-wrapped response
-        let adminData;
+        let adminData: Admin[] = [];
         
         // Check if response.data has nested success/data structure
         if ((response.data as any).success && (response.data as any).data) {
@@ -80,7 +81,7 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
           adminData = (response.data as any).data;
         } else if (Array.isArray(response.data)) {
           adminData = response.data;
-        } else {
+        } else if (typeof response.data === 'object') {
           adminData = (response.data as any).admins || (response.data as any).users || [];
         }
         
@@ -89,22 +90,23 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
         
         // Ensure adminData is an array
         if (!Array.isArray(adminData)) {
-          console.error('❌ Admin data is not an array:', adminData);
+          console.error('❌ Admin data is not an array:', typeof adminData, adminData);
           adminData = [];
         }
         
-        // Filter for admin roles only
-        adminData = adminData.filter((user: Admin) => 
-          user.role === 'Super Admin' || user.role === 'Admin'
-        );
+        // Filter for admin roles only - with safety check
+        const filteredAdmins = adminData.filter((user: any) => {
+          if (!user || typeof user !== 'object') return false;
+          return user.role === 'Super Admin' || user.role === 'Admin';
+        });
         
-        console.log('✨ Filtered admins:', adminData);
-        console.log('👥 Number of admins found:', adminData.length);
-        setAdmins(adminData);
+        console.log('✨ Filtered admins:', filteredAdmins);
+        console.log('👥 Number of admins found:', filteredAdmins.length);
+        setAdmins(filteredAdmins);
         setError('');
       } else {
         console.error('❌ No admin data received - response:', response);
-        setError('Failed to load admin list');
+        setError(response.error || 'Failed to load admin list');
         setAdmins([]); // Set empty array on error
       }
     } catch (err: any) {

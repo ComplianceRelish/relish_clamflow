@@ -93,7 +93,8 @@ class ClamFlowAPI {
   private token: string | null = null;
 
   constructor(baseURL: string = API_BASE_URL) {
-    this.baseURL = baseURL.replace(/\/$/, '');
+    // Ensure HTTPS protocol and remove trailing slash
+    this.baseURL = baseURL.replace(/^http:/, 'https:').replace(/\/$/, '');
     
     if (typeof window !== 'undefined') {
       this.token = localStorage.getItem('clamflow_token');
@@ -122,6 +123,13 @@ class ClamFlowAPI {
   ): Promise<ApiResponse<T>> {
     try {
       const url = `${this.baseURL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
+      
+      // Log the URL to catch any HTTP protocol issues
+      if (url.startsWith('http:')) {
+        console.error('🚨 SECURITY WARNING: Attempting HTTP request to:', url);
+        console.error('🔧 This should be HTTPS. Forcing HTTPS...');
+      }
+      
       const config: RequestInit = {
         ...options,
         headers: {
@@ -139,12 +147,15 @@ class ClamFlowAPI {
         }
 
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || errorData.message || `HTTP ${response.status}`);
+        const errorMessage = errorData.detail || errorData.message || `HTTP ${response.status}`;
+        console.error(`❌ API Error [${response.status}] ${endpoint}:`, errorMessage);
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
       return { success: true, data };
     } catch (error) {
+      console.error(`💥 Request failed for ${endpoint}:`, error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -192,11 +203,11 @@ class ClamFlowAPI {
   }
 
   async getAllUsers(): Promise<ApiResponse<User[]>> {
-    return this.get('/api/users');
+    return this.get('/api/users/');
   }
 
   async createUser(userData: Partial<User>): Promise<ApiResponse<User>> {
-    return this.post('/api/users', userData);
+    return this.post('/api/users/', userData);
   }
 
   async updateUser(userId: string, userData: Partial<User>): Promise<ApiResponse<User>> {
@@ -254,16 +265,16 @@ class ClamFlowAPI {
   async getAdmins(): Promise<ApiResponse<User[]>> {
     // Try multiple endpoints to find admins
     try {
-      const response = await this.get('/super-admin/admins');
+      const response = await this.get<User[]>('/super-admin/admins');
       if (response.success && response.data) {
         return response;
       }
     } catch (err) {
-      console.warn('Failed to get from /super-admin/admins, trying /api/users');
+      console.warn('Failed to get from /super-admin/admins, trying /api/users/');
     }
     
-    // Fallback to general users endpoint filtered by admin roles
-    return this.get('/api/users');
+    // Fallback to general users endpoint filtered by admin roles (with trailing slash to avoid 307)
+    return this.get<User[]>('/api/users/');
   }
 
   async createAdmin(adminData: AdminFormData): Promise<ApiResponse<User>> {
