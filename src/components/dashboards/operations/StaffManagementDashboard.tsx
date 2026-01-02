@@ -1,89 +1,18 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import clamflowAPI from '../../../lib/clamflow-api';
-
-interface AttendanceRecord {
-  id: string;
-  staffId: string;
-  staffName: string;
-  checkInTime: string;
-  checkOutTime: string | null;
-  station: string;
-  status: 'present' | 'late' | 'absent';
-  hoursWorked: number;
-}
-
-interface StaffLocation {
-  staffId: string;
-  staffName: string;
-  currentLocation: string;
-  lastSeen: string;
-  activity: string;
-}
-
-interface PerformanceMetric {
-  staffId: string;
-  staffName: string;
-  role: string;
-  lotsProcessed: number;
-  averageProcessingTime: number;
-  qualityScore: number;
-  efficiency: number;
-}
+import React from 'react';
+import { useStaffData } from '@/hooks/useStaffData';
+import { AttendanceRecord, StaffLocation, StaffPerformance } from '@/types/dashboard';
 
 const StaffManagementDashboard: React.FC = () => {
-  const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
-  const [locations, setLocations] = useState<StaffLocation[]>([]);
-  const [performance, setPerformance] = useState<PerformanceMetric[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string>('');
-  const [lastUpdated, setLastUpdated] = useState<string>('');
-
-  useEffect(() => {
-    loadStaffData();
-    const interval = setInterval(loadStaffData, 30000); // Refresh every 30 seconds
-    return () => clearInterval(interval);
-  }, []);
-
-  const loadStaffData = async () => {
-    try {
-      const [attendanceRes, locationsRes, performanceRes] = await Promise.all([
-        clamflowAPI.getStaffAttendance(),
-        clamflowAPI.getStaffLocations(),
-        clamflowAPI.getStaffPerformance()
-      ]);
-
-      if (attendanceRes.success && attendanceRes.data) {
-        setAttendance(attendanceRes.data as AttendanceRecord[]);
-      }
-
-      if (locationsRes.success && locationsRes.data) {
-        setLocations(locationsRes.data as StaffLocation[]);
-      }
-
-      if (performanceRes.success && performanceRes.data) {
-        setPerformance(performanceRes.data as PerformanceMetric[]);
-      }
-
-      setLastUpdated(new Date().toLocaleTimeString());
-      setError('');
-    } catch (err) {
-      setError('Failed to load staff data');
-      console.error('Staff data loading error:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getAttendanceStatusColor = (status: string) => {
-    switch (status) {
-      case 'present': return 'bg-green-100 text-green-800 border-green-300';
-      case 'late': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-      case 'absent': return 'bg-red-100 text-red-800 border-red-300';
-      default: return 'bg-gray-100 text-gray-800 border-gray-300';
-    }
-  };
+  const {
+    attendance,
+    locations,
+    performance,
+    loading,
+    error,
+    lastUpdated,
+  } = useStaffData();
 
   const getPerformanceColor = (score: number) => {
     if (score >= 90) return 'text-green-600';
@@ -102,56 +31,55 @@ const StaffManagementDashboard: React.FC = () => {
     );
   }
 
-  const presentStaff = attendance.filter(a => a.status === 'present').length;
-  const lateStaff = attendance.filter(a => a.status === 'late').length;
-  const absentStaff = attendance.filter(a => a.status === 'absent').length;
-  const totalHours = attendance.reduce((sum, a) => sum + (a.hoursWorked || 0), 0);
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="text-red-500 text-5xl mb-4">⚠️</div>
+          <p className="text-xl font-semibold text-gray-900 mb-2">Failed to Load Staff Data</p>
+          <p className="text-gray-600">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  const checkedInStaff = attendance.filter(a => a.status === 'checked_in').length;
+  const checkedOutStaff = attendance.filter(a => a.status === 'checked_out').length;
+  const totalStaff = attendance.length;
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Staff Management Dashboard</h2>
+          <h2 className="text-2xl font-bold text-gray-900">👥 Staff Management Dashboard</h2>
           <p className="text-sm text-gray-500 mt-1">
-            Last updated: {lastUpdated || 'Never'}
+            Last updated: {lastUpdated?.toLocaleTimeString() || 'Never'}
           </p>
         </div>
-        <button
-          onClick={loadStaffData}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          Refresh
-        </button>
       </div>
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-          {error}
-        </div>
-      )}
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
-          <div className="text-sm font-medium text-gray-600">Present Today</div>
-          <div className="text-3xl font-bold text-gray-900 mt-2">{presentStaff}</div>
+          <div className="text-sm font-medium text-gray-600">Checked In</div>
+          <div className="text-3xl font-bold text-gray-900 mt-2">{checkedInStaff}</div>
           <div className="text-xs text-gray-500 mt-1">Staff members</div>
         </div>
         <div className="bg-white rounded-lg shadow p-6 border-l-4 border-yellow-500">
-          <div className="text-sm font-medium text-gray-600">Late Arrivals</div>
-          <div className="text-3xl font-bold text-gray-900 mt-2">{lateStaff}</div>
-          <div className="text-xs text-gray-500 mt-1">Staff members</div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-red-500">
-          <div className="text-sm font-medium text-gray-600">Absent Today</div>
-          <div className="text-3xl font-bold text-gray-900 mt-2">{absentStaff}</div>
+          <div className="text-sm font-medium text-gray-600">Checked Out</div>
+          <div className="text-3xl font-bold text-gray-900 mt-2">{checkedOutStaff}</div>
           <div className="text-xs text-gray-500 mt-1">Staff members</div>
         </div>
         <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
-          <div className="text-sm font-medium text-gray-600">Total Hours Today</div>
-          <div className="text-3xl font-bold text-gray-900 mt-2">{totalHours.toFixed(1)}</div>
-          <div className="text-xs text-gray-500 mt-1">Working hours</div>
+          <div className="text-sm font-medium text-gray-600">Total Staff</div>
+          <div className="text-3xl font-bold text-gray-900 mt-2">{totalStaff}</div>
+          <div className="text-xs text-gray-500 mt-1">Staff members</div>
+        </div>
+        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-purple-500">
+          <div className="text-sm font-medium text-gray-600">Active Locations</div>
+          <div className="text-3xl font-bold text-gray-900 mt-2">{locations.length}</div>
+          <div className="text-xs text-gray-500 mt-1">Locations</div>
         </div>
       </div>
 
@@ -168,16 +96,16 @@ const StaffManagementDashboard: React.FC = () => {
                   Staff Name
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Station
+                  Role
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Location
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Check In
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Check Out
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Hours Worked
+                  Method
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
@@ -193,25 +121,29 @@ const StaffManagementDashboard: React.FC = () => {
                 </tr>
               ) : (
                 attendance.map((record) => (
-                  <tr key={record.id} className="hover:bg-gray-50">
+                  <tr key={record.userId} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {record.staffName}
+                      {record.fullName}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {record.station}
+                      {record.shiftType}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {new Date(record.checkInTime).toLocaleTimeString()}
+                      {record.location}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {record.checkOutTime ? new Date(record.checkOutTime).toLocaleTimeString() : '-'}
+                      {record.checkInTime ? new Date(record.checkInTime).toLocaleTimeString() : '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {record.hoursWorked.toFixed(1)}h
+                      {record.method}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${getAttendanceStatusColor(record.status)}`}>
-                        {record.status.toUpperCase()}
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full border ${
+                        record.status === 'checked_in' 
+                          ? 'bg-green-100 text-green-800 border-green-300' 
+                          : 'bg-gray-100 text-gray-800 border-gray-300'
+                      }`}>
+                        {record.status === 'checked_in' ? 'Checked In' : 'Checked Out'}
                       </span>
                     </td>
                   </tr>
@@ -236,21 +168,25 @@ const StaffManagementDashboard: React.FC = () => {
             ) : (
               locations.map((location) => (
                 <div
-                  key={location.staffId}
+                  key={location.location}
                   className="border rounded-lg p-4 hover:shadow-md transition-shadow"
                 >
                   <div className="flex justify-between items-start mb-2">
                     <div>
-                      <h4 className="font-semibold text-gray-900">{location.staffName}</h4>
-                      <p className="text-sm text-gray-600">{location.currentLocation}</p>
+                      <h4 className="font-semibold text-gray-900">{location.location}</h4>
+                      <p className="text-sm text-gray-600">{location.staffCount} staff members</p>
                     </div>
                     <span className="px-2 py-1 text-xs font-semibold rounded-full border bg-blue-100 text-blue-800 border-blue-300">
                       ACTIVE
                     </span>
                   </div>
                   <div className="text-xs text-gray-500 space-y-1">
-                    <div>Activity: {location.activity}</div>
-                    <div>Last seen: {new Date(location.lastSeen).toLocaleTimeString()}</div>
+                    {location.staffMembers.slice(0, 3).map((member) => (
+                      <div key={member.userId}>{member.fullName} ({member.role})</div>
+                    ))}
+                    {location.staffMembers.length > 3 && (
+                      <div className="text-blue-600">+{location.staffMembers.length - 3} more</div>
+                    )}
                   </div>
                 </div>
               ))
@@ -297,9 +233,9 @@ const StaffManagementDashboard: React.FC = () => {
                 </tr>
               ) : (
                 performance.map((metric) => (
-                  <tr key={metric.staffId} className="hover:bg-gray-50">
+                  <tr key={metric.userId} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {metric.staffName}
+                      {metric.fullName}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                       {metric.role}
@@ -308,7 +244,7 @@ const StaffManagementDashboard: React.FC = () => {
                       {metric.lotsProcessed}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {metric.averageProcessingTime.toFixed(1)}
+                      {metric.avgProcessingTime.toFixed(1)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold">
                       <span className={getPerformanceColor(metric.qualityScore)}>

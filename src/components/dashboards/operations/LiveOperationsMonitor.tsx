@@ -1,76 +1,18 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import clamflowAPI from '../../../lib/clamflow-api';
-
-interface StationStatus {
-  stationId: string;
-  stationName: string;
-  currentOperator: string | null;
-  currentLot: string | null;
-  status: 'active' | 'idle' | 'offline';
-  efficiency: number;
-}
-
-interface LotInProgress {
-  lotId: string;
-  currentStage: 'Weight' | 'PPC' | 'FP' | 'QC' | 'Inventory';
-  location: string;
-  startTime: string;
-  estimatedCompletion: string;
-  supplier?: string;
-}
-
-interface BottleneckAlert {
-  id: string;
-  stationName: string;
-  lotId: string;
-  delayMinutes: number;
-  severity: 'low' | 'medium' | 'high';
-}
+import React from 'react';
+import { useOperationsData } from '@/hooks/useOperationsData';
+import { StationStatus, ActiveLot, Bottleneck } from '@/types/dashboard';
 
 const LiveOperationsMonitor: React.FC = () => {
-  const [stations, setStations] = useState<StationStatus[]>([]);
-  const [activeLots, setActiveLots] = useState<LotInProgress[]>([]);
-  const [bottlenecks, setBottlenecks] = useState<BottleneckAlert[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [lastUpdated, setLastUpdated] = useState<string>('');
-
-  useEffect(() => {
-    loadOperationsData();
-    // Refresh every 10 seconds for real-time monitoring
-    const interval = setInterval(loadOperationsData, 10000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const loadOperationsData = async () => {
-    try {
-      // Fetch real data from backend
-      const [stationsRes, lotsRes, bottlenecksRes] = await Promise.all([
-        clamflowAPI.getStations(),
-        clamflowAPI.getActiveLots(),
-        clamflowAPI.getBottlenecks()
-      ]);
-
-      if (stationsRes.success && stationsRes.data) {
-        setStations(stationsRes.data as StationStatus[]);
-      }
-
-      if (lotsRes.success && lotsRes.data) {
-        setActiveLots(lotsRes.data as LotInProgress[]);
-      }
-
-      if (bottlenecksRes.success && bottlenecksRes.data) {
-        setBottlenecks(bottlenecksRes.data as BottleneckAlert[]);
-      }
-
-      setLastUpdated(new Date().toLocaleTimeString());
-      setLoading(false);
-    } catch (err) {
-      console.error('Failed to load operations data:', err);
-      setLoading(false);
-    }
-  };
+  const {
+    stations,
+    activeLots,
+    bottlenecks,
+    loading,
+    error,
+    lastUpdated,
+  } = useOperationsData();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -122,6 +64,18 @@ const LiveOperationsMonitor: React.FC = () => {
     );
   }
 
+  if (error) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <div className="text-center">
+          <div className="text-red-500 text-5xl mb-4">⚠️</div>
+          <p className="text-xl font-semibold text-gray-900 mb-2">Failed to Load Operations Data</p>
+          <p className="text-gray-600">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header with refresh indicator */}
@@ -131,7 +85,7 @@ const LiveOperationsMonitor: React.FC = () => {
           <p className="text-gray-600">Real-time station status and lot tracking</p>
         </div>
         <div className="text-sm text-gray-500">
-          Last updated: {lastUpdated}
+          Last updated: {lastUpdated?.toLocaleTimeString() || 'Never'}
           <span className="ml-2 inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
         </div>
       </div>
@@ -142,9 +96,10 @@ const LiveOperationsMonitor: React.FC = () => {
           <h3 className="font-bold text-yellow-900 mb-2">⚠️ Bottleneck Alerts</h3>
           <div className="space-y-2">
             {bottlenecks.map(alert => (
-              <div key={alert.id} className={`p-3 rounded border-l-4 ${getSeverityColor(alert.severity)}`}>
-                <p className="font-medium">{alert.stationName} - {alert.lotId}</p>
-                <p className="text-sm">Delayed by {alert.delayMinutes} minutes</p>
+              <div key={alert.stationName} className={`p-3 rounded border-l-4 ${getSeverityColor(alert.severity)}`}>
+                <p className="font-medium">{alert.stationName} - Queue: {alert.queuedLots} lots</p>
+                <p className="text-sm">Avg wait time: {alert.avgWaitTime} minutes</p>
+                <p className="text-xs text-gray-600 mt-1">{alert.recommendation}</p>
               </div>
             ))}
           </div>
@@ -217,26 +172,26 @@ const LiveOperationsMonitor: React.FC = () => {
               {activeLots.map(lot => (
                 <tr key={lot.lotId} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="font-medium text-gray-900">{lot.lotId}</span>
+                    <span className="font-medium text-gray-900">{lot.lotNumber}</span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStageColor(lot.currentStage)}`}>
-                      {lot.currentStage}
+                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStageColor(lot.currentStation)}`}>
+                      {lot.currentStation}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {lot.location}
+                    {lot.currentStation}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {lot.supplier || 'N/A'}
+                    N/A
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {getTimeElapsed(lot.startTime)}
+                    {getTimeElapsed(lot.entryTime)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="inline-flex items-center text-sm">
                       <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-                      In Progress
+                      {lot.status}
                     </span>
                   </td>
                 </tr>
@@ -250,8 +205,8 @@ const LiveOperationsMonitor: React.FC = () => {
       <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Processing Flow</h3>
         <div className="flex items-center justify-between space-x-4 overflow-x-auto pb-2">
-          {['Weight', 'PPC', 'FP', 'QC', 'Inventory'].map((stage, index) => {
-            const lotsInStage = activeLots.filter(lot => lot.currentStage === stage).length;
+          {['Weight Station', 'PPC Station', 'FP Station', 'QC Station', 'Inventory'].map((stage, index) => {
+            const lotsInStage = activeLots.filter(lot => lot.currentStation.includes(stage.split(' ')[0])).length;
             return (
               <React.Fragment key={stage}>
                 <div className="flex-1 min-w-[120px]">

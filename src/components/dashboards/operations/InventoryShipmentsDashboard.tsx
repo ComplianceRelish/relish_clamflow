@@ -1,91 +1,22 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import clamflowAPI from '../../../lib/clamflow-api';
-
-interface FinishedProduct {
-  id: string;
-  productType: string;
-  lotId: string;
-  weight: number;
-  packagingDate: string;
-  expiryDate: string;
-  status: 'in_stock' | 'shipped' | 'pending_shipment';
-  location: string;
-  batchNumber: string;
-}
-
-interface InventoryItem {
-  id: string;
-  category: string;
-  itemName: string;
-  quantity: number;
-  unit: string;
-  reorderLevel: number;
-  lastRestocked: string;
-  supplier: string;
-  status: 'adequate' | 'low' | 'critical';
-}
-
-interface TestResult {
-  id: string;
-  lotId: string;
-  testType: string;
-  testDate: string;
-  result: 'pass' | 'fail' | 'pending';
-  testedBy: string;
-  notes: string;
-  parameters: {
-    parameter: string;
-    value: string;
-    standard: string;
-  }[];
-}
+import React, { useState } from 'react';
+import { useInventoryData } from '@/hooks/useInventoryData';
+import { FinishedProduct, InventoryItem, TestResult } from '@/types/dashboard';
 
 const InventoryShipmentsDashboard: React.FC = () => {
-  const [finishedProducts, setFinishedProducts] = useState<FinishedProduct[]>([]);
-  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
-  const [testResults, setTestResults] = useState<TestResult[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string>('');
-  const [lastUpdated, setLastUpdated] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'products' | 'inventory' | 'tests'>('products');
-
-  useEffect(() => {
-    loadInventoryData();
-    const interval = setInterval(loadInventoryData, 45000); // Refresh every 45 seconds
-    return () => clearInterval(interval);
-  }, []);
-
-  const loadInventoryData = async () => {
-    try {
-      const [productsRes, inventoryRes, testsRes] = await Promise.all([
-        clamflowAPI.getFinishedProducts(),
-        clamflowAPI.getInventoryItems(),
-        clamflowAPI.getTestResults()
-      ]);
-
-      if (productsRes.success && productsRes.data) {
-        setFinishedProducts(productsRes.data as FinishedProduct[]);
-      }
-
-      if (inventoryRes.success && inventoryRes.data) {
-        setInventoryItems(inventoryRes.data as InventoryItem[]);
-      }
-
-      if (testsRes.success && testsRes.data) {
-        setTestResults(testsRes.data as TestResult[]);
-      }
-
-      setLastUpdated(new Date().toLocaleTimeString());
-      setError('');
-    } catch (err) {
-      setError('Failed to load inventory data');
-      console.error('Inventory data loading error:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  
+  const {
+    finishedProducts,
+    inventoryItems,
+    testResults,
+    readyForShipment,
+    pendingApprovals,
+    loading,
+    error,
+    lastUpdated,
+  } = useInventoryData();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -118,53 +49,53 @@ const InventoryShipmentsDashboard: React.FC = () => {
     );
   }
 
-  const inStockProducts = finishedProducts.filter(p => p.status === 'in_stock').length;
-  const pendingShipment = finishedProducts.filter(p => p.status === 'pending_shipment').length;
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="text-red-500 text-5xl mb-4">⚠️</div>
+          <p className="text-xl font-semibold text-gray-900 mb-2">Failed to Load Inventory Data</p>
+          <p className="text-gray-600">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  const packedProducts = finishedProducts.filter(p => p.status === 'packed').length;
+  const readyForShipmentCount = finishedProducts.filter(p => p.status === 'ready_for_shipment').length;
   const criticalItems = inventoryItems.filter(i => i.status === 'critical').length;
   const totalWeight = finishedProducts
-    .filter(p => p.status === 'in_stock')
-    .reduce((sum, p) => sum + p.weight, 0);
+    .filter(p => p.status === 'ready_for_shipment')
+    .reduce((sum, p) => sum + p.totalWeight, 0);
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Inventory & Shipments Dashboard</h2>
+          <h2 className="text-2xl font-bold text-gray-900">📦 Inventory & Shipments Dashboard</h2>
           <p className="text-sm text-gray-500 mt-1">
-            Last updated: {lastUpdated || 'Never'}
+            Last updated: {lastUpdated?.toLocaleTimeString() || 'Never'}
           </p>
         </div>
-        <button
-          onClick={loadInventoryData}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          Refresh
-        </button>
       </div>
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-          {error}
-        </div>
-      )}
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
-          <div className="text-sm font-medium text-gray-600">In Stock Products</div>
-          <div className="text-3xl font-bold text-gray-900 mt-2">{inStockProducts}</div>
-          <div className="text-xs text-gray-500 mt-1">Ready for shipment</div>
+          <div className="text-sm font-medium text-gray-600">Packed Products</div>
+          <div className="text-3xl font-bold text-gray-900 mt-2">{packedProducts}</div>
+          <div className="text-xs text-gray-500 mt-1">Awaiting testing</div>
         </div>
         <div className="bg-white rounded-lg shadow p-6 border-l-4 border-yellow-500">
-          <div className="text-sm font-medium text-gray-600">Pending Shipment</div>
-          <div className="text-3xl font-bold text-gray-900 mt-2">{pendingShipment}</div>
-          <div className="text-xs text-gray-500 mt-1">Orders in queue</div>
+          <div className="text-sm font-medium text-gray-600">Ready for Shipment</div>
+          <div className="text-3xl font-bold text-gray-900 mt-2">{readyForShipmentCount}</div>
+          <div className="text-xs text-gray-500 mt-1">Approved & ready</div>
         </div>
         <div className="bg-white rounded-lg shadow p-6 border-l-4 border-red-500">
           <div className="text-sm font-medium text-gray-600">Critical Items</div>
           <div className="text-3xl font-bold text-gray-900 mt-2">{criticalItems}</div>
-          <div className="text-xs text-gray-500 mt-1">Below reorder level</div>
+          <div className="text-xs text-gray-500 mt-1">Requires attention</div>
         </div>
         <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
           <div className="text-sm font-medium text-gray-600">Total Stock Weight</div>
@@ -217,25 +148,25 @@ const InventoryShipmentsDashboard: React.FC = () => {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Lot ID
+                    Lot Number
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Product Type
+                    Species
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Supplier
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Total Boxes
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Weight (kg)
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Packaging Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Expiry Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Location
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Approval
                   </th>
                 </tr>
               </thead>
@@ -248,28 +179,30 @@ const InventoryShipmentsDashboard: React.FC = () => {
                   </tr>
                 ) : (
                   finishedProducts.map((product) => (
-                    <tr key={product.id} className="hover:bg-gray-50">
+                    <tr key={product.lotNumber} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {product.lotId}
+                        {product.lotNumber}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                        {product.productType}
+                        {product.species}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                        {product.weight.toFixed(2)}
+                        {product.supplierName}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                        {new Date(product.packagingDate).toLocaleDateString()}
+                        {product.totalBoxes}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                        {new Date(product.expiryDate).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                        {product.location}
+                        {product.totalWeight.toFixed(2)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${getStatusColor(product.status)}`}>
                           {product.status.replace('_', ' ').toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${getStatusColor(product.approvalStatus)}`}>
+                          {product.approvalStatus.replace('_', ' ').toUpperCase()}
                         </span>
                       </td>
                     </tr>
@@ -287,22 +220,22 @@ const InventoryShipmentsDashboard: React.FC = () => {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Category
+                    Lot Number
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Item Name
+                    Species
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Quantity
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Reorder Level
+                    Weight (kg)
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Last Restocked
+                    Location
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Supplier
+                    Last Updated
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
@@ -318,24 +251,24 @@ const InventoryShipmentsDashboard: React.FC = () => {
                   </tr>
                 ) : (
                   inventoryItems.map((item) => (
-                    <tr key={item.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                        {item.category}
-                      </td>
+                    <tr key={item.itemId} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {item.itemName}
+                        {item.lotNumber}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                        {item.quantity} {item.unit}
+                        {item.species}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                        {item.reorderLevel} {item.unit}
+                        {item.quantity}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                        {new Date(item.lastRestocked).toLocaleDateString()}
+                        {item.weight.toFixed(2)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                        {item.supplier}
+                        {item.location}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        {new Date(item.lastUpdated).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${getStatusColor(item.status)}`}>
@@ -360,10 +293,10 @@ const InventoryShipmentsDashboard: React.FC = () => {
                 </div>
               ) : (
                 testResults.map((test) => (
-                  <div key={test.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                  <div key={test.testId} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
                     <div className="flex justify-between items-start mb-3">
                       <div>
-                        <h4 className="font-semibold text-gray-900">Lot: {test.lotId}</h4>
+                        <h4 className="font-semibold text-gray-900">Lot: {test.lotNumber}</h4>
                         <p className="text-sm text-gray-600">{test.testType}</p>
                       </div>
                       <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${getStatusColor(test.result)}`}>
@@ -373,31 +306,17 @@ const InventoryShipmentsDashboard: React.FC = () => {
                     <div className="grid grid-cols-2 gap-4 text-sm mb-3">
                       <div>
                         <span className="text-gray-600">Test Date:</span>
-                        <span className="ml-2 text-gray-900">{new Date(test.testDate).toLocaleDateString()}</span>
+                        <span className="ml-2 text-gray-900">{new Date(test.testedAt).toLocaleDateString()}</span>
                       </div>
                       <div>
                         <span className="text-gray-600">Tested By:</span>
                         <span className="ml-2 text-gray-900">{test.testedBy}</span>
                       </div>
-                    </div>
-                    {test.parameters && test.parameters.length > 0 && (
-                      <div className="border-t pt-3">
-                        <h5 className="text-xs font-semibold text-gray-700 mb-2">Test Parameters:</h5>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                          {test.parameters.map((param, idx) => (
-                            <div key={idx} className="text-xs bg-gray-50 p-2 rounded">
-                              <div className="font-medium text-gray-900">{param.parameter}</div>
-                              <div className="text-gray-600">
-                                Value: <span className="font-medium">{param.value}</span>
-                              </div>
-                              <div className="text-gray-600">
-                                Standard: <span className="font-medium">{param.standard}</span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
+                      <div>
+                        <span className="text-gray-600">Species:</span>
+                        <span className="ml-2 text-gray-900">{test.species}</span>
                       </div>
-                    )}
+                    </div>
                     {test.notes && (
                       <div className="mt-3 text-sm text-gray-700 bg-blue-50 p-2 rounded">
                         <span className="font-medium">Notes:</span> {test.notes}

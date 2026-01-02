@@ -1,5 +1,33 @@
 // src/lib/clamflow-api.ts
 import { User } from '../types/auth';
+import {
+  StationStatus,
+  ActiveLot,
+  Bottleneck,
+  VehicleLog,
+  ActiveDelivery,
+  SupplierHistory,
+  CheckpointHistory,
+  Camera,
+  FaceDetectionEvent,
+  SecurityEvent,
+  UnauthorizedAccess,
+  StationEfficiency,
+  ThroughputData,
+  QualityMetrics,
+  ProcessingTime,
+  AttendanceRecord,
+  StaffPerformance,
+  StaffLocation,
+  ShiftSchedule,
+  FinishedProduct,
+  InventoryItem,
+  TestResult,
+  ReadyForShipment,
+  PendingApproval,
+  DashboardMetrics,
+  SystemHealthData,
+} from '../types/dashboard';
 
 export interface ApiResponse<T = unknown> {
   success: boolean;
@@ -14,29 +42,7 @@ export interface LoginResponse {
   user: User;
 }
 
-export interface DashboardMetrics {
-  totalUsers: number;
-  activeUsers: number;
-  totalLots: number;
-  pendingApprovals: number;
-  systemHealth: 'healthy' | 'warning' | 'critical';
-  lastUpdated: string;
-}
-
-export interface SystemHealthData {
-  status: 'healthy' | 'warning' | 'critical';
-  uptime: string;
-  database: {
-    status: 'connected' | 'disconnected';
-    response_time: number;
-  };
-  services: {
-    authentication: boolean;
-    api: boolean;
-    database: boolean;
-    hardware: boolean;
-  };
-}
+// DashboardMetrics and SystemHealthData now imported from ../types/dashboard
 
 export interface ApprovalItem {
   id: string;
@@ -319,81 +325,105 @@ class ClamFlowAPI {
   }
 
   // OPERATIONS MONITOR
-  async getStations(): Promise<ApiResponse<unknown[]>> {
-    return this.get('/api/operations/stations');
+  async getStations(): Promise<ApiResponse<StationStatus[]>> {
+    return this.get('/operations/stations');
   }
 
-  async getActiveLots(): Promise<ApiResponse<unknown[]>> {
-    return this.get('/api/operations/active-lots');
+  async getActiveLots(): Promise<ApiResponse<ActiveLot[]>> {
+    return this.get('/operations/active-lots');
   }
 
-  async getBottlenecks(): Promise<ApiResponse<unknown[]>> {
-    return this.get('/api/operations/bottlenecks');
+  async getBottlenecks(): Promise<ApiResponse<Bottleneck[]>> {
+    return this.get('/operations/bottlenecks');
   }
 
   // GATE & VEHICLES
-  async getVehicles(): Promise<ApiResponse<unknown[]>> {
-    return this.get('/api/gate/vehicles');
+  async getVehicles(): Promise<ApiResponse<VehicleLog[]>> {
+    return this.get('/gate/vehicles');
   }
 
-  async getActiveVehicles(): Promise<ApiResponse<unknown[]>> {
-    return this.get('/api/gate/active');
+  async getActiveVehicles(): Promise<ApiResponse<ActiveDelivery[]>> {
+    return this.get('/gate/active');
   }
 
-  async getSuppliers(): Promise<ApiResponse<unknown[]>> {
-    return this.get('/api/gate/suppliers');
+  async getSuppliers(): Promise<ApiResponse<SupplierHistory[]>> {
+    return this.get('/gate/suppliers');
+  }
+
+  async getCheckpoints(): Promise<ApiResponse<CheckpointHistory[]>> {
+    return this.get('/gate/checkpoints');
   }
 
   // SECURITY & SURVEILLANCE
-  async getSecurityCameras(): Promise<ApiResponse<unknown[]>> {
-    return this.get('/api/security/cameras');
+  async getSecurityCameras(): Promise<ApiResponse<Camera[]>> {
+    return this.get('/security/cameras');
   }
 
-  async getSecurityEvents(): Promise<ApiResponse<unknown[]>> {
-    return this.get('/api/security/events');
+  async getSecurityEvents(): Promise<ApiResponse<SecurityEvent[]>> {
+    return this.get('/security/events');
   }
 
-  async getFaceDetectionEvents(): Promise<ApiResponse<unknown[]>> {
-    return this.get('/api/security/face-detection');
+  async getFaceDetectionEvents(): Promise<ApiResponse<FaceDetectionEvent[]>> {
+    return this.get('/security/face-detection');
+  }
+
+  async getUnauthorizedAccess(): Promise<ApiResponse<UnauthorizedAccess[]>> {
+    return this.get('/security/unauthorized');
   }
 
   // PRODUCTION ANALYTICS
-  async getProductionThroughput(): Promise<ApiResponse<unknown>> {
-    return this.get('/api/analytics/throughput');
+  async getProductionThroughput(): Promise<ApiResponse<ThroughputData>> {
+    return this.get('/analytics/throughput');
   }
 
-  async getEfficiencyMetrics(): Promise<ApiResponse<unknown>> {
-    return this.get('/api/analytics/efficiency');
+  async getEfficiencyMetrics(): Promise<ApiResponse<StationEfficiency[]>> {
+    return this.get('/analytics/efficiency');
   }
 
-  async getQualityMetrics(): Promise<ApiResponse<unknown>> {
-    return this.get('/api/analytics/quality');
+  async getQualityMetrics(): Promise<ApiResponse<QualityMetrics>> {
+    return this.get('/analytics/quality');
+  }
+
+  async getProcessingTimes(): Promise<ApiResponse<ProcessingTime[]>> {
+    return this.get('/analytics/processing-times');
   }
 
   // STAFF MANAGEMENT
-  async getStaffAttendance(): Promise<ApiResponse<unknown[]>> {
-    return this.get('/api/staff/attendance');
+  async getStaffAttendance(): Promise<ApiResponse<AttendanceRecord[]>> {
+    return this.get('/staff_dashboard/attendance');
   }
 
-  async getStaffLocations(): Promise<ApiResponse<unknown[]>> {
-    return this.get('/api/staff/locations');
+  async getStaffLocations(): Promise<ApiResponse<StaffLocation[]>> {
+    return this.get('/staff_dashboard/locations');
   }
 
-  async getStaffPerformance(): Promise<ApiResponse<unknown[]>> {
-    return this.get('/api/staff/performance');
+  async getStaffPerformance(): Promise<ApiResponse<StaffPerformance[]>> {
+    return this.get('/staff_dashboard/performance');
+  }
+
+  async getShiftSchedules(): Promise<ApiResponse<ShiftSchedule[]>> {
+    return this.get('/staff_dashboard/shifts');
   }
 
   // INVENTORY & SHIPMENTS
-  async getFinishedProducts(): Promise<ApiResponse<unknown[]>> {
-    return this.get('/api/inventory/finished-products');
+  async getFinishedProducts(): Promise<ApiResponse<FinishedProduct[]>> {
+    return this.get('/inventory_dashboard/finished-products');
   }
 
-  async getInventoryItems(): Promise<ApiResponse<unknown[]>> {
-    return this.get('/api/inventory/items');
+  async getInventoryItems(): Promise<ApiResponse<InventoryItem[]>> {
+    return this.get('/inventory_dashboard/items');
   }
 
-  async getTestResults(): Promise<ApiResponse<unknown[]>> {
-    return this.get('/api/inventory/test-results');
+  async getTestResults(): Promise<ApiResponse<TestResult[]>> {
+    return this.get('/inventory_dashboard/test-results');
+  }
+
+  async getReadyForShipment(): Promise<ApiResponse<ReadyForShipment[]>> {
+    return this.get('/inventory_dashboard/ready-for-shipment');
+  }
+
+  async getPendingInventoryApprovals(): Promise<ApiResponse<PendingApproval[]>> {
+    return this.get('/inventory_dashboard/pending-approvals');
   }
 
   // QA/QC FORMS - Required by QAFlowDashboard and QCFlowDashboard

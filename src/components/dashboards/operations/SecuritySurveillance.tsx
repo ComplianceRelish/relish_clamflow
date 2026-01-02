@@ -1,81 +1,18 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import clamflowAPI from '../../../lib/clamflow-api';
-
-interface Camera {
-  id: string;
-  cameraName: string;
-  location: string;
-  status: 'online' | 'offline' | 'error';
-  lastHeartbeat: string;
-  recordingStatus: 'active' | 'inactive';
-}
-
-interface SecurityEvent {
-  id: string;
-  timestamp: string;
-  eventType: 'unauthorized_access' | 'face_detected' | 'motion_detected' | 'alarm_triggered';
-  location: string;
-  cameraId: string;
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  description: string;
-  resolved: boolean;
-}
-
-interface FaceDetectionEvent {
-  id: string;
-  timestamp: string;
-  personName: string;
-  personId: string;
-  cameraLocation: string;
-  confidence: number;
-  authorized: boolean;
-}
+import React from 'react';
+import { useSecurityData } from '@/hooks/useSecurityData';
+import { Camera, FaceDetectionEvent, SecurityEvent } from '@/types/dashboard';
 
 const SecuritySurveillance: React.FC = () => {
-  const [cameras, setCameras] = useState<Camera[]>([]);
-  const [securityEvents, setSecurityEvents] = useState<SecurityEvent[]>([]);
-  const [faceEvents, setFaceEvents] = useState<FaceDetectionEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string>('');
-  const [lastUpdated, setLastUpdated] = useState<string>('');
-
-  useEffect(() => {
-    loadSecurityData();
-    const interval = setInterval(loadSecurityData, 15000); // Refresh every 15 seconds
-    return () => clearInterval(interval);
-  }, []);
-
-  const loadSecurityData = async () => {
-    try {
-      const [camerasRes, eventsRes, faceEventsRes] = await Promise.all([
-        clamflowAPI.getSecurityCameras(),
-        clamflowAPI.getSecurityEvents(),
-        clamflowAPI.getFaceDetectionEvents()
-      ]);
-
-      if (camerasRes.success && camerasRes.data) {
-        setCameras(camerasRes.data as Camera[]);
-      }
-
-      if (eventsRes.success && eventsRes.data) {
-        setSecurityEvents(eventsRes.data as SecurityEvent[]);
-      }
-
-      if (faceEventsRes.success && faceEventsRes.data) {
-        setFaceEvents(faceEventsRes.data as FaceDetectionEvent[]);
-      }
-
-      setLastUpdated(new Date().toLocaleTimeString());
-      setError('');
-    } catch (err) {
-      setError('Failed to load security data');
-      console.error('Security data loading error:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {
+    cameras,
+    faceDetectionEvents,
+    securityEvents,
+    loading,
+    error,
+    lastUpdated,
+  } = useSecurityData();
 
   const getCameraStatusColor = (status: string) => {
     switch (status) {
@@ -117,26 +54,21 @@ const SecuritySurveillance: React.FC = () => {
     );
   }
 
+  const activeAlerts = cameras.filter(c => c.status === 'offline').length;
   const onlineCameras = cameras.filter(c => c.status === 'online').length;
-  const unresolvedEvents = securityEvents.filter(e => !e.resolved).length;
-  const criticalEvents = securityEvents.filter(e => e.severity === 'critical' && !e.resolved).length;
+  const unresolvedEvents = securityEvents.filter(e => !e.resolvedAt).length;
+  const highSeverityEvents = securityEvents.filter(e => e.severity === 'high' && !e.resolvedAt).length;
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Security & Surveillance</h2>
+          <h2 className="text-2xl font-bold text-gray-900">🔒 Security & Surveillance Dashboard</h2>
           <p className="text-sm text-gray-500 mt-1">
-            Last updated: {lastUpdated || 'Never'}
+            Last updated: {lastUpdated?.toLocaleTimeString() || 'Never'}
           </p>
         </div>
-        <button
-          onClick={loadSecurityData}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          Refresh
-        </button>
       </div>
 
       {error && (
@@ -158,12 +90,13 @@ const SecuritySurveillance: React.FC = () => {
           <div className="text-3xl font-bold text-gray-900 mt-2">{unresolvedEvents}</div>
         </div>
         <div className="bg-white rounded-lg shadow p-6 border-l-4 border-red-500">
-          <div className="text-sm font-medium text-gray-600">Critical Alerts</div>
-          <div className="text-3xl font-bold text-gray-900 mt-2">{criticalEvents}</div>
+          <div className="text-sm font-medium text-gray-600">High Severity Events</div>
+          <div className="text-3xl font-bold text-gray-900 mt-2">{highSeverityEvents}</div>
+          <div className="text-xs text-gray-500 mt-1">Requires immediate attention</div>
         </div>
         <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
           <div className="text-sm font-medium text-gray-600">Face Detections Today</div>
-          <div className="text-3xl font-bold text-gray-900 mt-2">{faceEvents.length}</div>
+          <div className="text-3xl font-bold text-gray-900 mt-2">{faceDetectionEvents.length}</div>
         </div>
       </div>
 
@@ -181,7 +114,7 @@ const SecuritySurveillance: React.FC = () => {
             ) : (
               cameras.map((camera) => (
                 <div
-                  key={camera.id}
+                  key={camera.cameraId}
                   className="border rounded-lg p-4 hover:shadow-md transition-shadow"
                 >
                   <div className="flex justify-between items-start mb-2">
@@ -194,8 +127,9 @@ const SecuritySurveillance: React.FC = () => {
                     </span>
                   </div>
                   <div className="text-xs text-gray-500 space-y-1">
-                    <div>Last heartbeat: {new Date(camera.lastHeartbeat).toLocaleString()}</div>
-                    <div>Recording: {camera.recordingStatus}</div>
+                    <div>Last activity: {camera.lastActivity ? new Date(camera.lastActivity).toLocaleString() : 'N/A'}</div>
+                    <div>Recording: {camera.recordingEnabled ? 'Enabled' : 'Disabled'}</div>
+                    <div>Resolution: {camera.resolution}</div>
                   </div>
                 </div>
               ))
@@ -242,7 +176,7 @@ const SecuritySurveillance: React.FC = () => {
                 </tr>
               ) : (
                 securityEvents.slice(0, 10).map((event) => (
-                  <tr key={event.id} className="hover:bg-gray-50">
+                  <tr key={event.eventId} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <span className="flex items-center">
                         <span className="mr-2">{getEventTypeIcon(event.eventType)}</span>
@@ -264,7 +198,7 @@ const SecuritySurveillance: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {event.resolved ? (
+                      {event.resolvedAt ? (
                         <span className="text-green-600">✓ Resolved</span>
                       ) : (
                         <span className="text-yellow-600">⚠ Pending</span>
@@ -297,23 +231,23 @@ const SecuritySurveillance: React.FC = () => {
                   Location
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Confidence
+                  Method
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Authorization
+                  Event Type
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {faceEvents.length === 0 ? (
+              {faceDetectionEvents.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
                     No face detection events recorded
                   </td>
                 </tr>
               ) : (
-                faceEvents.slice(0, 10).map((event) => (
-                  <tr key={event.id} className="hover:bg-gray-50">
+                faceDetectionEvents.slice(0, 10).map((event) => (
+                  <tr key={event.eventId} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                       {new Date(event.timestamp).toLocaleString()}
                     </td>
@@ -321,19 +255,19 @@ const SecuritySurveillance: React.FC = () => {
                       {event.personName}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {event.cameraLocation}
+                      {event.location}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {(event.confidence * 100).toFixed(1)}%
+                      {event.method}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {event.authorized ? (
-                        <span className="px-3 py-1 text-xs font-semibold rounded-full border bg-green-100 text-green-800 border-green-300">
-                          AUTHORIZED
+                      {event.eventType === 'check-in' ? (
+                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 border border-green-300">
+                          CHECK-IN
                         </span>
                       ) : (
-                        <span className="px-3 py-1 text-xs font-semibold rounded-full border bg-red-100 text-red-800 border-red-300">
-                          UNAUTHORIZED
+                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 border border-blue-300">
+                          CHECK-OUT
                         </span>
                       )}
                     </td>
