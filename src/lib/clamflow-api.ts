@@ -153,6 +153,13 @@ class ClamFlowAPI {
       }
 
       const data = await response.json();
+      
+      // 🛡️ DEFENSIVE: Ensure array endpoints return arrays
+      if (this.isArrayEndpoint(endpoint) && !Array.isArray(data)) {
+        console.warn(`⚠️ Expected array from ${endpoint}, got:`, typeof data, data);
+        return { success: true, data: [] as T };
+      }
+      
       return { success: true, data };
     } catch (error) {
       console.error(`💥 Request failed for ${endpoint}:`, error);
@@ -161,6 +168,28 @@ class ClamFlowAPI {
         error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
+  }
+
+  private isArrayEndpoint(endpoint: string): boolean {
+    // List of endpoints that should return arrays
+    const arrayEndpoints = [
+      '/api/operations/stations',
+      '/api/operations/active-lots',
+      '/api/operations/bottlenecks',
+      '/api/gate/vehicles',
+      '/api/gate/active',
+      '/api/gate/suppliers',
+      '/api/security/cameras',
+      '/api/security/events',
+      '/api/security/face-detection',
+      '/api/staff/attendance',
+      '/api/staff/locations',
+      '/api/staff/performance',
+      '/api/inventory/finished-products',
+      '/api/inventory/items',
+      '/api/inventory/test-results',
+    ];
+    return arrayEndpoints.some(path => endpoint.includes(path));
   }
 
   private handleUnauthorized() {
