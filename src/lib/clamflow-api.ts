@@ -160,13 +160,20 @@ class ClamFlowAPI {
 
       const data = await response.json();
       
+      // 🛡️ DEFENSIVE: Handle paginated responses (unwrap { items: [], total, skip, limit })
+      let finalData = data;
+      if (data && typeof data === 'object' && 'items' in data && Array.isArray(data.items)) {
+        console.log(`📦 Unwrapping paginated response from ${endpoint}`);
+        finalData = data.items;
+      }
+      
       // 🛡️ DEFENSIVE: Ensure array endpoints return arrays
-      if (this.isArrayEndpoint(endpoint) && !Array.isArray(data)) {
-        console.warn(`⚠️ Expected array from ${endpoint}, got:`, typeof data, data);
+      if (this.isArrayEndpoint(endpoint) && !Array.isArray(finalData)) {
+        console.warn(`⚠️ Expected array from ${endpoint}, got:`, typeof finalData, finalData);
         return { success: true, data: [] as T };
       }
       
-      return { success: true, data };
+      return { success: true, data: finalData };
     } catch (error) {
       console.error(`💥 Request failed for ${endpoint}:`, error);
       return {
