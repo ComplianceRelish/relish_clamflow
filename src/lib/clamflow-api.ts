@@ -160,11 +160,18 @@ class ClamFlowAPI {
 
       const data = await response.json();
       
-      // 🛡️ DEFENSIVE: Handle paginated responses (unwrap { items: [], total, skip, limit })
+      // 🛡️ DEFENSIVE: Handle paginated responses - unwrap various formats
       let finalData = data;
-      if (data && typeof data === 'object' && 'items' in data && Array.isArray(data.items)) {
-        console.log(`📦 Unwrapping paginated response from ${endpoint}`);
-        finalData = data.items;
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        // Check for common pagination wrapper keys
+        const wrapperKeys = ['items', 'finished_products', 'test_results', 'data'];
+        for (const key of wrapperKeys) {
+          if (key in data && Array.isArray(data[key])) {
+            console.log(`📦 Unwrapping paginated response from ${endpoint} (key: ${key})`);
+            finalData = data[key];
+            break;
+          }
+        }
       }
       
       // 🛡️ DEFENSIVE: Ensure array endpoints return arrays
