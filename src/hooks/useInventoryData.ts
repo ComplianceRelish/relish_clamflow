@@ -48,37 +48,47 @@ export function useInventoryData(): UseInventoryDataReturn {
 
       // Handle finished products response
       if (finishedProductsRes.success && finishedProductsRes.data) {
-        setFinishedProducts(finishedProductsRes.data);
+        const data = Array.isArray(finishedProductsRes.data) ? finishedProductsRes.data : [];
+        setFinishedProducts(data);
       } else {
         console.warn('Failed to fetch finished products:', finishedProductsRes.error);
+        setFinishedProducts([]);
       }
 
       // Handle inventory items response
       if (inventoryItemsRes.success && inventoryItemsRes.data) {
-        setInventoryItems(inventoryItemsRes.data);
+        const data = Array.isArray(inventoryItemsRes.data) ? inventoryItemsRes.data : [];
+        setInventoryItems(data);
       } else {
         console.warn('Failed to fetch inventory items:', inventoryItemsRes.error);
+        setInventoryItems([]);
       }
 
       // Handle test results response
       if (testResultsRes.success && testResultsRes.data) {
-        setTestResults(testResultsRes.data);
+        const data = Array.isArray(testResultsRes.data) ? testResultsRes.data : [];
+        setTestResults(data);
       } else {
         console.warn('Failed to fetch test results:', testResultsRes.error);
+        setTestResults([]);
       }
 
       // Handle ready for shipment response
       if (readyForShipmentRes.success && readyForShipmentRes.data) {
-        setReadyForShipment(readyForShipmentRes.data);
+        const data = Array.isArray(readyForShipmentRes.data) ? readyForShipmentRes.data : [];
+        setReadyForShipment(data);
       } else {
         console.warn('Failed to fetch ready for shipment:', readyForShipmentRes.error);
+        setReadyForShipment([]);
       }
 
       // Handle pending approvals response
       if (pendingApprovalsRes.success && pendingApprovalsRes.data) {
-        setPendingApprovals(pendingApprovalsRes.data);
+        const data = Array.isArray(pendingApprovalsRes.data) ? pendingApprovalsRes.data : [];
+        setPendingApprovals(data);
       } else {
         console.warn('Failed to fetch pending approvals:', pendingApprovalsRes.error);
+        setPendingApprovals([]);
       }
 
       setLastUpdated(new Date());
