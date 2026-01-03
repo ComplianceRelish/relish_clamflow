@@ -326,104 +326,104 @@ class ClamFlowAPI {
 
   // OPERATIONS MONITOR
   async getStations(): Promise<ApiResponse<StationStatus[]>> {
-    return this.get('/operations/stations');
+    return this.get('/api/operations/stations');
   }
 
   async getActiveLots(): Promise<ApiResponse<ActiveLot[]>> {
-    return this.get('/operations/active-lots');
+    return this.get('/api/operations/active-lots');
   }
 
   async getBottlenecks(): Promise<ApiResponse<Bottleneck[]>> {
-    return this.get('/operations/bottlenecks');
+    return this.get('/api/operations/bottlenecks');
   }
 
   // GATE & VEHICLES
   async getVehicles(): Promise<ApiResponse<VehicleLog[]>> {
-    return this.get('/gate/vehicles');
+    return this.get('/api/gate/vehicles');
   }
 
   async getActiveVehicles(): Promise<ApiResponse<ActiveDelivery[]>> {
-    return this.get('/gate/active');
+    return this.get('/api/gate/active');
   }
 
   async getSuppliers(): Promise<ApiResponse<SupplierHistory[]>> {
-    return this.get('/gate/suppliers');
+    return this.get('/api/gate/suppliers');
   }
 
   async getCheckpoints(): Promise<ApiResponse<CheckpointHistory[]>> {
-    return this.get('/gate/checkpoints');
+    return this.get('/api/gate/checkpoints');
   }
 
   // SECURITY & SURVEILLANCE
   async getSecurityCameras(): Promise<ApiResponse<Camera[]>> {
-    return this.get('/security/cameras');
+    return this.get('/api/security/cameras');
   }
 
   async getSecurityEvents(): Promise<ApiResponse<SecurityEvent[]>> {
-    return this.get('/security/events');
+    return this.get('/api/security/events');
   }
 
   async getFaceDetectionEvents(): Promise<ApiResponse<FaceDetectionEvent[]>> {
-    return this.get('/security/face-detection');
+    return this.get('/api/security/face-detection');
   }
 
   async getUnauthorizedAccess(): Promise<ApiResponse<UnauthorizedAccess[]>> {
-    return this.get('/security/unauthorized');
+    return this.get('/api/security/unauthorized');
   }
 
   // PRODUCTION ANALYTICS
   async getProductionThroughput(): Promise<ApiResponse<ThroughputData>> {
-    return this.get('/analytics/throughput');
+    return this.get('/api/analytics/throughput');
   }
 
   async getEfficiencyMetrics(): Promise<ApiResponse<StationEfficiency[]>> {
-    return this.get('/analytics/efficiency');
+    return this.get('/api/analytics/efficiency');
   }
 
   async getQualityMetrics(): Promise<ApiResponse<QualityMetrics>> {
-    return this.get('/analytics/quality');
+    return this.get('/api/analytics/quality');
   }
 
   async getProcessingTimes(): Promise<ApiResponse<ProcessingTime[]>> {
-    return this.get('/analytics/processing-times');
+    return this.get('/api/analytics/processing-times');
   }
 
   // STAFF MANAGEMENT
   async getStaffAttendance(): Promise<ApiResponse<AttendanceRecord[]>> {
-    return this.get('/staff_dashboard/attendance');
+    return this.get('/api/staff/attendance');
   }
 
   async getStaffLocations(): Promise<ApiResponse<StaffLocation[]>> {
-    return this.get('/staff_dashboard/locations');
+    return this.get('/api/staff/locations');
   }
 
   async getStaffPerformance(): Promise<ApiResponse<StaffPerformance[]>> {
-    return this.get('/staff_dashboard/performance');
+    return this.get('/api/staff/performance');
   }
 
   async getShiftSchedules(): Promise<ApiResponse<ShiftSchedule[]>> {
-    return this.get('/staff_dashboard/shifts');
+    return this.get('/api/staff/shifts');
   }
 
   // INVENTORY & SHIPMENTS
   async getFinishedProducts(): Promise<ApiResponse<FinishedProduct[]>> {
-    return this.get('/inventory_dashboard/finished-products');
+    return this.get('/api/inventory/finished-products');
   }
 
   async getInventoryItems(): Promise<ApiResponse<InventoryItem[]>> {
-    return this.get('/inventory_dashboard/items');
+    return this.get('/api/inventory/items');
   }
 
   async getTestResults(): Promise<ApiResponse<TestResult[]>> {
-    return this.get('/inventory_dashboard/test-results');
+    return this.get('/api/inventory/test-results');
   }
 
   async getReadyForShipment(): Promise<ApiResponse<ReadyForShipment[]>> {
-    return this.get('/inventory_dashboard/ready-for-shipment');
+    return this.get('/api/inventory/ready-for-shipment');
   }
 
   async getPendingInventoryApprovals(): Promise<ApiResponse<PendingApproval[]>> {
-    return this.get('/inventory_dashboard/pending-approvals');
+    return this.get('/api/inventory/pending-approvals');
   }
 
   // QA/QC FORMS - Required by QAFlowDashboard and QCFlowDashboard
