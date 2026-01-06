@@ -88,10 +88,11 @@ interface WeightNoteFormData {
 interface AdminFormData {
   username: string;
   full_name: string;
-  email: string;
+  email?: string;
   password: string;
   role: string;
   station: string;
+  contact_number?: string;
 }
 
 class ClamFlowAPI {

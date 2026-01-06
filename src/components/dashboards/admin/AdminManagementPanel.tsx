@@ -12,12 +12,13 @@ interface Admin {
   id: string;
   username: string;
   full_name: string;
-  email: string;
+  email?: string;
   role: string;
-  station: string;
+  station?: string;
   is_active: boolean;
-  created_at: string;
-  last_login: string | null;
+  created_at?: string;
+  last_login?: string | null;
+  contact_number?: string;
 }
 
 interface CreateAdminFormData {
@@ -27,6 +28,7 @@ interface CreateAdminFormData {
   password: string;
   role: string;
   station: string;
+  contact_number: string;
 }
 
 const USERNAME_PREFIXES: { [key: string]: string } = {
@@ -55,7 +57,8 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
     email: '',
     password: '',
     role: 'Admin',
-    station: 'Main Office'
+    station: 'Main Office',
+    contact_number: ''
   });
 
   useEffect(() => {
@@ -135,8 +138,8 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
     
     // For edit mode, password is optional
     if (editingAdmin) {
-      if (!formData.username || !formData.full_name || !formData.email) {
-        setError('Username, full name, and email are required');
+      if (!formData.username || !formData.full_name) {
+        setError('Username and full name are required');
         return;
       }
       if (formData.password && formData.password.length < 8) {
@@ -145,8 +148,8 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
       }
     } else {
       // Validate and generate username if needed
-      if (!formData.full_name || !formData.email || !formData.password) {
-        setError('Full name, email, and password are required');
+      if (!formData.full_name || !formData.password) {
+        setError('Full name and password are required');
         return;
       }
       if (formData.password.length < 8) {
@@ -175,7 +178,8 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
           full_name: formData.full_name,
           email: formData.email,
           role: formData.role,
-          station: formData.station
+          station: formData.station,
+          contact_number: formData.contact_number || ''
         };
         if (formData.password) {
           updateData.password = formData.password;
@@ -189,13 +193,14 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
           email: formData.email,
           password: formData.password,
           role: formData.role,
-          station: formData.station || 'Main Office'
+          station: formData.station || 'Main Office',
+          contact_number: formData.contact_number || ''
         };
         
         console.log('📤 Creating admin with data:', createData);
         
         // Validate all required fields
-        if (!createData.username || !createData.full_name || !createData.email || !createData.password || !createData.role) {
+        if (!createData.username || !createData.full_name || !createData.password || !createData.role) {
           setError('Missing required fields. Please check all fields are filled.');
           setSubmitting(false);
           return;
@@ -215,7 +220,8 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
           email: '',
           password: '',
           role: 'Admin',
-          station: 'Main Office'
+          station: 'Main Office',
+          contact_number: ''
         });
         
         await loadAdmins();
@@ -239,10 +245,11 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
     setFormData({
       username: admin.username,
       full_name: admin.full_name,
-      email: admin.email,
+      email: admin.email || '',
       password: '', // Don't populate password for security
       role: admin.role,
-      station: admin.station
+      station: admin.station || 'Main Office',
+      contact_number: admin.contact_number || ''
     });
     setShowCreateForm(true);
     setError('');
@@ -257,7 +264,8 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
       email: '',
       password: '',
       role: 'Admin',
-      station: 'Main Office'
+      station: 'Main Office',
+      contact_number: ''
     });
     setError('');
   };
@@ -383,14 +391,24 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
                 <input
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  placeholder="john@clamflow.com"
-                  required
+                  placeholder="john@clamflow.com (optional)"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Contact Number</label>
+                <input
+                  type="tel"
+                  value={formData.contact_number}
+                  onChange={(e) => setFormData({ ...formData, contact_number: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  placeholder="+1234567890"
                 />
               </div>
 
