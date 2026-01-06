@@ -184,11 +184,25 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
       } else {
         // Create new admin - ensure username is set
         const createData = {
-          ...formData,
-          username: formData.username || generateUsername(formData.role, formData.full_name)
+          username: formData.username || generateUsername(formData.role, formData.full_name),
+          full_name: formData.full_name,
+          email: formData.email,
+          password: formData.password,
+          role: formData.role,
+          station: formData.station || 'Main Office'
         };
-        console.log('Creating admin with data:', createData);
+        
+        console.log('📤 Creating admin with data:', createData);
+        
+        // Validate all required fields
+        if (!createData.username || !createData.full_name || !createData.email || !createData.password || !createData.role) {
+          setError('Missing required fields. Please check all fields are filled.');
+          setSubmitting(false);
+          return;
+        }
+        
         response = await clamflowAPI.createAdmin(createData);
+        console.log('📥 Create admin response:', response);
       }
       
       if (response.success) {
@@ -207,11 +221,14 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
         await loadAdmins();
         setTimeout(() => setSuccessMessage(''), 5000);
       } else {
-        setError(response.error || `Failed to ${editingAdmin ? 'update' : 'create'} admin`);
+        const errorMsg = response.error || `Failed to ${editingAdmin ? 'update' : 'create'} admin`;
+        console.error('❌ Backend error:', errorMsg, response);
+        setError(`Backend Error: ${errorMsg}`);
       }
     } catch (err: any) {
-      console.error(`Failed to ${editingAdmin ? 'update' : 'create'} admin:`, err);
-      setError(err.message || `Failed to ${editingAdmin ? 'update' : 'create'} admin`);
+      console.error(`💥 Failed to ${editingAdmin ? 'update' : 'create'} admin:`, err);
+      const errorMessage = err.message || err.toString() || `Failed to ${editingAdmin ? 'update' : 'create'} admin`;
+      setError(`Error: ${errorMessage}`);
     } finally {
       setSubmitting(false);
     }

@@ -153,6 +153,31 @@ class ClamFlowAPI {
         }
 
         const errorData = await response.json().catch(() => ({}));
+        
+        // Enhanced error handling for 422 validation errors
+        if (response.status === 422) {
+          console.error('🔴 Validation Error [422]:', errorData);
+          
+          // Try to extract detailed validation errors
+          let errorMessage = 'Validation failed';
+          
+          if (errorData.detail) {
+            if (Array.isArray(errorData.detail)) {
+              // FastAPI validation error format
+              const errors = errorData.detail.map((err: any) => 
+                `${err.loc?.join('.') || 'field'}: ${err.msg}`
+              ).join(', ');
+              errorMessage = errors;
+            } else if (typeof errorData.detail === 'string') {
+              errorMessage = errorData.detail;
+            }
+          } else if (errorData.message) {
+            errorMessage = errorData.message;
+          }
+          
+          throw new Error(errorMessage);
+        }
+        
         const errorMessage = errorData.detail || errorData.message || `HTTP ${response.status}`;
         console.error(`❌ API Error [${response.status}] ${endpoint}:`, errorMessage);
         throw new Error(errorMessage);
