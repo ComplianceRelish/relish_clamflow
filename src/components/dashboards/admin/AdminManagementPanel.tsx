@@ -176,11 +176,11 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
         const updateData: any = {
           username: formData.username,
           full_name: formData.full_name,
-          email: formData.email,
           role: formData.role,
           station: formData.station,
           contact_number: formData.contact_number || ''
         };
+        // Email not supported by backend
         if (formData.password) {
           updateData.password = formData.password;
         }
