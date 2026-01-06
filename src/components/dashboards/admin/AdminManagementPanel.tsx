@@ -29,6 +29,16 @@ interface CreateAdminFormData {
   station: string;
 }
 
+const USERNAME_PREFIXES = {
+  'Super Admin': ['SA'],
+  'Admin': ['AD']
+};
+
+const generateUsername = (role: string, prefix: string, fullName: string): string => {
+  const firstName = fullName.split(' ')[0] || 'User';
+  return `${prefix}_${firstName}`;
+};
+
 const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser }) => {
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,6 +56,7 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
     role: 'Admin',
     station: 'Main Office'
   });
+  const [usernamePrefix, setUsernamePrefix] = useState<string>('AD');
 
   useEffect(() => {
     loadAdmins();
@@ -178,6 +189,7 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
           role: 'Admin',
           station: 'Main Office'
         });
+        setUsernamePrefix('AD');
         
         await loadAdmins();
         setTimeout(() => setSuccessMessage(''), 5000);
@@ -194,6 +206,8 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
 
   const handleEditAdmin = (admin: Admin) => {
     setEditingAdmin(admin);
+    const prefix = admin.username.split('_')[0] || 'AD';
+    setUsernamePrefix(prefix);
     setFormData({
       username: admin.username,
       full_name: admin.full_name,
@@ -209,6 +223,7 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
   const handleCancelEdit = () => {
     setEditingAdmin(null);
     setShowCreateForm(false);
+    setUsernamePrefix('AD');
     setFormData({
       username: '',
       full_name: '',
@@ -291,11 +306,55 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
           <form onSubmit={handleCreateAdmin} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Role *</label>
+                <select
+                  value={formData.role}
+                  onChange={(e) => {
+                    const newRole = e.target.value;
+                    const availablePrefixes = USERNAME_PREFIXES[newRole as keyof typeof USERNAME_PREFIXES] || ['AD'];
+                    const newPrefix = availablePrefixes[0];
+                    setFormData({ ...formData, role: newRole });
+                    setUsernamePrefix(newPrefix);
+                  }}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  required
+                  disabled={editingAdmin ? true : false}
+                >
+                  <option value="Admin">Admin</option>
+                  <option value="Super Admin">Super Admin</option>
+                </select>
+                {editingAdmin && <p className="text-xs text-gray-500 mt-1">Role cannot be changed</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Username Prefix *</label>
+                <select
+                  value={usernamePrefix}
+                  onChange={(e) => setUsernamePrefix(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  required
+                  disabled={editingAdmin ? true : false}
+                >
+                  {(USERNAME_PREFIXES[formData.role as keyof typeof USERNAME_PREFIXES] || ['AD']).map(prefix => (
+                    <option key={prefix} value={prefix}>{prefix} - {formData.role}</option>
+                  ))}
+                </select>
+                {editingAdmin && <p className="text-xs text-gray-500 mt-1">Username cannot be changed</p>}
+              </div>
+
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
                 <input
                   type="text"
                   value={formData.full_name}
-                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                  onChange={(e) => {
+                    const newFullName = e.target.value;
+                    setFormData({ 
+                      ...formData, 
+                      full_name: newFullName,
+                      username: editingAdmin ? formData.username : generateUsername(formData.role, usernamePrefix, newFullName)
+                    });
+                  }}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   placeholder="John Doe"
                   required
@@ -303,15 +362,15 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Username *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Generated Username *</label>
                 <input
                   type="text"
                   value={formData.username}
-                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  placeholder="admin_john"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
+                  disabled
                   required
                 />
+                <p className="text-xs text-gray-500 mt-1">Auto-generated from Role + Name</p>
               </div>
 
               <div>
@@ -337,19 +396,6 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
                   minLength={8}
                   required={!editingAdmin}
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Role *</label>
-                <select
-                  value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  required
-                >
-                  <option value="Admin">Admin</option>
-                  <option value="Super Admin">Super Admin</option>
-                </select>
               </div>
 
               <div>
