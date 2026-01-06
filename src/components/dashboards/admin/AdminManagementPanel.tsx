@@ -34,6 +34,7 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [editingAdmin, setEditingAdmin] = useState<Admin | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
@@ -121,25 +122,54 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
   const handleCreateAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.username || !formData.full_name || !formData.email || !formData.password) {
-      setError('All fields are required');
-      return;
-    }
-
-    if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters');
-      return;
+    // For edit mode, password is optional
+    if (editingAdmin) {
+      if (!formData.username || !formData.full_name || !formData.email) {
+        setError('Username, full name, and email are required');
+        return;
+      }
+      if (formData.password && formData.password.length < 8) {
+        setError('Password must be at least 8 characters');
+        return;
+      }
+    } else {
+      if (!formData.username || !formData.full_name || !formData.email || !formData.password) {
+        setError('All fields are required');
+        return;
+      }
+      if (formData.password.length < 8) {
+        setError('Password must be at least 8 characters');
+        return;
+      }
     }
 
     try {
       setSubmitting(true);
       setError('');
       
-      const response = await clamflowAPI.createAdmin(formData);
+      let response;
+      if (editingAdmin) {
+        // Update existing admin
+        const updateData: any = {
+          username: formData.username,
+          full_name: formData.full_name,
+          email: formData.email,
+          role: formData.role,
+          station: formData.station
+        };
+        if (formData.password) {
+          updateData.password = formData.password;
+        }
+        response = await clamflowAPI.updateAdmin(editingAdmin.id, updateData);
+      } else {
+        // Create new admin
+        response = await clamflowAPI.createAdmin(formData);
+      }
       
       if (response.success) {
-        setSuccessMessage(`Admin "${formData.full_name}" created successfully!`);
+        setSuccessMessage(`Admin "${formData.full_name}" ${editingAdmin ? 'updated' : 'created'} successfully!`);
         setShowCreateForm(false);
+        setEditingAdmin(null);
         setFormData({
           username: '',
           full_name: '',
@@ -152,14 +182,42 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
         await loadAdmins();
         setTimeout(() => setSuccessMessage(''), 5000);
       } else {
-        setError(response.error || 'Failed to create admin');
+        setError(response.error || `Failed to ${editingAdmin ? 'update' : 'create'} admin`);
       }
     } catch (err: any) {
-      console.error('Failed to create admin:', err);
-      setError(err.message || 'Failed to create admin');
+      console.error(`Failed to ${editingAdmin ? 'update' : 'create'} admin:`, err);
+      setError(err.message || `Failed to ${editingAdmin ? 'update' : 'create'} admin`);
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleEditAdmin = (admin: Admin) => {
+    setEditingAdmin(admin);
+    setFormData({
+      username: admin.username,
+      full_name: admin.full_name,
+      email: admin.email,
+      password: '', // Don't populate password for security
+      role: admin.role,
+      station: admin.station
+    });
+    setShowCreateForm(true);
+    setError('');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingAdmin(null);
+    setShowCreateForm(false);
+    setFormData({
+      username: '',
+      full_name: '',
+      email: '',
+      password: '',
+      role: 'Admin',
+      station: 'Main Office'
+    });
+    setError('');
   };
 
   const handleDeleteAdmin = async (adminId: string, adminName: string) => {
@@ -229,7 +287,7 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
 
       {showCreateForm && (
         <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-6">
-          <h3 className="text-xl font-bold text-gray-900 mb-6">Create New Admin</h3>
+          <h3 className="text-xl font-bold text-gray-900 mb-6">{editingAdmin ? 'Edit Admin' : 'Create New Admin'}</h3>
           <form onSubmit={handleCreateAdmin} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -269,15 +327,15 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Password *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Password {editingAdmin ? '(leave blank to keep current)' : '*'}</label>
                 <input
                   type="password"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  placeholder="Min. 8 characters"
+                  placeholder={editingAdmin ? 'Leave blank to keep current password' : 'Min. 8 characters'}
                   minLength={8}
-                  required
+                  required={!editingAdmin}
                 />
               </div>
 
@@ -310,7 +368,7 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
             <div className="flex justify-end space-x-3 mt-6">
               <button
                 type="button"
-                onClick={() => setShowCreateForm(false)}
+                onClick={handleCancelEdit}
                 className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 Cancel
@@ -320,7 +378,7 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
                 disabled={submitting}
                 className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
-                {submitting ? 'Creating...' : 'Create Admin'}
+                {submitting ? (editingAdmin ? 'Updating...' : 'Creating...') : (editingAdmin ? 'Update Admin' : 'Create Admin')}
               </button>
             </div>
           </form>
@@ -377,15 +435,24 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
                       {admin.last_login ? new Date(admin.last_login).toLocaleString() : 'Never'}
                     </td>
                     <td className="px-6 py-4">
-                      {admin.username !== currentUser?.username && (
-                        <button
-                          onClick={() => handleDeleteAdmin(admin.id, admin.full_name)}
-                          className="text-red-600 hover:text-red-800 text-sm font-medium"
-                        >
-                          Deactivate
-                        </button>
-                      )}
-                      {admin.username === currentUser?.username && (
+                      {admin.username !== currentUser?.username ? (
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => handleEditAdmin(admin)}
+                            className="text-blue-600 hover:text-blue-800 text-sm font-medium px-3 py-1 border border-blue-600 rounded hover:bg-blue-50 transition-colors"
+                            title="Edit Admin"
+                          >
+                            ✏️ Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteAdmin(admin.id, admin.full_name)}
+                            className="text-red-600 hover:text-red-800 text-sm font-medium px-3 py-1 border border-red-600 rounded hover:bg-red-50 transition-colors"
+                            title="Delete Admin"
+                          >
+                            🗑️ Delete
+                          </button>
+                        </div>
+                      ) : (
                         <span className="text-gray-400 text-sm">Current User</span>
                       )}
                     </td>

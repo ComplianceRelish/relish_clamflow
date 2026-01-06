@@ -278,26 +278,151 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
     }
   };
 
+  const updateUser = async (userId: string, userData: any) => {
+    try {
+      // Try API first
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://clamflowbackend-production.up.railway.app'}/users/${userId}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(userData)
+        });
+
+        if (response.ok) {
+          const updatedUser = await response.json();
+          setUsers(prev => prev.map(u => u.id === userId ? updatedUser : u));
+          return true;
+        }
+      } catch (err) {
+        console.warn('API failed, using local fallback:', err);
+      }
+
+      // Fallback to local storage
+      const updatedUsers = users.map(u => u.id === userId ? { ...u, ...userData } : u);
+      setUsers(updatedUsers);
+      localStorage.setItem('clamflow_users', JSON.stringify(updatedUsers));
+      
+      return true;
+    } catch (err) {
+      console.error('Error updating user:', err);
+      setFormError('Failed to update user');
+      return false;
+    }
+  };
+
+  const deleteUser = async (userId: string) => {
+    try {
+      // Try API first
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://clamflowbackend-production.up.railway.app'}/users/${userId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          setUsers(prev => prev.filter(u => u.id !== userId));
+          return true;
+        }
+      } catch (err) {
+        console.warn('API failed, using local fallback:', err);
+      }
+
+      // Fallback to local storage
+      const updatedUsers = users.filter(u => u.id !== userId);
+      setUsers(updatedUsers);
+      localStorage.setItem('clamflow_users', JSON.stringify(updatedUsers));
+      
+      return true;
+    } catch (err) {
+      console.error('Error deleting user:', err);
+      setFormError('Failed to delete user');
+      return false;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError('');
 
-    if (!formData.username && !formData.full_name) {
+    if (!formData.full_name) {
       setFormError('Full name is required');
       return;
     }
 
-    const success = await createUser(formData);
+    let success = false;
+    if (editingUser) {
+      // Update existing user
+      const updateData: any = {
+        full_name: formData.full_name,
+        role: formData.role,
+        station: formData.station
+      };
+      if (formData.password) {
+        updateData.password = formData.password;
+      }
+      success = await updateUser(editingUser.id, updateData);
+    } else {
+      // Create new user
+      success = await createUser(formData);
+    }
+
     if (success) {
       setShowCreateForm(false);
+      setEditingUser(null);
       setFormData({
         username: '',
         full_name: '',
         role: 'Production Staff',
         station: '',
-        password: ''
+        password: '',
+        phone_number: ''
       });
     }
+  };
+
+  const handleEditUser = (user: User) => {
+    setEditingUser(user);
+    setFormData({
+      username: user.username,
+      full_name: user.full_name,
+      role: user.role,
+      station: user.station || '',
+      password: '', // Don't populate password for security
+      phone_number: ''
+    });
+    setShowCreateForm(true);
+    setFormError('');
+  };
+
+  const handleDeleteUser = async (userId: string, userName: string) => {
+    if (!confirm(`Are you sure you want to delete user "${userName}"?`)) {
+      return;
+    }
+
+    const success = await deleteUser(userId);
+    if (!success) {
+      alert('Failed to delete user');
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingUser(null);
+    setShowCreateForm(false);
+    setFormData({
+      username: '',
+      full_name: '',
+      role: 'Production Staff',
+      station: '',
+      password: '',
+      phone_number: ''
+    });
+    setFormError('');
   };
 
   const filteredUsers = users.filter(user => {
@@ -408,7 +533,9 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => setEditingUser(user)}
+                            onClick={() => handleEditUser(user)}
+                            className="hover:bg-blue-50 hover:border-blue-500"
+                            title="Edit User"
                           >
                             <Edit2 className="w-4 h-4" />
                           </Button>
@@ -416,6 +543,9 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
                             size="sm"
                             variant="outline"
                             disabled={user.username === currentUser?.username}
+                            onClick={() => handleDeleteUser(user.id, user.full_name)}
+                            className="hover:bg-red-50 hover:border-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Delete User"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -435,7 +565,7 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <Card className="w-full max-w-md mx-4">
             <CardHeader>
-              <CardTitle>Create New User</CardTitle>
+              <CardTitle>{editingUser ? 'Edit User' : 'Create New User'}</CardTitle>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -455,6 +585,19 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
                     required
                   />
                 </div>
+
+                {editingUser && (
+                  <div>
+                    <Label htmlFor="username">Username</Label>
+                    <Input
+                      id="username"
+                      value={formData.username}
+                      disabled
+                      className="bg-gray-100 cursor-not-allowed"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Username cannot be changed</p>
+                  </div>
+                )}
 
                 <div>
                   <Label htmlFor="role">Role</Label>
@@ -479,30 +622,34 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
                 </div>
 
                 <div>
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password">Password {editingUser && '(optional)'}</Label>
                   <Input
                     id="password"
                     type="password"
                     value={formData.password}
                     onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
                     placeholder="••••••••"
-                    required
+                    required={!editingUser}
                   />
-                  <p className="text-xs text-gray-500 mt-1">Leave blank to auto-generate</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {editingUser ? 'Leave blank to keep current password' : 'Leave blank to auto-generate'}
+                  </p>
                 </div>
 
-                <div>
-                  <Label htmlFor="phone_number">Phone Number (WhatsApp) *</Label>
-                  <Input
-                    id="phone_number"
-                    type="tel"
-                    value={formData.phone_number}
-                    onChange={(e) => setFormData(prev => ({ ...prev, phone_number: e.target.value }))}
-                    placeholder="+91 XXXXXXXXXX"
-                    required
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Login credentials will be sent via WhatsApp</p>
-                </div>
+                {!editingUser && (
+                  <div>
+                    <Label htmlFor="phone_number">Phone Number (WhatsApp) *</Label>
+                    <Input
+                      id="phone_number"
+                      type="tel"
+                      value={formData.phone_number}
+                      onChange={(e) => setFormData(prev => ({ ...prev, phone_number: e.target.value }))}
+                      placeholder="+91 XXXXXXXXXX"
+                      required
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Login credentials will be sent via WhatsApp</p>
+                  </div>
+                )}
 
                 {whatsappStatus && (
                   <Alert>
@@ -514,13 +661,13 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setShowCreateForm(false)}
+                    onClick={handleCancelEdit}
                     className="flex-1"
                   >
                     Cancel
                   </Button>
                   <Button type="submit" className="flex-1">
-                    Create User
+                    {editingUser ? 'Update User' : 'Create User'}
                   </Button>
                 </div>
               </form>

@@ -330,6 +330,10 @@ class ClamFlowAPI {
     return this.post('/super-admin/create-admin', adminData);
   }
 
+  async updateAdmin(adminId: string, adminData: Partial<AdminFormData>): Promise<ApiResponse<User>> {
+    return this.put(`/super-admin/admins/${adminId}`, adminData);
+  }
+
   async deleteAdmin(adminId: string): Promise<ApiResponse<void>> {
     return this.delete(`/super-admin/admins/${adminId}`);
   }
