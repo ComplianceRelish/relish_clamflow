@@ -29,12 +29,13 @@ interface CreateAdminFormData {
   station: string;
 }
 
-const USERNAME_PREFIXES = {
-  'Super Admin': ['SA'],
-  'Admin': ['AD']
+const USERNAME_PREFIXES: { [key: string]: string } = {
+  'Super Admin': 'SA',
+  'Admin': 'AD'
 };
 
-const generateUsername = (role: string, prefix: string, fullName: string): string => {
+const generateUsername = (role: string, fullName: string): string => {
+  const prefix = USERNAME_PREFIXES[role] || 'AD';
   const firstName = fullName.split(' ')[0] || 'User';
   return `${prefix}_${firstName}`;
 };
@@ -56,7 +57,6 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
     role: 'Admin',
     station: 'Main Office'
   });
-  const [usernamePrefix, setUsernamePrefix] = useState<string>('AD');
 
   useEffect(() => {
     loadAdmins();
@@ -144,12 +144,21 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
         return;
       }
     } else {
-      if (!formData.username || !formData.full_name || !formData.email || !formData.password) {
-        setError('All fields are required');
+      // Validate and generate username if needed
+      if (!formData.full_name || !formData.email || !formData.password) {
+        setError('Full name, email, and password are required');
         return;
       }
       if (formData.password.length < 8) {
         setError('Password must be at least 8 characters');
+        return;
+      }
+      
+      // Generate username if not already set
+      const finalUsername = formData.username || generateUsername(formData.role, formData.full_name);
+      
+      if (!finalUsername) {
+        setError('Unable to generate username. Please enter a full name.');
         return;
       }
     }
@@ -173,8 +182,13 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
         }
         response = await clamflowAPI.updateAdmin(editingAdmin.id, updateData);
       } else {
-        // Create new admin
-        response = await clamflowAPI.createAdmin(formData);
+        // Create new admin - ensure username is set
+        const createData = {
+          ...formData,
+          username: formData.username || generateUsername(formData.role, formData.full_name)
+        };
+        console.log('Creating admin with data:', createData);
+        response = await clamflowAPI.createAdmin(createData);
       }
       
       if (response.success) {
@@ -189,7 +203,6 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
           role: 'Admin',
           station: 'Main Office'
         });
-        setUsernamePrefix('AD');
         
         await loadAdmins();
         setTimeout(() => setSuccessMessage(''), 5000);
@@ -206,8 +219,6 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
 
   const handleEditAdmin = (admin: Admin) => {
     setEditingAdmin(admin);
-    const prefix = admin.username.split('_')[0] || 'AD';
-    setUsernamePrefix(prefix);
     setFormData({
       username: admin.username,
       full_name: admin.full_name,
@@ -223,7 +234,6 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
   const handleCancelEdit = () => {
     setEditingAdmin(null);
     setShowCreateForm(false);
-    setUsernamePrefix('AD');
     setFormData({
       username: '',
       full_name: '',
@@ -311,10 +321,8 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
                   value={formData.role}
                   onChange={(e) => {
                     const newRole = e.target.value;
-                    const availablePrefixes = USERNAME_PREFIXES[newRole as keyof typeof USERNAME_PREFIXES] || ['AD'];
-                    const newPrefix = availablePrefixes[0];
-                    setFormData({ ...formData, role: newRole });
-                    setUsernamePrefix(newPrefix);
+                    const newUsername = formData.full_name ? generateUsername(newRole, formData.full_name) : '';
+                    setFormData({ ...formData, role: newRole, username: newUsername });
                   }}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   required
@@ -327,22 +335,6 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Username Prefix *</label>
-                <select
-                  value={usernamePrefix}
-                  onChange={(e) => setUsernamePrefix(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  required
-                  disabled={editingAdmin ? true : false}
-                >
-                  {(USERNAME_PREFIXES[formData.role as keyof typeof USERNAME_PREFIXES] || ['AD']).map(prefix => (
-                    <option key={prefix} value={prefix}>{prefix} - {formData.role}</option>
-                  ))}
-                </select>
-                {editingAdmin && <p className="text-xs text-gray-500 mt-1">Username cannot be changed</p>}
-              </div>
-
-              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
                 <input
                   type="text"
@@ -352,7 +344,7 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
                     setFormData({ 
                       ...formData, 
                       full_name: newFullName,
-                      username: editingAdmin ? formData.username : generateUsername(formData.role, usernamePrefix, newFullName)
+                      username: editingAdmin ? formData.username : generateUsername(formData.role, newFullName)
                     });
                   }}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
@@ -370,7 +362,7 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
                   disabled
                   required
                 />
-                <p className="text-xs text-gray-500 mt-1">Auto-generated from Role + Name</p>
+                <p className="text-xs text-gray-500 mt-1">Auto-generated: {USERNAME_PREFIXES[formData.role]}_FirstName</p>
               </div>
 
               <div>

@@ -108,7 +108,6 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
     password: '',
     phone_number: ''
   });
-  const [usernamePrefix, setUsernamePrefix] = useState<string>('PS');
   const [formError, setFormError] = useState('');
   const [whatsappStatus, setWhatsappStatus] = useState<string>('');
 
@@ -121,21 +120,21 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
     'Security Guard'
   ];
 
-  const USERNAME_PREFIXES: { [key: string]: string[] } = {
-    'Production Lead': ['PL'],
-    'QC Lead': ['QA'],
-    'Staff Lead': ['SL'],
-    'QC Staff': ['QC'],
-    'Production Staff': ['PS'],
-    'Security Guard': ['SG']
+  const USERNAME_PREFIXES: { [key: string]: string } = {
+    'Production Lead': 'PL',
+    'QC Lead': 'QA',
+    'Staff Lead': 'SL',
+    'QC Staff': 'QC',
+    'Production Staff': 'PS',
+    'Security Guard': 'SG'
   };
 
   const getRolePrefix = (role: string): string => {
-    const prefixes = USERNAME_PREFIXES[role];
-    return prefixes ? prefixes[0] : 'US';
+    return USERNAME_PREFIXES[role] || 'PS';
   };
 
-  const generateUsername = (role: string, prefix: string, fullName: string): string => {
+  const generateUsername = (role: string, fullName: string): string => {
+    const prefix = USERNAME_PREFIXES[role] || 'PS';
     const firstName = fullName.split(' ')[0] || 'User';
     return `${prefix}_${firstName}`;
   };
@@ -187,8 +186,8 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
 
   const createUser = async (userData: any) => {
     try {
-      // Use the selected username prefix and generate username
-      const username = generateUsername(userData.role, usernamePrefix, userData.full_name);
+      // Use the auto-assigned prefix and generate username
+      const username = generateUsername(userData.role, userData.full_name);
 
       // Generate secure random password
       const generatedPassword = userData.password || `Clam${Math.random().toString(36).slice(2, 10)}!`;
@@ -377,7 +376,6 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
     if (success) {
       setShowCreateForm(false);
       setEditingUser(null);
-      setUsernamePrefix('PS');
       setFormData({
         username: '',
         full_name: '',
@@ -391,8 +389,6 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
 
   const handleEditUser = (user: User) => {
     setEditingUser(user);
-    const prefix = user.username.split('_')[0] || 'PS';
-    setUsernamePrefix(prefix);
     setFormData({
       username: user.username,
       full_name: user.full_name,
@@ -419,7 +415,6 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
   const handleCancelEdit = () => {
     setEditingUser(null);
     setShowCreateForm(false);
-    setUsernamePrefix('PS');
     setFormData({
       username: '',
       full_name: '',
@@ -586,29 +581,15 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
                   <FormSelect
                     value={formData.role}
                     onValueChange={(value) => {
-                      const availablePrefixes = USERNAME_PREFIXES[value] || ['PS'];
-                      const newPrefix = availablePrefixes[0];
-                      setFormData(prev => ({ ...prev, role: value }));
-                      setUsernamePrefix(newPrefix);
+                      const newUsername = formData.full_name ? generateUsername(value, formData.full_name) : '';
+                      setFormData(prev => ({ ...prev, role: value, username: newUsername }));
                     }}
                   >
                     {roles.map(role => (
                       <FormSelectItem key={role} value={role}>{role}</FormSelectItem>
                     ))}
                   </FormSelect>
-                </div>
-
-                <div>
-                  <Label htmlFor="username_prefix">Username Prefix *</Label>
-                  <FormSelect
-                    value={usernamePrefix}
-                    onValueChange={(value) => setUsernamePrefix(value)}
-                  >
-                    {(USERNAME_PREFIXES[formData.role] || ['PS']).map(prefix => (
-                      <FormSelectItem key={prefix} value={prefix}>{prefix} - {formData.role}</FormSelectItem>
-                    ))}
-                  </FormSelect>
-                  {editingUser && <p className="text-xs text-gray-500 mt-1">Username cannot be changed</p>}
+                  {editingUser && <p className="text-xs text-gray-500 mt-1">Role cannot be changed</p>}
                 </div>
 
                 <div>
@@ -621,7 +602,7 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
                       setFormData(prev => ({ 
                         ...prev, 
                         full_name: newFullName,
-                        username: editingUser ? prev.username : generateUsername(formData.role, usernamePrefix, newFullName)
+                        username: editingUser ? prev.username : generateUsername(formData.role, newFullName)
                       }));
                     }}
                     placeholder="Enter full name"
@@ -651,7 +632,7 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
                       disabled
                       className="bg-gray-100 cursor-not-allowed"
                     />
-                    <p className="text-xs text-gray-500 mt-1">Auto-generated from Role + Name</p>
+                    <p className="text-xs text-gray-500 mt-1">Auto-generated: {USERNAME_PREFIXES[formData.role]}_FirstName</p>
                   </div>
                 )}
 
