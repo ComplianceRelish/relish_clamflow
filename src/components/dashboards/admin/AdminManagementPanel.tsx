@@ -187,15 +187,19 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
         response = await clamflowAPI.updateAdmin(editingAdmin.id, updateData);
       } else {
         // Create new admin - ensure username is set
-        const createData = {
+        const createData: any = {
           username: formData.username || generateUsername(formData.role, formData.full_name),
           full_name: formData.full_name,
-          email: formData.email,
           password: formData.password,
           role: formData.role,
           station: formData.station || 'Main Office',
           contact_number: formData.contact_number || ''
         };
+        
+        // Only include email if backend supports it (currently it doesn't)
+        // if (formData.email) {
+        //   createData.email = formData.email;
+        // }
         
         console.log('📤 Creating admin with data:', createData);
         
