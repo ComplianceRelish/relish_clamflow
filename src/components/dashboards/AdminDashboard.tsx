@@ -5,7 +5,6 @@ import clamflowAPI, { DashboardMetrics, SystemHealthData } from '../../lib/clamf
 import { User } from '../../types/auth'
 import UserManagementPanel from './admin/UserManagementPanel'
 import HardwareManagementPanel from './admin/HardwareManagementPanel'
-import ApprovalWorkflowPanel from './admin/ApprovalWorkflowPanel'
 import DashboardMetricsPanel from './admin/DashboardMetricsPanel'
 import SystemHealth from './admin/SystemHealth'
 
@@ -13,7 +12,7 @@ interface AdminDashboardProps {
   currentUser: User | null
 }
 
-type AdminView = 'overview' | 'users' | 'hardware' | 'approvals' | 'metrics' | 'system' | 'settings'
+type AdminView = 'overview' | 'users' | 'hardware' | 'metrics' | 'system' | 'settings'
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
   const [activeView, setActiveView] = useState<AdminView>('overview')
@@ -70,7 +69,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
     { id: 'overview', label: 'Overview', icon: '📊' },
     { id: 'users', label: 'User Management', icon: '👥' },
     { id: 'hardware', label: 'Hardware', icon: '🔧' },
-    { id: 'approvals', label: 'Approvals', icon: '✅' },
     { id: 'metrics', label: 'Metrics', icon: '📈' },
     { id: 'system', label: 'System Health', icon: '🏥' },
     { id: 'settings', label: 'Settings', icon: '⚙️' }
@@ -218,16 +216,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
             </div>
           )}
 
-          {/* ✅ KEEP currentUser for components that need it */}
-          {/* Components WITHOUT currentUser prop */}
+          {/* Components */}
 {activeView === 'users' && <UserManagementPanel />}
 {activeView === 'hardware' && <HardwareManagementPanel />}
 {activeView === 'metrics' && <DashboardMetricsPanel />}
-
-{/* Component WITH currentUser prop */}
-{activeView === 'approvals' && currentUser && <ApprovalWorkflowPanel currentUser={currentUser} />}
-
-{/* SystemHealth - no props */}
 {activeView === 'system' && <SystemHealth />}
           
           {activeView === 'settings' && (
