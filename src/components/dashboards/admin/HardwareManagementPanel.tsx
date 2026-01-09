@@ -223,8 +223,8 @@ export default function HardwareManagementPanel() {
       const response = await apiClient.get('/hardware/devices')
       
       // Fixed: Type assertion to resolve 'unknown' error
-      const data = response.data as { devices: HardwareDevice[] }
-      setDevices(data.devices || [])
+      const data = response.data as { devices: HardwareDevice[] } | null
+      setDevices(data?.devices || [])
     } catch (err) {
       setError('Failed to load hardware devices')
       console.error(err)

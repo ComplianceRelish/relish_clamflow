@@ -126,8 +126,8 @@ const SystemHealth: React.FC = () => {
                 <h3 className="text-lg font-medium text-gray-900">Overall System Status</h3>
                 <p className="text-sm text-gray-500">Current system health overview</p>
               </div>
-              <Badge variant={getStatusColor(state.health.status)} className="text-lg px-4 py-2">
-                {state.health.status.toUpperCase()}
+              <Badge variant={getStatusColor(state.health?.status || 'critical')} className="text-lg px-4 py-2">
+                {state.health?.status?.toUpperCase() || 'UNKNOWN'}
               </Badge>
             </div>
             
@@ -146,14 +146,14 @@ const SystemHealth: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-gray-700">Connection Status</span>
-                <Badge variant={getStatusColor(state.health.database.status)}>
-                  {state.health.database.status.toUpperCase()}
+                <Badge variant={getStatusColor(state.health?.database?.status || 'critical')}>
+                  {state.health?.database?.status?.toUpperCase() || 'UNKNOWN'}
                 </Badge>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-gray-700">Response Time</span>
                 <span className="text-sm text-gray-900">
-                  {state.health.database.response_time}ms
+                  {state.health?.database?.response_time ?? 'N/A'}ms
                 </span>
               </div>
             </div>
