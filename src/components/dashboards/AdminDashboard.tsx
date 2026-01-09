@@ -210,8 +210,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
                     </div>
                   </div>
                   <div className="mt-4 text-sm text-gray-600">
-                    <p>Uptime: {systemHealth.uptime}</p>
-                    <p>Database Response: {systemHealth.database.response_time}ms</p>
+                    <p>Uptime: {systemHealth.uptime || 'N/A'}</p>
+                    <p>Database Response: {systemHealth.database?.response_time ?? 'N/A'}ms</p>
                   </div>
                 </div>
               )}
