@@ -182,30 +182,30 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="text-center">
                       <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm ${
-                        systemHealth.services.authentication ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        systemHealth.services?.authentication ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                       }`}>
-                        {systemHealth.services.authentication ? '✅' : '❌'} Auth
+                        {systemHealth.services?.authentication ? '✅' : '❌'} Auth
                       </div>
                     </div>
                     <div className="text-center">
                       <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm ${
-                        systemHealth.services.api ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        systemHealth.services?.api ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                       }`}>
-                        {systemHealth.services.api ? '✅' : '❌'} API
+                        {systemHealth.services?.api ? '✅' : '❌'} API
                       </div>
                     </div>
                     <div className="text-center">
                       <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm ${
-                        systemHealth.services.database ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        systemHealth.services?.database ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                       }`}>
-                        {systemHealth.services.database ? '✅' : '❌'} Database
+                        {systemHealth.services?.database ? '✅' : '❌'} Database
                       </div>
                     </div>
                     <div className="text-center">
                       <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm ${
-                        systemHealth.services.hardware ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        systemHealth.services?.hardware ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                       }`}>
-                        {systemHealth.services.hardware ? '✅' : '❌'} Hardware
+                        {systemHealth.services?.hardware ? '✅' : '❌'} Hardware
                       </div>
                     </div>
                   </div>
