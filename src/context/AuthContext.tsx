@@ -140,10 +140,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       setIsLoading(true);
       
-      // CRITICAL: Clear old localStorage data to force fresh backend data
-      localStorage.removeItem('clamflow_token');
-      localStorage.removeItem('clamflow_user');
-      console.log('🧹 Cleared old localStorage data before login');
+      console.log('🔐 Starting login process for:', username);
       
       // Try API authentication
       try {
@@ -174,25 +171,35 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
           console.log('📝 Setting user with requires_password_change:', userData.requires_password_change);
 
-          setToken(authToken);
-          setUser(userData);
-          setRequiresPasswordChange(userData.requires_password_change || false);
-
-          // Try to save to localStorage with error handling
+          // CRITICAL: Save to localStorage FIRST before setting state
           try {
             localStorage.setItem('clamflow_token', authToken);
             localStorage.setItem('clamflow_user', JSON.stringify(userData));
             console.log('✅ AuthContext: Successfully saved token and user to localStorage');
+            
+            // Verify it was saved
+            const savedToken = localStorage.getItem('clamflow_token');
+            const savedUser = localStorage.getItem('clamflow_user');
+            console.log('🔍 Verification - Token saved:', !!savedToken, 'User saved:', !!savedUser);
+            
+            if (!savedToken || !savedUser) {
+              throw new Error('localStorage verification failed');
+            }
           } catch (err) {
             console.error('❌ AuthContext: Failed to save to localStorage:', err);
-            // Continue anyway - state is set, auth will work for session
+            return { success: false, error: 'Failed to save authentication data. Please check your browser settings.' };
           }
+
+          // Now set React state
+          setToken(authToken);
+          setUser(userData);
+          setRequiresPasswordChange(userData.requires_password_change || false);
 
           if (userData.requires_password_change) {
             return { success: true, requiresPasswordChange: true };
           } else {
-            // Add small delay to ensure state propagation before navigation
-            await new Promise(resolve => setTimeout(resolve, 100));
+            // Add delay to ensure state propagation before navigation
+            await new Promise(resolve => setTimeout(resolve, 200));
             router.push('/dashboard');
             return { success: true };
           }
@@ -226,21 +233,30 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setUser(userData);
         setRequiresPasswordChange(userData.requires_password_change || false);
 
-        // Try to save to localStorage with error handling
+        // CRITICAL: Save to localStorage FIRST before setting state
         try {
           localStorage.setItem('clamflow_token', fallbackToken);
           localStorage.setItem('clamflow_user', JSON.stringify(userData));
           console.log('✅ AuthContext: Successfully saved enterprise token and user to localStorage');
+          
+          // Verify it was saved
+          const savedToken = localStorage.getItem('clamflow_token');
+          const savedUser = localStorage.getItem('clamflow_user');
+          console.log('🔍 Verification - Token saved:', !!savedToken, 'User saved:', !!savedUser);
+          
+          if (!savedToken || !savedUser) {
+            throw new Error('localStorage verification failed');
+          }
         } catch (err) {
           console.error('❌ AuthContext: Failed to save enterprise credentials to localStorage:', err);
-          // Continue anyway - state is set, auth will work for session
+          return { success: false, error: 'Failed to save authentication data. Please check your browser settings.' };
         }
 
         if (userData.requires_password_change) {
           return { success: true, requiresPasswordChange: true };
         } else {
-          // Add small delay to ensure state propagation before navigation
-          await new Promise(resolve => setTimeout(resolve, 100));
+          // Add delay to ensure state propagation before navigation
+          await new Promise(resolve => setTimeout(resolve, 200));
           router.push('/dashboard');
           return { success: true };
         }
