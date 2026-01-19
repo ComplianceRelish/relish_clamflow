@@ -123,7 +123,7 @@ const SecuritySurveillance: React.FC = () => {
                       <p className="text-sm text-gray-600">{camera.location}</p>
                     </div>
                     <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getCameraStatusColor(camera.status)}`}>
-                      {camera.status.toUpperCase()}
+                      {(camera.status || 'unknown').toUpperCase()}
                     </span>
                   </div>
                   <div className="text-xs text-gray-500 space-y-1">
@@ -180,7 +180,7 @@ const SecuritySurveillance: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <span className="flex items-center">
                         <span className="mr-2">{getEventTypeIcon(event.eventType)}</span>
-                        {event.eventType.replace(/_/g, ' ')}
+                        {(event.eventType || 'unknown').replace(/_/g, ' ')}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
@@ -194,7 +194,7 @@ const SecuritySurveillance: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${getSeverityColor(event.severity)}`}>
-                        {event.severity.toUpperCase()}
+                        {(event.severity || 'low').toUpperCase()}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">

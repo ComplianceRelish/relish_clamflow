@@ -34,25 +34,31 @@ export function useGateData(): UseGateDataReturn {
         clamflowAPI.getSuppliers(),
       ]);
 
-      // Handle vehicles response
+      // Handle vehicles response - ensure array
       if (vehiclesRes.success && vehiclesRes.data) {
-        setVehicles(vehiclesRes.data);
+        const data = Array.isArray(vehiclesRes.data) ? vehiclesRes.data : [];
+        setVehicles(data);
       } else {
         console.warn('Failed to fetch vehicles:', vehiclesRes.error);
+        setVehicles([]);
       }
 
-      // Handle active deliveries response
+      // Handle active deliveries response - ensure array
       if (activeRes.success && activeRes.data) {
-        setActiveDeliveries(activeRes.data);
+        const data = Array.isArray(activeRes.data) ? activeRes.data : [];
+        setActiveDeliveries(data);
       } else {
         console.warn('Failed to fetch active deliveries:', activeRes.error);
+        setActiveDeliveries([]);
       }
 
-      // Handle suppliers response
+      // Handle suppliers response - ensure array
       if (suppliersRes.success && suppliersRes.data) {
-        setSuppliers(suppliersRes.data);
+        const data = Array.isArray(suppliersRes.data) ? suppliersRes.data : [];
+        setSuppliers(data);
       } else {
         console.warn('Failed to fetch suppliers:', suppliersRes.error);
+        setSuppliers([]);
       }
 
       setLastUpdated(new Date());

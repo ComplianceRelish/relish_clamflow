@@ -34,25 +34,31 @@ export function useOperationsData(): UseOperationsDataReturn {
         clamflowAPI.getBottlenecks(),
       ]);
 
-      // Handle stations response
+      // Handle stations response - ensure array
       if (stationsRes.success && stationsRes.data) {
-        setStations(stationsRes.data);
+        const data = Array.isArray(stationsRes.data) ? stationsRes.data : [];
+        setStations(data);
       } else {
         console.warn('Failed to fetch stations:', stationsRes.error);
+        setStations([]);
       }
 
-      // Handle active lots response
+      // Handle active lots response - ensure array
       if (lotsRes.success && lotsRes.data) {
-        setActiveLots(lotsRes.data);
+        const data = Array.isArray(lotsRes.data) ? lotsRes.data : [];
+        setActiveLots(data);
       } else {
         console.warn('Failed to fetch active lots:', lotsRes.error);
+        setActiveLots([]);
       }
 
-      // Handle bottlenecks response
+      // Handle bottlenecks response - ensure array
       if (bottlenecksRes.success && bottlenecksRes.data) {
-        setBottlenecks(bottlenecksRes.data);
+        const data = Array.isArray(bottlenecksRes.data) ? bottlenecksRes.data : [];
+        setBottlenecks(data);
       } else {
         console.warn('Failed to fetch bottlenecks:', bottlenecksRes.error);
+        setBottlenecks([]);
       }
 
       setLastUpdated(new Date());

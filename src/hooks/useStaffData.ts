@@ -37,32 +37,40 @@ export function useStaffData(): UseStaffDataReturn {
         clamflowAPI.getShiftSchedules(),
       ]);
 
-      // Handle attendance response
+      // Handle attendance response - ensure array
       if (attendanceRes.success && attendanceRes.data) {
-        setAttendance(attendanceRes.data);
+        const data = Array.isArray(attendanceRes.data) ? attendanceRes.data : [];
+        setAttendance(data);
       } else {
         console.warn('Failed to fetch attendance:', attendanceRes.error);
+        setAttendance([]);
       }
 
-      // Handle locations response
+      // Handle locations response - ensure array
       if (locationsRes.success && locationsRes.data) {
-        setLocations(locationsRes.data);
+        const data = Array.isArray(locationsRes.data) ? locationsRes.data : [];
+        setLocations(data);
       } else {
         console.warn('Failed to fetch staff locations:', locationsRes.error);
+        setLocations([]);
       }
 
-      // Handle performance response
+      // Handle performance response - ensure array
       if (performanceRes.success && performanceRes.data) {
-        setPerformance(performanceRes.data);
+        const data = Array.isArray(performanceRes.data) ? performanceRes.data : [];
+        setPerformance(data);
       } else {
         console.warn('Failed to fetch staff performance:', performanceRes.error);
+        setPerformance([]);
       }
 
-      // Handle shifts response
+      // Handle shifts response - ensure array
       if (shiftsRes.success && shiftsRes.data) {
-        setShifts(shiftsRes.data);
+        const data = Array.isArray(shiftsRes.data) ? shiftsRes.data : [];
+        setShifts(data);
       } else {
         console.warn('Failed to fetch shift schedules:', shiftsRes.error);
+        setShifts([]);
       }
 
       setLastUpdated(new Date());

@@ -85,14 +85,14 @@ const ProductionAnalytics: React.FC = () => {
         <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
           <div className="text-sm font-medium text-gray-600">Lots Processed</div>
           <div className="text-3xl font-bold text-gray-900 mt-2">
-            {throughput?.daily?.reduce((sum, day) => sum + day.count, 0) || 0}
+            {(throughput?.daily || []).reduce((sum, day) => sum + (day.count || 0), 0)}
           </div>
           <div className="text-xs text-gray-500 mt-1">Today</div>
         </div>
         <div className="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
           <div className="text-sm font-medium text-gray-600">Overall Efficiency</div>
-          <div className={`text-3xl font-bold mt-2 ${getEfficiencyColor(efficiency && efficiency.length > 0 ? efficiency[0].efficiency : 0)}`}>
-            {efficiency && efficiency.length > 0 ? efficiency[0].efficiency.toFixed(1) : 0}%
+          <div className={`text-3xl font-bold mt-2 ${getEfficiencyColor(efficiency && efficiency.length > 0 ? (efficiency[0]?.efficiency || 0) : 0)}`}>
+            {efficiency && efficiency.length > 0 ? (efficiency[0]?.efficiency?.toFixed(1) || 0) : 0}%
           </div>
           <div className="text-xs text-gray-500 mt-1">System-wide average</div>
         </div>
@@ -108,7 +108,7 @@ const ProductionAnalytics: React.FC = () => {
         <div className="bg-white rounded-lg shadow p-6 border-l-4 border-orange-500">
           <div className="text-sm font-medium text-gray-600">Avg Processing Time</div>
           <div className="text-3xl font-bold text-gray-900 mt-2">
-            {efficiency && efficiency.length > 0 ? efficiency[0].avgProcessingTime.toFixed(0) : 0}
+            {efficiency && efficiency.length > 0 ? (efficiency[0]?.avgProcessingTime?.toFixed(0) || 0) : 0}
           </div>
           <div className="text-xs text-gray-500 mt-1">minutes per lot</div>
         </div>
@@ -124,20 +124,20 @@ const ProductionAnalytics: React.FC = () => {
             <div>
               <div className="text-sm font-medium text-gray-600 mb-2">Lots Processed</div>
               <div className="text-4xl font-bold text-blue-600">
-                {throughput?.daily?.reduce((sum, day) => sum + day.count, 0) || 0}
+                {(throughput?.daily || []).reduce((sum, day) => sum + (day.count || 0), 0)}
               </div>
             </div>
             <div>
               <div className="text-sm font-medium text-gray-600 mb-2">Total Weight Processed</div>
               <div className="text-4xl font-bold text-green-600">
-                {throughput?.daily?.reduce((sum, day) => sum + day.weight, 0).toFixed(1) || 0}
+                {((throughput?.daily || []).reduce((sum, day) => sum + (day.weight || 0), 0)).toFixed(1)}
                 <span className="text-lg text-gray-500 ml-2">kg</span>
               </div>
             </div>
             <div>
               <div className="text-sm font-medium text-gray-600 mb-2">Avg Time per Lot</div>
               <div className="text-4xl font-bold text-purple-600">
-                {efficiency && efficiency.length > 0 ? efficiency[0].avgProcessingTime.toFixed(0) : 0}
+                {efficiency && efficiency.length > 0 ? efficiency[0]?.avgProcessingTime?.toFixed(0) : 0}
                 <span className="text-lg text-gray-500 ml-2">min</span>
               </div>
             </div>
@@ -156,23 +156,23 @@ const ProductionAnalytics: React.FC = () => {
               efficiency.map((station, index) => (
                 <div key={index}>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium text-gray-700">{station.stationName}</span>
+                    <span className="text-sm font-medium text-gray-700">{station?.stationName || 'Unknown'}</span>
                     <div className="flex items-center gap-4">
                       <span className="text-sm text-gray-600">
-                        Lots: {station.lotsProcessed}
+                        Lots: {station?.lotsProcessed || 0}
                       </span>
-                      <span className={`text-sm font-semibold ${getEfficiencyColor(station.efficiency)}`}>
-                        {station.efficiency.toFixed(1)}%
+                      <span className={`text-sm font-semibold ${getEfficiencyColor(station?.efficiency || 0)}`}>
+                        {(station?.efficiency || 0).toFixed(1)}%
                       </span>
                     </div>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
                     <div
                       className={`h-3 rounded-full transition-all duration-500 ${
-                        station.efficiency >= 90 ? 'bg-green-500' :
-                        station.efficiency >= 75 ? 'bg-yellow-500' : 'bg-red-500'
+                        (station?.efficiency || 0) >= 90 ? 'bg-green-500' :
+                        (station?.efficiency || 0) >= 75 ? 'bg-yellow-500' : 'bg-red-500'
                       }`}
-                      style={{ width: `${station.efficiency}%` }}
+                      style={{ width: `${station?.efficiency || 0}%` }}
                     />
                   </div>
                 </div>
@@ -193,7 +193,7 @@ const ProductionAnalytics: React.FC = () => {
             <div className="bg-gray-50 rounded-lg p-4">
               <div className="text-sm text-gray-600">Total Lots</div>
               <div className="text-2xl font-bold text-gray-900 mt-1">
-                {efficiency?.reduce((sum, s) => sum + s.lotsProcessed, 0) || 0}
+                {(efficiency || []).reduce((sum, s) => sum + (s?.lotsProcessed || 0), 0)}
               </div>
             </div>
           </div>

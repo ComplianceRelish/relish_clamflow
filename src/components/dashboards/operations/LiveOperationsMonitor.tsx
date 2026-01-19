@@ -206,7 +206,7 @@ const LiveOperationsMonitor: React.FC = () => {
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Processing Flow</h3>
         <div className="flex items-center justify-between space-x-4 overflow-x-auto pb-2">
           {['Weight Station', 'PPC Station', 'FP Station', 'QC Station', 'Inventory'].map((stage, index) => {
-            const lotsInStage = activeLots.filter(lot => lot.currentStation.includes(stage.split(' ')[0])).length;
+            const lotsInStage = activeLots.filter(lot => lot.currentStation?.includes(stage.split(' ')[0])).length;
             return (
               <React.Fragment key={stage}>
                 <div className="flex-1 min-w-[120px]">

@@ -61,12 +61,12 @@ const InventoryShipmentsDashboard: React.FC = () => {
     );
   }
 
-  const packedProducts = finishedProducts.filter(p => p.status === 'packed').length;
-  const readyForShipmentCount = finishedProducts.filter(p => p.status === 'ready_for_shipment').length;
-  const criticalItems = inventoryItems.filter(i => i.status === 'critical').length;
-  const totalWeight = finishedProducts
-    .filter(p => p.status === 'ready_for_shipment')
-    .reduce((sum, p) => sum + p.totalWeight, 0);
+  const packedProducts = (finishedProducts || []).filter(p => p?.status === 'packed').length;
+  const readyForShipmentCount = (finishedProducts || []).filter(p => p?.status === 'ready_for_shipment').length;
+  const criticalItems = (inventoryItems || []).filter(i => i?.status === 'critical').length;
+  const totalWeight = (finishedProducts || [])
+    .filter(p => p?.status === 'ready_for_shipment')
+    .reduce((sum, p) => sum + (p?.totalWeight || 0), 0);
 
   return (
     <div className="space-y-6">

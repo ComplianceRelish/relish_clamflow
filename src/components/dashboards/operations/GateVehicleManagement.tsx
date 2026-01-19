@@ -69,16 +69,16 @@ const GateVehicleManagement: React.FC = () => {
         </div>
         <div className="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
           <div className="text-sm font-medium text-gray-600">Total Vehicles Today</div>
-          <div className="text-3xl font-bold text-gray-900 mt-2">{vehicles.length}</div>
+          <div className="text-3xl font-bold text-gray-900 mt-2">{vehicles?.length || 0}</div>
         </div>
         <div className="bg-white rounded-lg shadow p-6 border-l-4 border-purple-500">
           <div className="text-sm font-medium text-gray-600">Active Suppliers</div>
-          <div className="text-3xl font-bold text-gray-900 mt-2">{suppliers.length}</div>
+          <div className="text-3xl font-bold text-gray-900 mt-2">{suppliers?.length || 0}</div>
         </div>
         <div className="bg-white rounded-lg shadow p-6 border-l-4 border-orange-500">
           <div className="text-sm font-medium text-gray-600">RFID Scans Today</div>
           <div className="text-3xl font-bold text-gray-900 mt-2">
-            {vehicles.reduce((sum, v) => sum + v.rfidCount, 0)}
+            {(vehicles || []).reduce((sum, v) => sum + (v.rfidCount || 0), 0)}
           </div>
         </div>
       </div>
@@ -235,7 +235,13 @@ const GateVehicleManagement: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {vehicles.slice(0, 10).map((vehicle) => (
+              {vehicles.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                    No vehicle activity available
+                  </td>
+                </tr>
+              ) : (vehicles || []).slice(0, 10).map((vehicle) => (
                 <tr key={vehicle.vehicleId} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     {vehicle.lotNumber}
@@ -254,7 +260,7 @@ const GateVehicleManagement: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${getStatusColor(vehicle.status)}`}>
-                      {vehicle.status.toUpperCase()}
+                      {vehicle.status?.toUpperCase() || 'UNKNOWN'}
                     </span>
                   </td>
                 </tr>

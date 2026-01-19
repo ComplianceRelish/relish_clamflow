@@ -42,13 +42,16 @@ export function useAnalyticsData(): UseAnalyticsDataReturn {
         setThroughput(throughputRes.data);
       } else {
         console.warn('Failed to fetch throughput:', throughputRes.error);
+        setThroughput(null);
       }
 
-      // Handle efficiency response
+      // Handle efficiency response - ensure array
       if (efficiencyRes.success && efficiencyRes.data) {
-        setEfficiency(efficiencyRes.data);
+        const data = Array.isArray(efficiencyRes.data) ? efficiencyRes.data : [];
+        setEfficiency(data);
       } else {
         console.warn('Failed to fetch efficiency:', efficiencyRes.error);
+        setEfficiency([]);
       }
 
       // Handle quality response
@@ -56,13 +59,16 @@ export function useAnalyticsData(): UseAnalyticsDataReturn {
         setQuality(qualityRes.data);
       } else {
         console.warn('Failed to fetch quality metrics:', qualityRes.error);
+        setQuality(null);
       }
 
-      // Handle processing times response
+      // Handle processing times response - ensure array
       if (processingTimesRes.success && processingTimesRes.data) {
-        setProcessingTimes(processingTimesRes.data);
+        const data = Array.isArray(processingTimesRes.data) ? processingTimesRes.data : [];
+        setProcessingTimes(data);
       } else {
         console.warn('Failed to fetch processing times:', processingTimesRes.error);
+        setProcessingTimes([]);
       }
 
       setLastUpdated(new Date());

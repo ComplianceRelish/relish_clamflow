@@ -1,7 +1,8 @@
 "use client"
 
 import React, { useState, useEffect } from 'react'
-import clamflowAPI, { DashboardMetrics, SystemHealthData } from '../../lib/clamflow-api'
+import clamflowAPI from '../../lib/clamflow-api'
+import { DashboardMetrics, SystemHealthData } from '../../types/dashboard'
 import { User } from '../../types/auth'
 import AdminManagementPanel from './admin/AdminManagementPanel'
 import LiveOperationsMonitor from './operations/LiveOperationsMonitor'

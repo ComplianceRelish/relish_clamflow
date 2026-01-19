@@ -34,25 +34,31 @@ export function useSecurityData(): UseSecurityDataReturn {
         clamflowAPI.getSecurityEvents(),
       ]);
 
-      // Handle cameras response
+      // Handle cameras response - ensure array
       if (camerasRes.success && camerasRes.data) {
-        setCameras(camerasRes.data);
+        const data = Array.isArray(camerasRes.data) ? camerasRes.data : [];
+        setCameras(data);
       } else {
         console.warn('Failed to fetch cameras:', camerasRes.error);
+        setCameras([]);
       }
 
-      // Handle face detection events response
+      // Handle face detection events response - ensure array
       if (faceDetectionRes.success && faceDetectionRes.data) {
-        setFaceDetectionEvents(faceDetectionRes.data);
+        const data = Array.isArray(faceDetectionRes.data) ? faceDetectionRes.data : [];
+        setFaceDetectionEvents(data);
       } else {
         console.warn('Failed to fetch face detection events:', faceDetectionRes.error);
+        setFaceDetectionEvents([]);
       }
 
-      // Handle security events response
+      // Handle security events response - ensure array
       if (securityEventsRes.success && securityEventsRes.data) {
-        setSecurityEvents(securityEventsRes.data);
+        const data = Array.isArray(securityEventsRes.data) ? securityEventsRes.data : [];
+        setSecurityEvents(data);
       } else {
         console.warn('Failed to fetch security events:', securityEventsRes.error);
+        setSecurityEvents([]);
       }
 
       setLastUpdated(new Date());

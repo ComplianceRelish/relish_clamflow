@@ -181,11 +181,11 @@ const StaffManagementDashboard: React.FC = () => {
                     </span>
                   </div>
                   <div className="text-xs text-gray-500 space-y-1">
-                    {location.staffMembers.slice(0, 3).map((member) => (
+                    {(location.staffMembers || []).slice(0, 3).map((member) => (
                       <div key={member.userId}>{member.fullName} ({member.role})</div>
                     ))}
-                    {location.staffMembers.length > 3 && (
-                      <div className="text-blue-600">+{location.staffMembers.length - 3} more</div>
+                    {(location.staffMembers?.length || 0) > 3 && (
+                      <div className="text-blue-600">+{(location.staffMembers?.length || 0) - 3} more</div>
                     )}
                   </div>
                 </div>
