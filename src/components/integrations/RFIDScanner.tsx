@@ -33,11 +33,24 @@ const RFIDScanner: React.FC<RFIDScannerProps> = ({
   const [isConnected, setIsConnected] = useState(false);
   const [scanMode, setScanMode] = useState(mode);
 
-  // Simulate RFID reader connection
+  // Check RFID reader connection via API
   useEffect(() => {
-    // In real implementation, this would connect to actual RFID hardware
-    const checkConnection = () => {
-      setIsConnected(true); // Mock connection
+    // Production: Check actual RFID hardware connection status
+    const checkConnection = async () => {
+      try {
+        const token = localStorage.getItem('clamflow_token');
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/hardware/rfid/status`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setIsConnected(data.connected || false);
+        } else {
+          setIsConnected(false);
+        }
+      } catch {
+        setIsConnected(false);
+      }
     };
 
     checkConnection();

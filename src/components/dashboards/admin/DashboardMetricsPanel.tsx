@@ -14,6 +14,7 @@ import {
   Clock, DollarSign, Activity, Target, Calendar, RefreshCw 
 } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/Alert'
+import clamflowAPI from '@/lib/clamflow-api'
 
 // Custom Select component to avoid TypeScript issues
 const FormSelect: React.FC<{
@@ -56,80 +57,60 @@ const FormProgress: React.FC<{
   );
 };
 
-// Mock API functions - replace with your actual API implementation
-const mockApi = {
+// API-based metrics fetcher - fetches real data from backend
+const metricsAPI = {
   dashboard: {
     getMetrics: async ({ timeRange }: { timeRange: string }) => {
-      // Mock data - replace with actual API call
-      return {
-        overview: {
-          total_forms_today: 45,
-          total_forms_week: 312,
-          active_users: 23,
-          completion_rate: 94.5,
-          avg_processing_time: 12,
-          quality_score: 97.2
-        },
-        production: {
-          daily_throughput: 2400,
-          weekly_throughput: 15600,
-          yield_percentage: 89.5,
-          waste_percentage: 10.5,
-          efficiency_score: 92.3,
-          stations_active: 8
-        },
-        quality: {
-          passed_inspections: 234,
-          failed_inspections: 12,
-          pending_reviews: 8,
-          compliance_rate: 96.2,
-          defect_rate: 3.8,
-          rework_rate: 1.2
-        },
-        trends: {
-          daily_production: [
-            { date: '2024-01-01', production: 2200, quality: 95 },
-            { date: '2024-01-02', production: 2400, quality: 97 },
-            { date: '2024-01-03', production: 2100, quality: 94 }
-          ],
-          form_submissions: [
-            { date: '2024-01-01', weight_notes: 12, ppc: 8, fp: 15, qc: 10 },
-            { date: '2024-01-02', weight_notes: 15, ppc: 12, fp: 18, qc: 14 },
-            { date: '2024-01-03', weight_notes: 10, ppc: 6, fp: 12, qc: 8 }
-          ],
-          user_activity: [
-            { hour: '08:00', active_users: 15, forms_submitted: 8 },
-            { hour: '10:00', active_users: 22, forms_submitted: 15 },
-            { hour: '12:00', active_users: 18, forms_submitted: 12 }
-          ],
-          quality_trends: [
-            { date: '2024-01-01', passed: 45, failed: 3, pending: 2 },
-            { date: '2024-01-02', passed: 52, failed: 2, pending: 1 },
-            { date: '2024-01-03', passed: 48, failed: 4, pending: 3 }
-          ]
-        },
-        alerts: {
-          critical: 2,
-          warning: 5,
-          info: 12,
-          recent_alerts: [
-            {
-              id: '1',
-              type: 'Temperature Alert',
-              message: 'Freezer temperature exceeds threshold',
-              timestamp: new Date().toISOString(),
-              severity: 'critical' as const
-            },
-            {
-              id: '2',
-              type: 'Form Approval',
-              message: 'QC form pending approval',
-              timestamp: new Date().toISOString(),
-              severity: 'warning' as const
-            }
-          ]
-        }
+      const response = await clamflowAPI.getDashboardMetrics();
+      if (response.success && response.data) {
+        // Map backend response to expected format
+        return {
+          overview: {
+            total_forms_today: response.data.totalLots || 0,
+            total_forms_week: response.data.totalLots || 0,
+            active_users: response.data.activeUsers || 0,
+            completion_rate: 0,
+            avg_processing_time: 0,
+            quality_score: 0
+          },
+          production: {
+            daily_throughput: 0,
+            weekly_throughput: 0,
+            yield_percentage: 0,
+            waste_percentage: 0,
+            efficiency_score: 0,
+            stations_active: 0
+          },
+          quality: {
+            passed_inspections: 0,
+            failed_inspections: 0,
+            pending_reviews: response.data.pendingApprovals || 0,
+            compliance_rate: 0,
+            defect_rate: 0,
+            rework_rate: 0
+          },
+          trends: {
+            daily_production: [],
+            form_submissions: [],
+            user_activity: [],
+            quality_trends: []
+          },
+          alerts: {
+            critical: response.data.systemHealth === 'critical' ? 1 : 0,
+            warning: response.data.systemHealth === 'warning' ? 1 : 0,
+            info: 0,
+            recent_alerts: []
+          }
+        };
       }
+      // Return empty structure if API fails
+      return {
+        overview: { total_forms_today: 0, total_forms_week: 0, active_users: 0, completion_rate: 0, avg_processing_time: 0, quality_score: 0 },
+        production: { daily_throughput: 0, weekly_throughput: 0, yield_percentage: 0, waste_percentage: 0, efficiency_score: 0, stations_active: 0 },
+        quality: { passed_inspections: 0, failed_inspections: 0, pending_reviews: 0, compliance_rate: 0, defect_rate: 0, rework_rate: 0 },
+        trends: { daily_production: [], form_submissions: [], user_activity: [], quality_trends: [] },
+        alerts: { critical: 0, warning: 0, info: 0, recent_alerts: [] }
+      };
     }
   }
 }
@@ -223,7 +204,7 @@ export default function DashboardMetricsPanel({ currentUser }: DashboardMetricsP
         setLoading(true)
       }
       
-      const response = await mockApi.dashboard.getMetrics({ timeRange })
+      const response = await metricsAPI.dashboard.getMetrics({ timeRange })
       setMetrics(response)
     } catch (err) {
       setError('Failed to load dashboard metrics')

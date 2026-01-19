@@ -108,29 +108,8 @@ const Dashboard: React.FC = () => {
       } catch (err: any) {
         console.error('Dashboard data fetch error:', err);
         setError(err.message || 'Failed to load dashboard data');
-        
-        // ✅ FIXED: Fallback data with EXACT SystemHealthData properties
-        setDashboardData({
-          metrics: {
-            totalUsers: 0,
-            activeUsers: 0,
-            totalLots: 0,
-            pendingApprovals: 0,
-            systemHealth: 'healthy'
-          },
-          recentActivity: [],
-          pendingApprovals: [],
-          systemStatus: {
-            overall_status: 'healthy',
-            database_status: 'connected',
-            api_response_time: 45,
-            active_users: 12,
-            memory_usage: 45,
-            cpu_usage: 23,
-            last_backup: new Date().toISOString(),
-            uptime: "2h 15m"
-          }
-        });
+        // Production: No fallback data - show error state
+        setDashboardData(null);
       } finally {
         setLoading(false);
       }

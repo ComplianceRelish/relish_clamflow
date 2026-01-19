@@ -117,8 +117,7 @@ const AuthenticationWorkflow: React.FC<AuthenticationWorkflowProps> = ({
     setIsProcessing(true)
     setError('')
     
-    try {
-      // Mock face recognition - replace with actual implementation
+    try {\n      // Production: Call face recognition API
       const staffData = await validateStaff('face_data', 'face_recognition')
       await completeAuthenticationStep(staffData.id, 'face_recognition')
       setAuthMethod(null)

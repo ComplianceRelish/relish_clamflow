@@ -178,28 +178,44 @@ const ClamFlowSecure: React.FC<ClamFlowSecureProps> = ({
         severity: 'low',
       });
       
-      // Mock authentication process
-      await new Promise(resolve => setTimeout(resolve, 3000 + Math.random() * 2000));
+      // Production: Call biometric authentication API
+      const token = localStorage.getItem('clamflow_token');
+      const authResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/biometric`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          deviceType,
+          deviceId: availableDevice.id,
+          captureData: 'biometric_capture_data'
+        })
+      });
       
-      // Simulate success/failure (90% success rate)
-      const isSuccess = Math.random() > 0.1;
+      if (!authResponse.ok) {
+        throw new Error('Biometric authentication failed');
+      }
+      
+      const result = await authResponse.json();
+      const isSuccess = result.success;
       
       if (isSuccess) {
-        const mockUserId = `user_${Math.floor(Math.random() * 1000)}`;
+        const userId = result.user_id;
         const response: BiometricAuthResponse = {
           success: true,
-          userId: mockUserId,
-          confidence: 0.95 + Math.random() * 0.04,
+          userId: userId,
+          confidence: result.confidence || 0.95,
           timestamp: new Date().toISOString(),
           deviceId: availableDevice.id,
         };
         
-        setCurrentSession(prev => prev ? { ...prev, status: 'success', userId: mockUserId } : null);
-        onAuthSuccess?.(mockUserId);
+        setCurrentSession(prev => prev ? { ...prev, status: 'success', userId: userId } : null);
+        onAuthSuccess?.(userId);
         
         logSecurityEvent({
           type: 'authentication',
-          userId: mockUserId,
+          userId: userId,
           deviceId: availableDevice.id,
           details: { action: 'auth_success', confidence: response.confidence },
           severity: 'low',

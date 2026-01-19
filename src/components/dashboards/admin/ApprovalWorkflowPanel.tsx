@@ -48,37 +48,8 @@ const ApprovalWorkflowPanel: React.FC<ApprovalWorkflowPanelProps> = ({ currentUs
       if (response.success && response.data) {
         setPendingApprovals(response.data);
       } else {
-        // Use mock data for development
-        const mockApprovals: ApprovalItem[] = [
-          {
-            id: '1',
-            form_type: 'weight_note',
-            form_id: 'WN-2024-001',
-            submitted_by: 'john_doe',
-            submitted_at: new Date().toISOString(),
-            status: 'pending',
-            priority: 'high'
-          },
-          {
-            id: '2',
-            form_type: 'ppc_form',
-            form_id: 'PPC-2024-001',
-            submitted_by: 'jane_smith',
-            submitted_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-            status: 'pending',
-            priority: 'medium'
-          },
-          {
-            id: '3',
-            form_type: 'qc_form',
-            form_id: 'QC-2024-001',
-            submitted_by: 'mike_wilson',
-            submitted_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-            status: 'pending',
-            priority: 'low'
-          }
-        ];
-        setPendingApprovals(mockApprovals);
+        // No data available - show empty state
+        setPendingApprovals([]);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch pending approvals');

@@ -121,14 +121,18 @@ const DepurationForm: React.FC<DepurationFormProps> = ({ onSubmit, currentUser }
         setQcStaff(qcOnlyStaff)
       }
 
-      // Mock tank data - replace with actual API call when available
-      setTanks([
-        { id: '1', tank_number: 'TANK-001', capacity: 1000, status: 'available' },
-        { id: '2', tank_number: 'TANK-002', capacity: 1500, status: 'available' },
-        { id: '3', tank_number: 'TANK-003', capacity: 2000, status: 'in_use' },
-        { id: '4', tank_number: 'TANK-004', capacity: 1200, status: 'available' },
-        { id: '5', tank_number: 'TANK-005', capacity: 1800, status: 'maintenance' }
-      ])
+      // Fetch tanks from API
+      try {
+        const tanksResponse = await clamflowAPI.get('/api/depuration/tanks');
+        if (tanksResponse.success && tanksResponse.data) {
+          setTanks(Array.isArray(tanksResponse.data) ? tanksResponse.data : []);
+        } else {
+          setTanks([]);
+        }
+      } catch {
+        console.warn('Failed to fetch tanks');
+        setTanks([]);
+      }
     } catch (error) {
       console.error('Failed to fetch initial data:', error)
       setError('Failed to load form data. Please refresh the page.')
@@ -137,16 +141,16 @@ const DepurationForm: React.FC<DepurationFormProps> = ({ onSubmit, currentUser }
 
   const fetchAvailableSamples = async (lotId: string) => {
     try {
-      // Fetch samples for the selected lot
-      // This would typically come from a samples API endpoint
-      const mockSamples = [
-        { id: 'SMP-001', sample_type: 'Pre-processing', collected_at: new Date().toISOString() },
-        { id: 'SMP-002', sample_type: 'Mid-processing', collected_at: new Date().toISOString() },
-        { id: 'SMP-003', sample_type: 'Final Product', collected_at: new Date().toISOString() }
-      ]
-      setAvailableSamples(mockSamples)
+      // Fetch samples from API
+      const samplesResponse = await clamflowAPI.get(`/api/lots/${lotId}/samples`);
+      if (samplesResponse.success && samplesResponse.data) {
+        setAvailableSamples(Array.isArray(samplesResponse.data) ? samplesResponse.data : []);
+      } else {
+        setAvailableSamples([]);
+      }
     } catch (error) {
       console.error('Failed to fetch available samples:', error)
+      setAvailableSamples([]);
     }
   }
 

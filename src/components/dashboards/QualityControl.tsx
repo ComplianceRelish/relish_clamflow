@@ -1,16 +1,54 @@
-// src/components/dashboards/QualityControl.tsx - NEW
+// src/components/dashboards/QualityControl.tsx
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import clamflowAPI from '@/lib/clamflow-api';
+
+interface QCStats {
+  pendingTests: number;
+  passedTests: number;
+  failedTests: number;
+  completionRate: number;
+}
 
 const QualityControl: React.FC = () => {
-  // Mock QC data
-  const qcStats = {
-    pendingTests: 5,
-    passedTests: 142,
-    failedTests: 3,
-    completionRate: 98.5
-  };
+  const [qcStats, setQcStats] = useState<QCStats>({
+    pendingTests: 0,
+    passedTests: 0,
+    failedTests: 0,
+    completionRate: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchQCData = async () => {
+      try {
+        const response = await clamflowAPI.getDashboardMetrics();
+        if (response.success && response.data) {
+          // Map available data to QC stats
+          setQcStats({
+            pendingTests: response.data.pendingApprovals || 0,
+            passedTests: 0,
+            failedTests: 0,
+            completionRate: 0
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching QC data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchQCData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-32">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -33,20 +71,11 @@ const QualityControl: React.FC = () => {
         </div>
       </div>
       
-      <div className="space-y-2">
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-600">Weight Notes</span>
-          <span className="text-sm font-medium text-green-600">2 pending</span>
+      {qcStats.pendingTests === 0 && qcStats.passedTests === 0 && (
+        <div className="text-center text-gray-500 text-sm py-4">
+          No QC data available
         </div>
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-600">PPC Forms</span>
-          <span className="text-sm font-medium text-yellow-600">1 pending</span>
-        </div>
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-600">FP Forms</span>
-          <span className="text-sm font-medium text-green-600">All clear</span>
-        </div>
-      </div>
+      )}
       
       <div className="text-center">
         <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">

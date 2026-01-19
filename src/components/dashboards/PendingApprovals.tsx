@@ -5,8 +5,9 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Clock } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
-// Simple loading spinner component since LoadingSpinner might not exist
+// Simple loading spinner component
 const LoadingSpinner: React.FC = () => (
   <div className="flex items-center justify-center">
     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
@@ -22,33 +23,16 @@ interface ApprovalItem {
   submitted_by: string;
   submitted_by_id: string;
   urgency: 'low' | 'medium' | 'high' | 'critical';
-  status: 'pending' | 'approved' | 'rejected' | &apos;in_review&apos;;
+  status: 'pending' | 'approved' | 'rejected' | 'in_review';
   created_at: string;
   updated_at: string;
   description?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
-interface User {
-  id: string;
-  role: string;
-  name: string;
-}
-
-// Mock useAuth hook - replace with your actual implementation
-const useAuth = () => {
-  const [user] = useState<User | null>({
-    id: '1',
-    role: 'admin',
-    name: &apos;Admin User&apos;
-  });
-  
-  return { user };
-};
-
-// Mock dashboardAPI - replace with your actual implementation
+// Dashboard API for approvals - fetches from backend
 const dashboardAPI = {
-  getPendingApprovals: async (role: string): Promise<ApprovalItem[]> => {
+  getPendingApprovals: async (_role: string): Promise<ApprovalItem[]> => {
     try {
       const response = await fetch('/api/dashboard/pending-approvals', {
         method: 'GET',
@@ -64,57 +48,9 @@ const dashboardAPI = {
 
       return await response.json();
     } catch (error) {
-      // Fallback demo data for development
-      return [
-        {
-          id: '1',
-          title: 'Staff Onboarding - John Doe',
-          type: 'staff_onboarding',
-          submitted_by: 'Staff Lead Manager',
-          submitted_by_id: 'staff_lead_001',
-          urgency: 'high',
-          status: 'pending',
-          created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
-          updated_at: new Date().toISOString(),
-          description: 'New production staff member requires approval for floor access',
-          metadata: {
-            department: 'Production',
-            position: 'Quality Control Technician'
-          }
-        },
-        {
-          id: '2',
-          title: 'Supplier Registration - Fresh Catch Co.',
-          type: 'supplier_registration',
-          submitted_by: 'Procurement Manager',
-          submitted_by_id: 'proc_mgr_001',
-          urgency: 'medium',
-          status: 'pending',
-          created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
-          updated_at: new Date().toISOString(),
-          description: 'New seafood supplier registration for raw material sourcing',
-          metadata: {
-            supplier_type: 'Raw Material',
-            estimated_volume: '500kg/month'
-          }
-        },
-        {
-          id: '3',
-          title: 'Equipment Request - New Freezer Unit',
-          type: 'equipment_request',
-          submitted_by: 'Facility Manager',
-          submitted_by_id: 'facility_001',
-          urgency: 'critical',
-          status: 'pending',
-          created_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), // 4 hours ago
-          updated_at: new Date().toISOString(),
-          description: 'Urgent replacement needed for failed freezer unit in storage area B',
-          metadata: {
-            equipment_type: 'Freezer',
-            estimated_cost: &apos;$15,000&apos;
-          }
-        }
-      ];
+      // Production: Return empty array on error
+      console.error('Failed to fetch pending approvals:', error);
+      return [];
     }
   },
 
@@ -129,10 +65,11 @@ const dashboardAPI = {
       });
 
       if (!response.ok) {
-        throw new Error(&apos;Failed to approve item&apos;);
+        throw new Error('Failed to approve item');
       }
     } catch (error) {
-      console.log(`Mock approval for item ${id}`);
+      console.error('Failed to approve item:', error);
+      throw error;
     }
   },
 
@@ -151,7 +88,8 @@ const dashboardAPI = {
         throw new Error(&apos;Failed to reject item&apos;);
       }
     } catch (error) {
-      console.log(`Mock rejection for item ${id}: ${reason}`);
+      console.error('Failed to reject item:', error);
+      throw error;
     }
   }
 };

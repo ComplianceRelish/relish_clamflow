@@ -33,25 +33,8 @@ const DisasterRecovery: React.FC = () => {
       
       if (response.success) {
         setSystemHealth(response.data);
-        // Mock backup data for demonstration
-        setBackups([
-          {
-            id: '1',
-            type: 'database',
-            status: 'completed',
-            created_at: new Date().toISOString(),
-            size: '2.5 GB',
-            location: 'AWS S3'
-          },
-          {
-            id: '2',
-            type: 'files',
-            status: 'completed',
-            created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-            size: '1.2 GB',
-            location: 'AWS S3'
-          }
-        ]);
+        // Backups will be fetched from backend when backup API is available
+        setBackups([]);
       } else {
         setError(response.error || 'Failed to fetch system status');
       }
@@ -66,11 +49,10 @@ const DisasterRecovery: React.FC = () => {
   const initiateBackup = async (type: 'database' | 'files' | 'full_system') => {
     try {
       setLoading(true);
-      // This would be a real API call to initiate backup
+      // TODO: Implement when backup API is available
       // await clamflowAPI.initiateBackup(type);
       
-      // Mock successful backup initiation
-      alert(`${type} backup initiated successfully`);
+      alert(`Backup feature is not yet configured. Contact system administrator.`);
       await fetchSystemStatus();
     } catch (error) {
       console.error('Error initiating backup:', error);
