@@ -235,25 +235,25 @@ const StaffManagementDashboard: React.FC = () => {
                 performance.map((metric) => (
                   <tr key={metric.userId} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {metric.fullName}
+                      {metric.fullName || '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {metric.role}
+                      {metric.role || '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {metric.lotsProcessed}
+                      {metric.lotsProcessed ?? 0}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {metric.avgProcessingTime.toFixed(1)}
+                      {(metric.avgProcessingTime ?? 0).toFixed(1)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold">
-                      <span className={getPerformanceColor(metric.qualityScore)}>
-                        {metric.qualityScore.toFixed(1)}
+                      <span className={getPerformanceColor(metric.qualityScore ?? 0)}>
+                        {(metric.qualityScore ?? 0).toFixed(1)}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold">
-                      <span className={getPerformanceColor(metric.efficiency)}>
-                        {metric.efficiency.toFixed(1)}%
+                      <span className={getPerformanceColor(metric.efficiency ?? 0)}>
+                        {(metric.efficiency ?? 0).toFixed(1)}%
                       </span>
                     </td>
                   </tr>

@@ -237,13 +237,9 @@ const RFIDScanner: React.FC<RFIDScannerProps> = ({
 
   const startScanning = () => {
     setIsScanning(true);
-    // In real implementation, this would start the RFID reader
-    // For demo, we'll simulate scanning after 2 seconds
-    setTimeout(() => {
-      const mockRFID = `RFID${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
-      processScan(mockRFID);
-      setIsScanning(false);
-    }, 2000);
+    // Production: Real RFID reader integration via WebSocket or Serial API
+    // Hardware should trigger processScan() when a tag is detected
+    console.log('RFID Scanner: Waiting for hardware input...');
   };
 
   const stopScanning = () => {

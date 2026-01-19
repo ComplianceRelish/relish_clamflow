@@ -63,43 +63,34 @@ const ClamFlowSecure: React.FC<ClamFlowSecureProps> = ({
     try {
       setConnectionStatus('connecting');
       
-      // Simulate hardware initialization
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Mock devices - replace with actual hardware detection
-      const mockDevices: BiometricDevice[] = [
-        {
-          id: 'fp_001',
-          type: 'fingerprint',
-          status: 'connected',
-          lastSeen: new Date().toISOString(),
-          accuracy: 0.98,
-        },
-        {
-          id: 'face_001',
-          type: 'facial',
-          status: 'connected',
-          lastSeen: new Date().toISOString(),
-          accuracy: 0.95,
-        },
-        {
-          id: 'iris_001',
-          type: 'iris',
-          status: 'disconnected',
-          lastSeen: new Date(Date.now() - 300000).toISOString(),
-          accuracy: 0.99,
-        },
-      ];
-      
-      setDevices(mockDevices);
-      setConnectionStatus('connected');
-      
-      // Log security event
-      logSecurityEvent({
-        type: 'authentication',
-        details: { action: 'hardware_initialized', deviceCount: mockDevices.length },
-        severity: 'low',
+      // Production: Detect actual connected hardware devices
+      const token = localStorage.getItem('clamflow_token');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/hardware/devices`, {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const detectedDevices: BiometricDevice[] = (data.devices || []).map((d: any) => ({
+          id: d.id,
+          type: d.type,
+          status: d.status || 'disconnected',
+          lastSeen: d.last_seen || new Date().toISOString(),
+          accuracy: d.accuracy || 0.95,
+        }));
+        setDevices(detectedDevices);
+        setConnectionStatus(detectedDevices.length > 0 ? 'connected' : 'disconnected');
+        
+        logSecurityEvent({
+          type: 'authentication',
+          details: { action: 'hardware_initialized', deviceCount: detectedDevices.length },
+          severity: 'low',
+        });
+      } else {
+        console.error('No hardware devices available');
+        setDevices([]);
+        setConnectionStatus('disconnected');
+      }
       
     } catch (error) {
       console.error('Hardware initialization failed:', error);

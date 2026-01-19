@@ -55,17 +55,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUserRole(profile.role);
     } catch (error) {
       console.error('Failed to fetch user profile:', error);
-      const fallbackProfile: UserProfile = {
-        id: userId,
-        username: 'test_user',
-        role: 'qa_technician',
-        full_name: 'Test User',
-        email: user?.email || '',
-        department: 'Quality Assurance',
-        is_first_login: false
-      };
-      setUserProfile(fallbackProfile);
-      setUserRole(fallbackProfile.role);
+      // Production: Clear user state on profile fetch failure
+      setUserProfile(null);
+      setUserRole(null);
     }
   }, [user]); // ✅ Add user as dependency
 

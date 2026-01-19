@@ -65,25 +65,28 @@ const AuthenticationWorkflow: React.FC<AuthenticationWorkflowProps> = ({
     }
   }, [weightNote])
 
-  // Mock staff validation (replace with real implementation)
+  // Validate staff via API
   const validateStaff = async (identifier: string, method: 'rfid' | 'face_recognition'): Promise<UserProfile> => {
-    // Mock implementation - replace with actual validation
-    const mockStaff: UserProfile = {
-      id: 'mock-staff-id',
-      full_name: 'Mock Staff Member',
-      role: getRequiredRole(currentStep) as UserProfile['role'],
-      created_at: new Date().toISOString(),
-      station: 'Mock Station',
-      username: 'mockuser',
-      is_active: true,
-      login_attempts: 0,
-      password_reset_required: false
+    const token = localStorage.getItem('clamflow_token');
+    const endpoint = method === 'rfid' 
+      ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/rfid/validate`
+      : `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/face-recognition`;
+    
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ identifier, method })
+    });
+    
+    if (!response.ok) {
+      throw new Error('Staff validation failed');
     }
     
-    // Simulate validation delay
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    return mockStaff
+    const data = await response.json();
+    return data.user as UserProfile;
   }
 
   // Handle RFID authentication
