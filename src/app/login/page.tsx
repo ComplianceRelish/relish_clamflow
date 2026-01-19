@@ -170,14 +170,12 @@ const LoginPage: React.FC = () => {
           </form>
 
           <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-            <h4 className="font-medium text-blue-900 mb-2">Enterprise Login</h4>
+            <h4 className="font-medium text-blue-900 mb-2">ClamFlow Enterprise</h4>
             <div className="text-xs text-blue-700 space-y-1">
-              <div><strong>Super Admin:</strong> SA_Motty</div>
-              <div><strong>Admin:</strong> AD_Admin</div>
-              <div><strong>QC Lead:</strong> QC_Lead</div>
-              <div className="text-xs text-blue-600 mt-2">
-                * Default passwords require change on first login
-              </div>
+              <p>Contact your system administrator for login credentials.</p>
+              <p className="text-blue-600 mt-2">
+                Need help? Email: support@clamflow.com
+              </p>
             </div>
           </div>
         </Card>

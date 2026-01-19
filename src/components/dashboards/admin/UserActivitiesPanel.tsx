@@ -107,143 +107,30 @@ const UserActivitiesPanel: React.FC<UserActivitiesPanelProps> = ({ onClose }) =>
         if (response.ok) {
           const data = await response.json();
           setActivities(data.activities || []);
-          setStats(data.stats || {});
+          setStats(data.stats || {
+            total_activities: 0,
+            unique_users: 0,
+            avg_session_duration: 0,
+            peak_hour: '-',
+            most_active_department: '-',
+            login_success_rate: 0
+          });
         } else {
-          // Fallback demo data
-          const demoActivities: UserActivity[] = [
-            {
-              id: '1',
-              user_id: 'u1',
-              username: 'SA_Williams',
-              full_name: 'Sarah Williams',
-              role: 'QC Lead',
-              department: 'Quality Control',
-              activity_type: 'login',
-              action: 'User Login',
-              description: 'Successful login from QC workstation',
-              timestamp: new Date(Date.now() - 300000).toISOString(),
-              ip_address: '192.168.1.45',
-              device_type: 'desktop',
-              location: 'QC Lab - Station 2',
-              status: 'success',
-              session_duration: 240
-            },
-            {
-              id: '2',
-              user_id: 'u2',
-              username: 'PL_Johnson',
-              full_name: 'Michael Johnson',
-              role: 'Production Lead',
-              department: 'Processing',
-              activity_type: 'approval',
-              action: 'Request Approved',
-              description: 'Approved staff onboarding request for new QC technician',
-              timestamp: new Date(Date.now() - 600000).toISOString(),
-              ip_address: '192.168.1.23',
-              device_type: 'desktop',
-              location: 'Processing Floor Office',
-              status: 'success',
-              metadata: {
-                request_type: 'staff_onboarding',
-                approved_user: 'John Peterson'
-              }
-            },
-            {
-              id: '3',
-              user_id: 'u3',
-              username: 'SL_Brown',
-              full_name: 'David Brown',
-              role: 'Staff Lead',
-              department: 'Packaging',
-              activity_type: 'task_completion',
-              action: 'Task Completed',
-              description: 'Completed packaging line inspection and safety check',
-              timestamp: new Date(Date.now() - 900000).toISOString(),
-              ip_address: '192.168.1.67',
-              device_type: 'mobile',
-              location: 'Packaging Area B',
-              status: 'success',
-              metadata: {
-                task_id: 'PKG-001',
-                inspection_score: 95
-              }
-            },
-            {
-              id: '4',
-              user_id: 'u4',
-              username: 'admin',
-              full_name: 'Admin User',
-              role: 'Admin',
-              department: 'Administration',
-              activity_type: 'settings_change',
-              action: 'Settings Modified',
-              description: 'Updated department permissions for QC Lead role',
-              timestamp: new Date(Date.now() - 1200000).toISOString(),
-              ip_address: '192.168.1.10',
-              device_type: 'desktop',
-              location: 'Admin Office',
-              status: 'success',
-              metadata: {
-                setting_type: 'permissions',
-                affected_role: 'QC Lead'
-              }
-            },
-            {
-              id: '5',
-              user_id: 'u5',
-              username: 'QC_Martinez',
-              full_name: 'Carlos Martinez',
-              role: 'QC Lead',
-              department: 'Quality Control',
-              activity_type: 'error',
-              action: 'Login Failed',
-              description: 'Failed login attempt - incorrect password',
-              timestamp: new Date(Date.now() - 1500000).toISOString(),
-              ip_address: '192.168.1.89',
-              device_type: 'desktop',
-              location: 'QC Lab - Station 1',
-              status: 'error',
-              metadata: {
-                error_type: 'authentication_failure',
-                attempt_count: 3
-              }
-            },
-            {
-              id: '6',
-              user_id: 'u6',
-              username: 'LL_Rodriguez',
-              full_name: 'Lisa Rodriguez',
-              role: 'Logistics Lead',
-              department: 'Shipping',
-              activity_type: 'data_access',
-              action: 'Report Generated',
-              description: 'Generated monthly shipping performance report',
-              timestamp: new Date(Date.now() - 1800000).toISOString(),
-              ip_address: '192.168.1.34',
-              device_type: 'desktop',
-              location: 'Shipping Office',
-              status: 'success',
-              metadata: {
-                report_type: 'shipping_performance',
-                date_range: '2025-07-01 to 2025-07-31'
-              }
-            }
-          ];
-
-          const demoStats: ActivityStats = {
-            total_activities: 234,
-            unique_users: 45,
-            avg_session_duration: 185,
-            peak_hour: '10:00 AM',
-            most_active_department: 'Processing',
-            login_success_rate: 96.5
-          };
-
-          setActivities(demoActivities);
-          setStats(demoStats);
+          // Production: Show empty state when API fails
+          console.warn('Failed to fetch user activities from API');
+          setActivities([]);
+          setStats({
+            total_activities: 0,
+            unique_users: 0,
+            avg_session_duration: 0,
+            peak_hour: '-',
+            most_active_department: '-',
+            login_success_rate: 0
+          });
         }
       } catch (error) {
         console.error('Failed to fetch user activities:', error);
+        setActivities([]);
       } finally {
         setLoading(false);
       }

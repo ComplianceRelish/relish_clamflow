@@ -36,39 +36,7 @@ const FormSelectItem: React.FC<{
   return <option value={value}>{children}</option>;
 };
 
-// Mock/Fallback user data
-const mockUsers = [
-  {
-    id: 'user_1',
-    username: 'SA_Motty',
-    full_name: 'Motty Philip',
-    role: 'Super Admin',
-    station: 'Enterprise',
-    is_active: true,
-    last_login: '2024-09-16T08:00:00Z',
-    created_at: '2024-01-01T00:00:00Z'
-  },
-  {
-    id: 'user_2',
-    username: 'AD_Admin',
-    full_name: 'System Administrator',
-    role: 'Admin',
-    station: 'Main Office',
-    is_active: true,
-    last_login: '2024-09-15T14:30:00Z',
-    created_at: '2024-01-15T00:00:00Z'
-  },
-  {
-    id: 'user_3',
-    username: 'QC_Lead',
-    full_name: 'Quality Control Lead',
-    role: 'QC Lead',
-    station: 'QC Station 1',
-    is_active: true,
-    last_login: '2024-09-16T07:45:00Z',
-    created_at: '2024-02-01T00:00:00Z'
-  }
-];
+// Production: No mock data - all users come from API
 
 interface User {
   id: string;
@@ -144,37 +112,26 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
       setLoading(true);
       setError(null);
 
-      // Try to fetch from API
-      try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://clamflowbackend-production.up.railway.app'}/users/`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setUsers(data);
-          return;
+      // Fetch users from API
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://clamflowbackend-production.up.railway.app'}/users/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
-      } catch (err) {
-        console.warn('API authentication failed, trying enterprise credentials:', err);
-      }
+      });
 
-      // Fallback to local storage or mock data
-      const storedUsers = localStorage.getItem('clamflow_users');
-      if (storedUsers) {
-        setUsers(JSON.parse(storedUsers));
+      if (response.ok) {
+        const data = await response.json();
+        setUsers(Array.isArray(data) ? data : []);
       } else {
-        setUsers(mockUsers);
-        localStorage.setItem('clamflow_users', JSON.stringify(mockUsers));
+        console.error('Failed to fetch users:', response.status);
+        setError('Failed to load users from server');
+        setUsers([]);
       }
-
     } catch (err) {
       console.error('Error loading users:', err);
-      setError('Failed to load users');
-      setUsers(mockUsers); // Always provide fallback
+      setError('Unable to connect to user service');
+      setUsers([]);
     } finally {
       setLoading(false);
     }

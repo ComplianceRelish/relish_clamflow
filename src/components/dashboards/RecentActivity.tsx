@@ -1,4 +1,5 @@
-// src/components/dashboards/RecentActivity.tsx - NEW
+// src/components/dashboards/RecentActivity.tsx
+// Production-ready: Displays only real activity data from API
 'use client';
 
 import React from 'react';
@@ -36,36 +37,20 @@ const RecentActivity: React.FC<RecentActivityProps> = ({ activities }) => {
     }
   };
 
-  // Mock data if no activities provided
-  const mockActivities: ActivityItem[] = [
-    {
-      id: '1',
-      type: 'login',
-      user: 'John Doe',
-      description: 'Logged into the system',
-      timestamp: new Date().toISOString()
-    },
-    {
-      id: '2',
-      type: 'form_submitted',
-      user: 'Jane Smith',
-      description: 'Submitted weight note WN-001',
-      timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString()
-    },
-    {
-      id: '3',
-      type: 'approval',
-      user: 'QC Lead',
-      description: &apos;Approved PPC form PPC-001&apos;,
-      timestamp: new Date(Date.now() - 60 * 60 * 1000).toISOString()
-    }
-  ];
-
-  const displayActivities = activities.length > 0 ? activities : mockActivities;
+  // Production: Only display real activities from the API
+  if (activities.length === 0) {
+    return (
+      <div className="text-center py-6 text-gray-500">
+        <div className="text-2xl mb-2">📭</div>
+        <p className="text-sm">No recent activity</p>
+        <p className="text-xs text-gray-400 mt-1">Activity will appear here as users perform actions</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">
-      {displayActivities.slice(0, 5).map((activity) => (
+      {activities.slice(0, 5).map((activity) => (
         <div key={activity.id} className="flex items-start space-x-3">
           <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm ${getActivityColor(activity.type)}`}>
             {getActivityIcon(activity.type)}
@@ -80,13 +65,6 @@ const RecentActivity: React.FC<RecentActivityProps> = ({ activities }) => {
           </div>
         </div>
       ))}
-      
-      {displayActivities.length === 0 && (
-        <div className="text-center py-6 text-gray-500">
-          <div className="text-2xl mb-2">📭</div>
-          <p className="text-sm">No recent activity</p>
-        </div>
-      )}
     </div>
   );
 };

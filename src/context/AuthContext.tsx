@@ -33,68 +33,11 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// API Base URL (✅ Fixed: Removed trailing whitespace)
+// API Base URL
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://clamflowbackend-production.up.railway.app';
 
-// Enterprise Credentials
-const enterpriseDefaultCredentials = [
-  { 
-    username: 'SA_Motty', 
-    password: 'Phes0061', 
-    role: 'Super Admin' as const, 
-    fullName: 'Super Admin - Motty',
-    requiresPasswordChange: true 
-  },
-  { 
-    username: 'AD_Admin', 
-    password: 'DefaultAdmin123!', 
-    role: 'Admin' as const, 
-    fullName: 'Admin - Default',
-    requiresPasswordChange: true 
-  },
-  { 
-    username: 'QA_Lead', 
-    password: 'DefaultQC123!', 
-    role: 'QC Lead' as const, 
-    fullName: 'QC Lead - Default',
-    requiresPasswordChange: true 
-  },
-  { 
-    username: 'PL_Lead', 
-    password: 'DefaultPL123!', 
-    role: 'Production Lead' as const, 
-    fullName: 'Production Lead - Default',
-    requiresPasswordChange: true 
-  },
-  { 
-    username: 'SL_Staff', 
-    password: 'DefaultSL123!', 
-    role: 'Staff Lead' as const, 
-    fullName: 'Staff Lead - Default',
-    requiresPasswordChange: true 
-  },
-  { 
-    username: 'QC_Staff', 
-    password: 'DefaultQS123!', 
-    role: 'QC Staff' as const, 
-    fullName: 'QC Staff - Default',
-    requiresPasswordChange: true 
-  },
-  { 
-    username: 'PS_Staff', 
-    password: 'DefaultPS123!', 
-    role: 'Production Staff' as const, 
-    fullName: 'Production Staff - Default',
-    requiresPasswordChange: true 
-  },
-  { 
-    username: 'SG_Guard', 
-    password: 'DefaultSG123!', 
-    role: 'Security Guard' as const, 
-    fullName: 'Security Guard - Default',
-    requiresPasswordChange: true 
-  }
-];
+// Production: All authentication is handled by the backend API
+// No fallback credentials - ensures security compliance
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -203,66 +146,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             router.push('/dashboard');
             return { success: true };
           }
+        } else {
+          // API returned non-OK response
+          const errorData = await response.json().catch(() => ({}));
+          console.error('❌ Authentication failed:', errorData);
+          return { success: false, error: errorData.detail || 'Invalid credentials' };
         }
       } catch (err) {
-        console.warn('API authentication failed, trying enterprise credentials:', err);
+        console.error('❌ API authentication failed:', err);
+        return { success: false, error: 'Authentication service unavailable. Please try again later.' };
       }
-
-      // Fallback to enterprise credentials
-      const matchedCredential = enterpriseDefaultCredentials.find(
-        cred => cred.username.toLowerCase() === username.toLowerCase() && cred.password === password
-      );
-
-      if (matchedCredential) {
-        const hasChangedPassword = localStorage.getItem(`password_changed_${username.toLowerCase()}`);
-        
-        const fallbackToken = `enterprise_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        const userData: User = {
-          id: `enterprise_${matchedCredential.username.toLowerCase()}`,
-          username: matchedCredential.username,
-          full_name: matchedCredential.fullName,
-          role: matchedCredential.role,
-          station: 'Enterprise',
-          is_active: true,
-          last_login: new Date().toISOString(),
-          requires_password_change: hasChangedPassword ? false : matchedCredential.requiresPasswordChange,
-          first_login: !hasChangedPassword
-        };
-
-        setToken(fallbackToken);
-        setUser(userData);
-        setRequiresPasswordChange(userData.requires_password_change || false);
-
-        // CRITICAL: Save to localStorage FIRST before setting state
-        try {
-          localStorage.setItem('clamflow_token', fallbackToken);
-          localStorage.setItem('clamflow_user', JSON.stringify(userData));
-          console.log('✅ AuthContext: Successfully saved enterprise token and user to localStorage');
-          
-          // Verify it was saved
-          const savedToken = localStorage.getItem('clamflow_token');
-          const savedUser = localStorage.getItem('clamflow_user');
-          console.log('🔍 Verification - Token saved:', !!savedToken, 'User saved:', !!savedUser);
-          
-          if (!savedToken || !savedUser) {
-            throw new Error('localStorage verification failed');
-          }
-        } catch (err) {
-          console.error('❌ AuthContext: Failed to save enterprise credentials to localStorage:', err);
-          return { success: false, error: 'Failed to save authentication data. Please check your browser settings.' };
-        }
-
-        if (userData.requires_password_change) {
-          return { success: true, requiresPasswordChange: true };
-        } else {
-          // Add delay to ensure state propagation before navigation
-          await new Promise(resolve => setTimeout(resolve, 200));
-          router.push('/dashboard');
-          return { success: true };
-        }
-      }
-
-      return { success: false, error: 'Invalid credentials' };
     } catch (err) {
       console.error('Login error:', err);
       return { success: false, error: 'Network error. Please check your connection.' };
@@ -320,46 +213,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           return { success: false, error: errorData.message || 'Failed to change password' };
         }
       } catch (err) {
-        console.warn('API password change failed, using local storage for enterprise accounts', err);
+        console.error('❌ API password change failed:', err);
+        return { success: false, error: 'Password change service unavailable. Please try again later.' };
       }
-
-      // For enterprise accounts
-      if (user.id.startsWith('enterprise_')) {
-        const matchedCredential = enterpriseDefaultCredentials.find(
-          cred => cred.username.toLowerCase() === user.username.toLowerCase()
-        );
-
-        if (!matchedCredential || matchedCredential.password !== currentPassword) {
-          return { success: false, error: 'Current password is incorrect' };
-        }
-
-        // Try to save password change to localStorage
-        try {
-          localStorage.setItem(`password_changed_${user.username.toLowerCase()}`, 'true');
-          localStorage.setItem(`new_password_${user.username.toLowerCase()}`, newPassword);
-          console.log('✅ AuthContext: Successfully saved enterprise password change');
-        } catch (err) {
-          console.error('❌ AuthContext: Failed to save enterprise password change:', err);
-        }
-
-        const updatedUser = { ...user, requires_password_change: false, first_login: false };
-        setUser(updatedUser);
-        setRequiresPasswordChange(false);
-        
-        try {
-          localStorage.setItem('clamflow_user', JSON.stringify(updatedUser));
-          console.log('✅ AuthContext: Successfully updated enterprise user in localStorage');
-        } catch (err) {
-          console.error('❌ AuthContext: Failed to update enterprise user in localStorage:', err);
-        }
-
-        // Add small delay to ensure state propagation before navigation
-        await new Promise(resolve => setTimeout(resolve, 100));
-        router.push('/dashboard');
-        return { success: true };
-      }
-
-      return { success: false, error: 'Password change not supported for this account type' };
     } catch (err) {
       console.error('Password change error:', err);
       return { success: false, error: 'An error occurred while changing password' };

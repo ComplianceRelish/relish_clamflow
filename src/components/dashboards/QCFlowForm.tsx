@@ -131,15 +131,24 @@ const QCFlowForm: React.FC<QCFlowFormProps> = ({
         setQcStaff(qcOnlyStaff)
       }
 
-      // Mock station data - replace with actual API when available
-      setStations([
-        { id: '1', name: 'Raw Material Inspection', type: 'incoming' },
-        { id: '2', name: 'Processing Line A', type: 'processing' },
-        { id: '3', name: 'Processing Line B', type: 'processing' },
-        { id: '4', name: 'Packaging Station 1', type: 'packaging' },
-        { id: '5', name: 'Final Inspection', type: 'final' },
-        { id: '6', name: 'QC Laboratory', type: 'lab' }
-      ])
+      // Fetch stations from API
+      try {
+        const stationsResponse = await clamflowAPI.getStations()
+        if (stationsResponse.success && stationsResponse.data) {
+          const stationData = Array.isArray(stationsResponse.data) ? stationsResponse.data : []
+          setStations(stationData.map((s: any) => ({
+            id: s.stationId || s.id || String(Math.random()),
+            name: s.stationName || s.name || 'Unknown Station',
+            type: s.stationType || s.type || 'processing'
+          })))
+        } else {
+          // No stations available from API
+          setStations([])
+        }
+      } catch (stationErr) {
+        console.warn('Could not fetch stations:', stationErr)
+        setStations([])
+      }
     } catch (error) {
       console.error('Failed to fetch initial data:', error)
       setError('Failed to load form data. Please refresh the page.')

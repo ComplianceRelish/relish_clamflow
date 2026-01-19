@@ -1,10 +1,20 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Card } from '../ui/Card'; // ✅ FIXED: Use consistent casing
-import LoadingSpinner from '../ui/LoadingSpinner';
-import { clamflowAPI } from '../../lib/clamflow-api'; // ✅ FIXED: Use consistent API
-import type { SystemHealthData } from '../../types/auth';
+import React, { useState, useEffect } from 'react';
+import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
+import { LoadingSpinner } from '../ui/LoadingSpinner';
+import clamflowAPI from '../../lib/clamflow-api';
+import type { SystemHealthData } from '../../types/dashboard';
+
+interface HardwareStatus {
+  id: string;
+  name: string;
+  type: string;
+  status: string;
+  location: string;
+  last_ping: string;
+  ip_address: string;
+}
 
 const SystemHealth: React.FC = () => {
   const [healthData, setHealthData] = useState<SystemHealthData | null>(null);
@@ -15,33 +25,28 @@ const SystemHealth: React.FC = () => {
   useEffect(() => {
     const fetchSystemHealth = async () => {
       try {
-        const [health, hardware] = await Promise.all([
-          clamflowAPI.dashboard.getSystemHealth(), // ✅ FIXED: Use clamflowAPI
-          clamflowAPI.dashboard.getHardwareStatus()
-        ]);
-        setHealthData(health);
-        setHardwareStatus(hardware);
+        const healthRes = await clamflowAPI.getSystemHealth();
+        
+        if (healthRes.success && healthRes.data) {
+          setHealthData(healthRes.data);
+        }
+        
+        // Hardware status is optional - some deployments may not have it
+        try {
+          const hardwareRes = await clamflowAPI.get('/api/hardware/status');
+          if (hardwareRes.success && hardwareRes.data) {
+            const data = Array.isArray(hardwareRes.data) ? hardwareRes.data : [];
+            setHardwareStatus(data);
+          }
+        } catch {
+          // Hardware status not available
+          setHardwareStatus([]);
+        }
       } catch (err) {
         setError('Failed to fetch system health data');
         console.error('Error fetching system health:', err);
-        
-        // ✅ FALLBACK DATA with correct SystemHealthData structure
-        setHealthData({
-          overall_status: 'healthy',
-          database_status: 'connected',
-          api_response_time: 45,
-          active_users: 12,
-          memory_usage: 45,
-          cpu_usage: 23,
-          last_backup: new Date().toISOString(),
-          uptime: &quot;2h 15m&quot;
-        });
-        
-        setHardwareStatus([
-          { id: '1', name: 'Scale #1', type: 'scale', status: 'online', location: 'Station A', last_ping: new Date().toISOString(), ip_address: '192.168.1.10' },
-          { id: '2', name: 'QR Scanner', type: 'scanner', status: 'online', location: 'QC Lab', last_ping: new Date().toISOString(), ip_address: '192.168.1.11' },
-          { id: '3', name: 'Gate Printer', type: 'printer', status: 'maintenance', location: 'Gate', last_ping: new Date().toISOString(), ip_address: &apos;192.168.1.12&apos; }
-        ]);
+        setHealthData(null);
+        setHardwareStatus([]);
       } finally {
         setLoading(false);
       }
@@ -64,7 +69,11 @@ const SystemHealth: React.FC = () => {
     return (
       <Card>
         <CardContent className="p-6">
-          <div className="text-red-500">{error || &apos;No health data available&apos;}</div>
+          <div className="text-center py-4">
+            <div className="text-red-500 text-2xl mb-2">⚠️</div>
+            <p className="text-red-600 font-medium">{error || 'Unable to load system health data'}</p>
+            <p className="text-gray-500 text-sm mt-1">Please check your connection and try again</p>
+          </div>
         </CardContent>
       </Card>
     );
@@ -74,18 +83,18 @@ const SystemHealth: React.FC = () => {
     switch (status) {
       case 'healthy':
       case 'online':
-      case 'connected': 
+      case 'connected':
         return 'text-green-600 bg-green-50';
       case 'warning':
       case 'slow':
-      case 'maintenance': 
+      case 'maintenance':
         return 'text-yellow-600 bg-yellow-50';
       case 'critical':
       case 'offline':
-      case 'disconnected': 
+      case 'disconnected':
         return 'text-red-600 bg-red-50';
-      default: 
-        return &apos;text-gray-600 bg-gray-50&apos;;
+      default:
+        return 'text-gray-600 bg-gray-50';
     }
   };
 
@@ -98,70 +107,83 @@ const SystemHealth: React.FC = () => {
         {/* Overall Status */}
         <div className="flex items-center justify-between">
           <span className="font-medium">Overall Status</span>
-          <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(healthData.overall_status)}`}>
-            {healthData.overall_status.toUpperCase()}
+          <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(healthData.status || 'unknown')}`}>
+            {(healthData.status || 'UNKNOWN').toUpperCase()}
           </span>
         </div>
 
         {/* Database Status */}
         <div className="flex items-center justify-between">
           <span className="font-medium">Database</span>
-          <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(healthData.database_status)}`}>
-            {healthData.database_status.toUpperCase()}
+          <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(healthData.database?.status || 'unknown')}`}>
+            {(healthData.database?.status || 'UNKNOWN').toUpperCase()}
           </span>
         </div>
 
         {/* System Metrics */}
         <div className="grid grid-cols-2 gap-4">
           <div className="text-center p-2 bg-gray-50 rounded">
-            <div className="text-sm text-gray-500">CPU Usage</div>
-            <div className="text-lg font-semibold">{healthData.cpu_usage}%</div>
+            <div className="text-sm text-gray-500">Database Response</div>
+            <div className="text-lg font-semibold">{healthData.database?.response_time || 0}ms</div>
           </div>
           <div className="text-center p-2 bg-gray-50 rounded">
-            <div className="text-sm text-gray-500">Memory Usage</div>
-            <div className="text-lg font-semibold">{healthData.memory_usage}%</div>
-          </div>
-          <div className="text-center p-2 bg-gray-50 rounded">
-            <div className="text-sm text-gray-500">Active Users</div>
-            <div className="text-lg font-semibold">{healthData.active_users}</div>
-          </div>
-          <div className="text-center p-2 bg-gray-50 rounded">
-            <div className="text-sm text-gray-500">API Response</div>
-            <div className="text-lg font-semibold">{healthData.api_response_time}ms</div>
+            <div className="text-sm text-gray-500">System Uptime</div>
+            <div className="text-lg font-semibold">{healthData.uptime || '-'}</div>
           </div>
         </div>
 
-        {/* System Info */}
-        <div className="border-t pt-4">
-          <div className="text-sm space-y-2">
-            <div className="flex justify-between">
-              <span className="text-gray-500">Uptime:</span>
-              <span className="font-medium">{healthData.uptime}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Last Backup:</span>
-              <span className="font-medium">{new Date(healthData.last_backup).toLocaleDateString()}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Hardware Status */}
-        <div>
-          <h4 className="font-medium mb-2">Hardware Status</h4>
-          <div className="space-y-2">
-            {hardwareStatus.slice(0, 3).map((hardware) => (
-              <div key={hardware.id} className="flex items-center justify-between text-sm">
-                <div>
-                  <span className="font-medium">{hardware.name}</span>
-                  <span className="text-gray-500 ml-1">({hardware.location})</span>
-                </div>
-                <span className={`px-2 py-1 rounded text-xs ${getStatusColor(hardware.status)}`}>
-                  {hardware.status}
+        {/* Services Status */}
+        {healthData.services && (
+          <div className="border-t pt-4">
+            <h4 className="font-medium mb-2">Services</h4>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-500">Authentication:</span>
+                <span className={healthData.services.authentication ? 'text-green-600' : 'text-red-600'}>
+                  {healthData.services.authentication ? '✓ Online' : '✗ Offline'}
                 </span>
               </div>
-            ))}
+              <div className="flex justify-between">
+                <span className="text-gray-500">API:</span>
+                <span className={healthData.services.api ? 'text-green-600' : 'text-red-600'}>
+                  {healthData.services.api ? '✓ Online' : '✗ Offline'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Database:</span>
+                <span className={healthData.services.database ? 'text-green-600' : 'text-red-600'}>
+                  {healthData.services.database ? '✓ Online' : '✗ Offline'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Hardware:</span>
+                <span className={healthData.services.hardware ? 'text-green-600' : 'text-red-600'}>
+                  {healthData.services.hardware ? '✓ Online' : '✗ Offline'}
+                </span>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Hardware Status */}
+        {hardwareStatus.length > 0 && (
+          <div>
+            <h4 className="font-medium mb-2">Hardware Status</h4>
+            <div className="space-y-2">
+              {hardwareStatus.slice(0, 5).map((hardware) => (
+                <div key={hardware.id} className="flex items-center justify-between text-sm">
+                  <div>
+                    <span className="font-medium">{hardware.name}</span>
+                    <span className="text-gray-500 ml-1">({hardware.location})</span>
+                  </div>
+                  <span className={`px-2 py-1 rounded text-xs ${getStatusColor(hardware.status)}`}>
+                    {hardware.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
