@@ -1,7 +1,9 @@
 // src/components/InteractiveStationAssignment.tsx
+// Production-ready: Uses real staff and station data from backend API
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { DndContext, DragOverlay, useDraggable, useDroppable, DragEndEvent } from '@dnd-kit/core';
 import { motion, AnimatePresence } from 'framer-motion';
+import clamflowAPI from '../lib/clamflow-api';
 
 // Types based on your production flow
 interface StationAssignment {
@@ -43,8 +45,9 @@ interface StaffMember {
   shiftPreference: string[];
 }
 
-// Station data based on your plant layouts
-const PPC_STATIONS: ProductionStation[] = [
+// Default station configurations (used when API doesn't return station data)
+// These represent the physical layout of the plant and should match backend configuration
+const DEFAULT_PPC_STATIONS: ProductionStation[] = [
   {
     id: 'ppc-receiving',
     name: 'Raw Material Receiving',
@@ -84,7 +87,7 @@ const PPC_STATIONS: ProductionStation[] = [
   }
 ];
 
-const FP_STATIONS: ProductionStation[] = [
+const DEFAULT_FP_STATIONS: ProductionStation[] = [
   {
     id: 'fp-rfid-in',
     name: 'Product In RFID',
@@ -136,53 +139,31 @@ const FP_STATIONS: ProductionStation[] = [
   }
 ];
 
-// Staff data
-const STAFF_MEMBERS: StaffMember[] = [
-  {
-    id: 'staff-001',
-    name: 'John Martinez',
-    role: 'Production',
-    department: 'PPC',
-    avatar: '/avatars/john.jpg',
-    isAvailable: true,
-    skills: ['Material Handling', 'Tank Operation', 'Processing'],
-    certifications: ['HACCP', 'Food Safety'],
-    shiftPreference: ['Day', 'Swing']
-  },
-  {
-    id: 'staff-002', 
-    name: 'Sarah Chen',
-    role: 'QC',
-    department: 'Both',
-    avatar: '/avatars/sarah.jpg',
-    isAvailable: true,
-    skills: ['Quality Check', 'PPC Form', 'FP Form', 'QC Flow'],
-    certifications: ['Quality Control', 'HACCP'],
-    shiftPreference: ['Day']
-  },
-  {
-    id: 'staff-003',
-    name: 'Mike Rodriguez',
-    role: 'Production',
-    department: 'FP',
-    avatar: '/avatars/mike.jpg',
-    isAvailable: true,
-    skills: ['RFID Scanning', 'Packing', 'FP Form'],
-    certifications: ['Food Safety', 'Equipment Operation'],
-    shiftPreference: ['Swing', 'Night']
-  },
-  {
-    id: 'staff-004',
-    name: 'Lisa Wang',
-    role: 'Supervisor',
-    department: 'Both',
-    avatar: '/avatars/lisa.jpg',
-    isAvailable: true,
-    skills: ['All Operations', 'Training', 'Quality Management'],
-    certifications: ['Supervisor', 'HACCP', 'Quality Control'],
-    shiftPreference: ['Day', 'Swing']
-  }
-];
+// Helper function to map backend role to component role type
+const mapRoleToType = (role: string): 'Production' | 'QC' | 'Supervisor' | 'Maintenance' => {
+  const roleMap: Record<string, 'Production' | 'QC' | 'Supervisor' | 'Maintenance'> = {
+    'production_staff': 'Production',
+    'production_lead': 'Supervisor',
+    'qc_staff': 'QC',
+    'qc_lead': 'Supervisor',
+    'maintenance_staff': 'Maintenance',
+    'supervisor': 'Supervisor',
+    'admin': 'Supervisor',
+    'super_admin': 'Supervisor',
+    'security_guard': 'Maintenance',
+    'staff_lead': 'Supervisor'
+  };
+  return roleMap[role?.toLowerCase()] || 'Production';
+};
+
+// Helper to map department
+const mapDepartment = (dept: string | undefined): 'PPC' | 'FP' | 'Both' => {
+  if (!dept) return 'Both';
+  const deptLower = dept.toLowerCase();
+  if (deptLower.includes('ppc') || deptLower.includes('pre-production')) return 'PPC';
+  if (deptLower.includes('fp') || deptLower.includes('finished')) return 'FP';
+  return 'Both';
+};
 
 // Draggable Staff Component
 const DraggableStaff: React.FC<{ staff: StaffMember; isAssigned: boolean }> = ({ 
@@ -322,13 +303,122 @@ const StationDropZone: React.FC<{
 // Main Component
 export const InteractiveStationAssignment: React.FC = () => {
   const [selectedPlant, setSelectedPlant] = useState<'PPC' | 'FP'>('PPC');
-  const [stations, setStations] = useState<ProductionStation[]>([...PPC_STATIONS, ...FP_STATIONS]);
-  const [staff, setStaff] = useState<StaffMember[]>(STAFF_MEMBERS);
+  const [stations, setStations] = useState<ProductionStation[]>([...DEFAULT_PPC_STATIONS, ...DEFAULT_FP_STATIONS]);
+  const [staff, setStaff] = useState<StaffMember[]>([]);
   const [selectedStation, setSelectedStation] = useState<ProductionStation | null>(null);
   const [assignments, setAssignments] = useState<StationAssignment[]>([]);
   const [showStaffPanel, setShowStaffPanel] = useState(true);
   const [viewMode, setViewMode] = useState<'overview' | 'detailed'>('overview');
+  const [isLoadingStaff, setIsLoadingStaff] = useState(true);
+  const [isLoadingStations, setIsLoadingStations] = useState(true);
+  const [staffError, setStaffError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Fetch stations from backend API
+  useEffect(() => {
+    const fetchStations = async () => {
+      setIsLoadingStations(true);
+      try {
+        const response = await clamflowAPI.getStationsWithAssignments(selectedDate, selectedPlant);
+        if (response.success && response.data && response.data.length > 0) {
+          // Map backend stations to component format
+          const mappedStations: ProductionStation[] = response.data.map((station: any) => ({
+            id: station.id,
+            name: station.name,
+            type: station.plant_type as 'PPC' | 'FP',
+            category: station.station_type as ProductionStation['category'],
+            capacity: station.capacity || 2,
+            currentStaff: (station.assignments || []).map((a: any) => ({
+              id: a.id,
+              stationId: station.id,
+              staffId: a.staff_id,
+              staffName: a.staff_name || 'Unknown',
+              startTime: a.start_time || '08:00',
+              endTime: a.end_time || '16:00',
+              shiftType: 'Day' as const,
+              skills: [],
+              certifications: []
+            })),
+            requiredSkills: station.required_skills?.split(',').map((s: string) => s.trim()) || [],
+            status: station.status as 'operational' | 'maintenance' | 'offline',
+            coordinates: { x: (station.station_order || 1) * 120, y: 100 + (station.station_order || 1) % 3 * 80 },
+            formType: undefined,
+            equipmentIds: []
+          }));
+          setStations(mappedStations);
+          
+          // Also update assignments from the fetched data
+          const allAssignments = response.data.flatMap((station: any) => 
+            (station.assignments || []).map((a: any) => ({
+              id: a.id,
+              stationId: station.id,
+              staffId: a.staff_id,
+              staffName: a.staff_name || 'Unknown',
+              startTime: a.start_time || '08:00',
+              endTime: a.end_time || '16:00',
+              shiftType: 'Day' as const,
+              skills: [],
+              certifications: []
+            }))
+          );
+          setAssignments(allAssignments);
+        } else {
+          // Use default stations if API returns empty or fails
+          console.log('Using default stations, API returned:', response);
+        }
+      } catch (error) {
+        console.error('Error fetching stations:', error);
+        // Keep default stations on error
+      } finally {
+        setIsLoadingStations(false);
+      }
+    };
+
+    fetchStations();
+  }, [selectedDate, selectedPlant]);
+
+  // Fetch staff data from API on mount
+  useEffect(() => {
+    const fetchStaffData = async () => {
+      setIsLoadingStaff(true);
+      setStaffError(null);
+      try {
+        const response = await clamflowAPI.getStaff();
+        if (response.success && response.data) {
+          // Map backend staff data to component format
+          const mappedStaff: StaffMember[] = response.data.map((person: any) => ({
+            id: person.id || person.person_id || String(Math.random()),
+            name: person.full_name || `${person.first_name || ''} ${person.last_name || ''}`.trim() || 'Unknown',
+            role: mapRoleToType(person.role || person.designation || ''),
+            department: mapDepartment(person.department),
+            avatar: person.face_image_url || '',
+            isAvailable: person.is_active !== false && person.status !== 'inactive',
+            skills: person.skills || person.certifications || [],
+            certifications: person.certifications || [],
+            currentStation: undefined,
+            shiftPreference: ['Day', 'Swing']
+          }));
+          setStaff(mappedStaff);
+        } else {
+          setStaffError('Failed to load staff data');
+          setStaff([]);
+        }
+      } catch (error) {
+        console.error('Error fetching staff data:', error);
+        setStaffError('Error loading staff data');
+        setStaff([]);
+      } finally {
+        setIsLoadingStaff(false);
+      }
+    };
+
+    fetchStaffData();
+    // Refresh every 5 minutes
+    const interval = setInterval(fetchStaffData, 300000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Get current plant stations
   const currentStations = stations.filter(s => s.type === selectedPlant);
@@ -338,8 +428,41 @@ export const InteractiveStationAssignment: React.FC = () => {
     return assignments.some(a => a.staffId === staffId);
   };
 
+  // Save assignment to backend
+  const saveAssignmentToBackend = async (assignment: StationAssignment, stationId: string): Promise<string | null> => {
+    try {
+      const response = await clamflowAPI.createStationAssignment({
+        station_id: stationId,
+        staff_id: assignment.staffId,
+        assigned_date: selectedDate,
+        start_time: assignment.startTime,
+        end_time: assignment.endTime,
+        notes: `Assigned via station assignment UI`
+      });
+      
+      if (response.success && response.data) {
+        return response.data.id;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error saving assignment:', error);
+      return null;
+    }
+  };
+
+  // Delete assignment from backend
+  const deleteAssignmentFromBackend = async (assignmentId: string): Promise<boolean> => {
+    try {
+      const response = await clamflowAPI.deleteStationAssignment(assignmentId);
+      return response.success;
+    } catch (error) {
+      console.error('Error deleting assignment:', error);
+      return false;
+    }
+  };
+
   // Handle drag end
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     
     if (!over) return;
@@ -372,7 +495,7 @@ export const InteractiveStationAssignment: React.FC = () => {
 
     // Create assignment
     const newAssignment: StationAssignment = {
-      id: `assignment-${Date.now()}`,
+      id: `temp-${Date.now()}`,
       stationId: station.id,
       staffId: staffMember.id,
       staffName: staffMember.name,
@@ -383,7 +506,7 @@ export const InteractiveStationAssignment: React.FC = () => {
       certifications: staffMember.certifications
     };
 
-    // Update assignments
+    // Add to local state for immediate feedback
     setAssignments(prev => [...prev, newAssignment]);
 
     // Update station
@@ -400,6 +523,40 @@ export const InteractiveStationAssignment: React.FC = () => {
         : s
     ));
 
+    // Save to backend
+    setIsSaving(true);
+    const savedId = await saveAssignmentToBackend(newAssignment, station.id);
+    setIsSaving(false);
+    
+    if (savedId) {
+      // Update the assignment with the backend ID
+      setAssignments(prev => prev.map(a => 
+        a.id === newAssignment.id ? { ...a, id: savedId } : a
+      ));
+      setStations(prev => prev.map(s => 
+        s.id === station.id 
+          ? { ...s, currentStaff: s.currentStaff.map(a => 
+              a.id === newAssignment.id ? { ...a, id: savedId } : a
+            )}
+          : s
+      ));
+    } else {
+      // Rollback on failure
+      setAssignments(prev => prev.filter(a => a.id !== newAssignment.id));
+      setStations(prev => prev.map(s => 
+        s.id === station.id 
+          ? { ...s, currentStaff: s.currentStaff.filter(a => a.id !== newAssignment.id) }
+          : s
+      ));
+      setStaff(prev => prev.map(s => 
+        s.id === staffMember.id 
+          ? { ...s, currentStation: undefined }
+          : s
+      ));
+      alert('Failed to save assignment. Please try again.');
+      return;
+    }
+
     // Auto-select the station for easy editing
     setSelectedStation(station);
   };
@@ -410,10 +567,11 @@ export const InteractiveStationAssignment: React.FC = () => {
   };
 
   // Remove assignment
-  const removeAssignment = (assignmentId: string) => {
+  const removeAssignment = async (assignmentId: string) => {
     const assignment = assignments.find(a => a.id === assignmentId);
     if (!assignment) return;
 
+    // Remove from local state first
     setAssignments(prev => prev.filter(a => a.id !== assignmentId));
     
     setStations(prev => prev.map(s => 
@@ -427,6 +585,26 @@ export const InteractiveStationAssignment: React.FC = () => {
         ? { ...s, currentStation: undefined }
         : s
     ));
+
+    // Only call API if it's a real backend ID (not a temp ID)
+    if (!assignmentId.startsWith('temp-')) {
+      const deleted = await deleteAssignmentFromBackend(assignmentId);
+      if (!deleted) {
+        // Rollback on failure - re-add the assignment
+        setAssignments(prev => [...prev, assignment]);
+        setStations(prev => prev.map(s => 
+          s.id === assignment.stationId
+            ? { ...s, currentStaff: [...s.currentStaff, assignment] }
+            : s
+        ));
+        setStaff(prev => prev.map(s => 
+          s.id === assignment.staffId
+            ? { ...s, currentStation: assignment.stationId }
+            : s
+        ));
+        alert('Failed to remove assignment. Please try again.');
+      }
+    }
   };
 
   return (
@@ -436,6 +614,7 @@ export const InteractiveStationAssignment: React.FC = () => {
         <div className="header-left">
           <img src="/logo-relish.png" alt="Relish ClamFlow" className="logo" />
           <h1>Interactive Station Assignment</h1>
+          {isSaving && <span className="saving-indicator">💾 Saving...</span>}
           <div className="traceability-badges">
             <span className="badge traceability">✓ Traceability</span>
             <span className="badge persistence">💾 Data Persistence</span>
@@ -443,6 +622,14 @@ export const InteractiveStationAssignment: React.FC = () => {
           </div>
         </div>
         <div className="header-controls">
+          <div className="date-selector">
+            <label>Date: </label>
+            <input 
+              type="date" 
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+            />
+          </div>
           <div className="plant-selector">
             <button 
               className={selectedPlant === 'PPC' ? 'active' : ''}
@@ -492,20 +679,36 @@ export const InteractiveStationAssignment: React.FC = () => {
               </div>
               
               <div className="staff-categories">
-                {['Production', 'QC', 'Supervisor', 'Maintenance'].map(role => (
-                  <div key={role} className="staff-category">
-                    <h4>{role} Staff</h4>
-                    {staff
-                      .filter(s => s.role === role && (s.department === selectedPlant || s.department === 'Both'))
-                      .map(s => (
-                        <DraggableStaff 
-                          key={s.id} 
-                          staff={s} 
-                          isAssigned={isStaffAssigned(s.id)}
-                        />
-                      ))}
+                {isLoadingStaff ? (
+                  <div className="loading-state">
+                    <p>⏳ Loading staff...</p>
                   </div>
-                ))}
+                ) : staffError ? (
+                  <div className="error-state">
+                    <p>⚠️ {staffError}</p>
+                  </div>
+                ) : staff.length === 0 ? (
+                  <div className="empty-state">
+                    <p>No staff members available</p>
+                  </div>
+                ) : (
+                  ['Production', 'QC', 'Supervisor', 'Maintenance'].map(role => {
+                    const roleStaff = staff.filter(s => s.role === role && (s.department === selectedPlant || s.department === 'Both'));
+                    if (roleStaff.length === 0) return null;
+                    return (
+                      <div key={role} className="staff-category">
+                        <h4>{role} Staff</h4>
+                        {roleStaff.map(s => (
+                          <DraggableStaff 
+                            key={s.id} 
+                            staff={s} 
+                            isAssigned={isStaffAssigned(s.id)}
+                          />
+                        ))}
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </motion.div>
           )}

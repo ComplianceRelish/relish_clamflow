@@ -37,22 +37,60 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // ✅ Define fetchUserProfile with useCallback to avoid re-creation
+  // ✅ Define fetchUserProfile with useCallback - fetches real user data from backend
   const fetchUserProfile = useCallback(async (userId: string) => {
     try {
-      const response = await apiClient.getStaff();
-      // This should be replaced with actual user lookup logic
-      const profile: UserProfile = {
-        id: userId,
-        username: 'current_user',
-        role: 'qa_technician',
-        full_name: 'Test User',
-        email: user?.email || '',
-        department: 'Quality Assurance',
-        is_first_login: false
-      };
-      setUserProfile(profile);
-      setUserRole(profile.role);
+      // Fetch user profile from backend API
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/user/${userId}/`, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const userData = await response.json();
+        const profile: UserProfile = {
+          id: userData.id || userId,
+          username: userData.username || userData.email?.split('@')[0] || 'user',
+          role: userData.role || 'production_staff',
+          full_name: userData.full_name || `${userData.first_name || ''} ${userData.last_name || ''}`.trim() || 'User',
+          first_name: userData.first_name,
+          last_name: userData.last_name,
+          email: userData.email || user?.email || '',
+          department: userData.department || '',
+          is_first_login: userData.password_reset_required || false
+        };
+        setUserProfile(profile);
+        setUserRole(profile.role);
+        return;
+      }
+
+      // If direct user fetch fails, try to get user info from staff endpoint
+      const staffResponse = await apiClient.getStaff();
+      if (staffResponse && Array.isArray(staffResponse)) {
+        const matchingUser = staffResponse.find((s: any) => s.user_id === userId || s.id === userId);
+        if (matchingUser) {
+          const profile: UserProfile = {
+            id: matchingUser.id || userId,
+            username: matchingUser.username || matchingUser.email?.split('@')[0] || 'user',
+            role: matchingUser.role || 'production_staff',
+            full_name: matchingUser.full_name || `${matchingUser.first_name || ''} ${matchingUser.last_name || ''}`.trim(),
+            first_name: matchingUser.first_name,
+            last_name: matchingUser.last_name,
+            email: matchingUser.email || user?.email || '',
+            department: matchingUser.department || '',
+            is_first_login: matchingUser.password_reset_required || false
+          };
+          setUserProfile(profile);
+          setUserRole(profile.role);
+          return;
+        }
+      }
+
+      // If no profile found, log warning but don't set mock data
+      console.warn('User profile not found in backend');
+      setUserProfile(null);
+      setUserRole(null);
     } catch (error) {
       console.error('Failed to fetch user profile:', error);
       // Production: Clear user state on profile fetch failure
@@ -99,17 +137,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) throw error;
 
-      const profile: UserProfile = {
-        id: data.user.id,
-        username: username,
-        role: 'qa_technician',
-        full_name: username.charAt(0).toUpperCase() + username.slice(1),
-        email: data.user.email || '',
-        department: 'Quality Assurance',
-        is_first_login: false
-      };
-      setUserProfile(profile);
-      setUserRole(profile.role);
+      // Fetch real user profile after successful authentication
+      // The onAuthStateChange listener will call fetchUserProfile
+      // But we also fetch immediately to get profile data for the current session
+      if (data.user) {
+        await fetchUserProfile(data.user.id);
+      }
     } catch (error) {
       console.error('Sign in error:', error);
       throw new Error('Invalid username or password');

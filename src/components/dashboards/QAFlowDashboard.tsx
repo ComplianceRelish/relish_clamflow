@@ -52,6 +52,7 @@ const QAFlowDashboard: React.FC<QAFlowDashboardProps> = ({ currentUser }) => {
     // Refresh every 2 minutes
     const interval = setInterval(loadQAData, 120000)
     return () => clearInterval(interval)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const loadQAData = async () => {
@@ -87,7 +88,7 @@ const QAFlowDashboard: React.FC<QAFlowDashboardProps> = ({ currentUser }) => {
             assigned_to: note.qc_staff_name || 'Unassigned',
             created_at: note.created_at,
             updated_at: note.updated_at,
-            completion_percentage: calculateCompletion(note.status)
+            completion_percentage: calculateCompletion(note.status || 'pending')
           })
         })
       }
@@ -104,7 +105,7 @@ const QAFlowDashboard: React.FC<QAFlowDashboardProps> = ({ currentUser }) => {
             assigned_to: form.qc_staff_name || 'Unassigned',
             created_at: form.created_at,
             updated_at: form.updated_at,
-            completion_percentage: calculateCompletion(form.status)
+            completion_percentage: calculateCompletion(form.status || 'pending')
           })
         })
       }
@@ -121,7 +122,7 @@ const QAFlowDashboard: React.FC<QAFlowDashboardProps> = ({ currentUser }) => {
             assigned_to: form.qc_staff_name || 'Unassigned',
             created_at: form.created_at,
             updated_at: form.updated_at,
-            completion_percentage: calculateCompletion(form.status)
+            completion_percentage: calculateCompletion(form.status || 'pending')
           })
         })
       }
@@ -159,7 +160,7 @@ const QAFlowDashboard: React.FC<QAFlowDashboardProps> = ({ currentUser }) => {
   }
 
   const calculateCompletion = (status: string): number => {
-    const completionMap = {
+    const completionMap: Record<string, number> = {
       'pending': 0,
       'in_progress': 50,
       'completed': 100,
@@ -206,7 +207,7 @@ const QAFlowDashboard: React.FC<QAFlowDashboardProps> = ({ currentUser }) => {
   }
 
   const getStatusColor = (status: string): string => {
-    const colors = {
+    const colors: Record<string, string> = {
       'pending': 'bg-gray-100 text-gray-800',
       'in_progress': 'bg-blue-100 text-blue-800',
       'completed': 'bg-green-100 text-green-800',
@@ -216,7 +217,7 @@ const QAFlowDashboard: React.FC<QAFlowDashboardProps> = ({ currentUser }) => {
   }
 
   const getPriorityColor = (priority: string): string => {
-    const colors = {
+    const colors: Record<string, string> = {
       'low': 'bg-green-100 text-green-800 border-green-200',
       'medium': 'bg-yellow-100 text-yellow-800 border-yellow-200',
       'high': 'bg-orange-100 text-orange-800 border-orange-200',

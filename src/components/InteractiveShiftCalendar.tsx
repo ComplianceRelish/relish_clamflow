@@ -1,8 +1,10 @@
 // src/components/InteractiveShiftCalendar.tsx
+// Production-ready: Uses real staff data from backend API
 import React, { useState, useEffect, useCallback } from 'react';
 import { DndContext, DragOverlay, useDraggable, useDroppable, DragEndEvent } from '@dnd-kit/core';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
+import clamflowAPI from '../lib/clamflow-api';
 
 // Types
 interface StaffMember {
@@ -43,13 +45,31 @@ const SHIFT_COLORS = {
   Overtime: '#F8D7DA'
 };
 
-const STAFF_DATA: StaffMember[] = [
-  { id: '1', name: 'John Smith', role: 'Production', department: 'PPC', isAvailable: true, skills: ['T1-T4', 'Hatchery'] },
-  { id: '2', name: 'Maria Garcia', role: 'QC', department: 'FP', isAvailable: true, skills: ['RFID', 'Packing'] },
-  { id: '3', name: 'David Chen', role: 'Supervisor', department: 'Both', isAvailable: true, skills: ['All Stations'] },
-  { id: '4', name: 'Sarah Johnson', role: 'Production', department: 'PPC', isAvailable: false, skills: ['T5-T8', 'Processing'] },
-  { id: '5', name: 'Mike Rodriguez', role: 'Maintenance', department: 'Both', isAvailable: true, skills: ['Equipment', 'Repair'] },
-];
+// Helper function to map backend role to component role type
+const mapRoleToType = (role: string): 'Production' | 'QC' | 'Supervisor' | 'Maintenance' => {
+  const roleMap: Record<string, 'Production' | 'QC' | 'Supervisor' | 'Maintenance'> = {
+    'production_staff': 'Production',
+    'production_lead': 'Supervisor',
+    'qc_staff': 'QC',
+    'qc_lead': 'Supervisor',
+    'maintenance_staff': 'Maintenance',
+    'supervisor': 'Supervisor',
+    'admin': 'Supervisor',
+    'super_admin': 'Supervisor',
+    'security_guard': 'Maintenance',
+    'staff_lead': 'Supervisor'
+  };
+  return roleMap[role?.toLowerCase()] || 'Production';
+};
+
+// Helper to map department
+const mapDepartment = (dept: string | undefined): 'PPC' | 'FP' | 'Both' => {
+  if (!dept) return 'Both';
+  const deptLower = dept.toLowerCase();
+  if (deptLower.includes('ppc') || deptLower.includes('pre-production')) return 'PPC';
+  if (deptLower.includes('fp') || deptLower.includes('finished')) return 'FP';
+  return 'Both';
+};
 
 // Draggable Staff Item Component
 const DraggableStaff: React.FC<{ staff: StaffMember }> = ({ staff }) => {
@@ -132,6 +152,12 @@ export const InteractiveShiftCalendar: React.FC<ShiftCalendarProps> = ({
   const [shifts, setShifts] = useState<ShiftBlock[]>([]);
   const [selectedShift, setSelectedShift] = useState<ShiftBlock | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [staffData, setStaffData] = useState<StaffMember[]>([]);
+  const [isLoadingStaff, setIsLoadingStaff] = useState(true);
+  const [staffError, setStaffError] = useState<string | null>(null);
+  const [shiftDefinitions, setShiftDefinitions] = useState<{ id: string; name: string; code: string; color: string }[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [selectedPlant, setSelectedPlant] = useState<'PPC' | 'FP'>('PPC');
 
   // Generate week dates
   const weekStart = startOfWeek(currentDate);
@@ -143,6 +169,133 @@ export const InteractiveShiftCalendar: React.FC<ShiftCalendarProps> = ({
     '12:00', '13:00', '14:00', '15:00', '16:00', '17:00',
     '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'
   ];
+
+  // Fetch staff data from API
+  useEffect(() => {
+    const fetchStaffData = async () => {
+      setIsLoadingStaff(true);
+      setStaffError(null);
+      try {
+        // Use the scheduler-specific endpoint
+        const response = await clamflowAPI.getStaffForScheduler();
+        if (response.success && response.data) {
+          // Map backend staff data to component format
+          const mappedStaff: StaffMember[] = response.data.map((person: any) => ({
+            id: person.id || person.person_id || String(Math.random()),
+            name: person.full_name || `${person.first_name || ''} ${person.last_name || ''}`.trim() || 'Unknown',
+            role: mapRoleToType(person.role || person.designation || ''),
+            department: mapDepartment(person.department || person.plant),
+            avatar: person.face_image_url || undefined,
+            isAvailable: person.is_active !== false && person.status !== 'inactive',
+            skills: person.skills || person.certifications || []
+          }));
+          setStaffData(mappedStaff);
+        } else {
+          // Fallback to general staff endpoint
+          const fallbackResponse = await clamflowAPI.getStaff();
+          if (fallbackResponse.success && fallbackResponse.data) {
+            const mappedStaff: StaffMember[] = fallbackResponse.data.map((person: any) => ({
+              id: person.id || person.person_id || String(Math.random()),
+              name: person.full_name || `${person.first_name || ''} ${person.last_name || ''}`.trim() || 'Unknown',
+              role: mapRoleToType(person.role || person.designation || ''),
+              department: mapDepartment(person.department),
+              avatar: person.face_image_url || undefined,
+              isAvailable: person.is_active !== false && person.status !== 'inactive',
+              skills: person.skills || person.certifications || []
+            }));
+            setStaffData(mappedStaff);
+          } else {
+            setStaffError('Failed to load staff data');
+            setStaffData([]);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching staff data:', error);
+        setStaffError('Error loading staff data. Please try again.');
+        setStaffData([]);
+      } finally {
+        setIsLoadingStaff(false);
+      }
+    };
+
+    fetchStaffData();
+    // Refresh staff data every 5 minutes
+    const interval = setInterval(fetchStaffData, 300000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Fetch shift definitions from backend
+  useEffect(() => {
+    const fetchShiftDefinitions = async () => {
+      try {
+        const response = await clamflowAPI.getShiftDefinitions();
+        if (response.success && response.data) {
+          setShiftDefinitions(response.data.map(def => ({
+            id: def.id,
+            name: def.name,
+            code: def.code,
+            color: def.color
+          })));
+        }
+      } catch (error) {
+        console.error('Error fetching shift definitions:', error);
+      }
+    };
+    fetchShiftDefinitions();
+  }, []);
+
+  // Fetch existing shift assignments for current week
+  useEffect(() => {
+    const fetchShiftAssignments = async () => {
+      try {
+        const startDate = format(weekStart, 'yyyy-MM-dd');
+        const endDate = format(addDays(weekStart, 6), 'yyyy-MM-dd');
+        
+        const response = await clamflowAPI.getShiftAssignments({
+          start_date: startDate,
+          end_date: endDate,
+          plant: selectedPlant
+        });
+        
+        if (response.success && response.data) {
+          // Map backend shift assignments to component format
+          const mappedShifts: ShiftBlock[] = response.data.map((assignment: any) => {
+            const shiftDef = shiftDefinitions.find(d => d.id === assignment.shift_definition_id);
+            return {
+              id: assignment.id,
+              staffId: assignment.staff_id,
+              staffName: staffData.find(s => s.id === assignment.staff_id)?.name || 'Unknown',
+              date: new Date(assignment.date),
+              startTime: shiftDef?.code === 'night' ? '22:00' : shiftDef?.code === 'swing' ? '14:00' : '06:00',
+              endTime: shiftDef?.code === 'night' ? '06:00' : shiftDef?.code === 'swing' ? '22:00' : '14:00',
+              shiftType: mapShiftCodeToType(shiftDef?.code || 'day'),
+              department: assignment.plant || 'PPC'
+            };
+          });
+          setShifts(mappedShifts);
+        }
+      } catch (error) {
+        console.error('Error fetching shift assignments:', error);
+      }
+    };
+    
+    if (staffData.length > 0 && shiftDefinitions.length > 0) {
+      fetchShiftAssignments();
+    }
+  }, [weekStart, selectedPlant, staffData, shiftDefinitions]);
+
+  // Map shift code to display type
+  const mapShiftCodeToType = (code: string): 'Day' | 'Swing' | 'Night' | 'Overtime' => {
+    const codeMap: Record<string, 'Day' | 'Swing' | 'Night' | 'Overtime'> = {
+      'morning': 'Day',
+      'day': 'Day',
+      'swing': 'Swing',
+      'afternoon': 'Swing',
+      'night': 'Night',
+      'overtime': 'Overtime'
+    };
+    return codeMap[code.toLowerCase()] || 'Day';
+  };
 
   // Conflict detection
   const detectConflicts = useCallback((newShift: ShiftBlock): ShiftBlock[] => {
@@ -158,8 +311,46 @@ export const InteractiveShiftCalendar: React.FC<ShiftCalendarProps> = ({
     );
   }, [shifts]);
 
+  // Save shift to backend
+  const saveShiftToBackend = async (shift: ShiftBlock): Promise<boolean> => {
+    setIsSaving(true);
+    try {
+      // Find matching shift definition
+      const shiftDef = shiftDefinitions.find(d => 
+        mapShiftCodeToType(d.code) === shift.shiftType
+      );
+      
+      if (!shiftDef) {
+        console.error('No matching shift definition found for:', shift.shiftType);
+        return false;
+      }
+      
+      const response = await clamflowAPI.createShiftAssignment({
+        staff_id: shift.staffId,
+        shift_definition_id: shiftDef.id,
+        date: format(shift.date, 'yyyy-MM-dd'),
+        plant: shift.department as 'PPC' | 'FP',
+        notes: `Assigned via shift calendar`
+      });
+      
+      if (response.success && response.data) {
+        // Update the shift with the backend ID
+        setShifts(prev => prev.map(s => 
+          s.id === shift.id ? { ...s, id: response.data!.id } : s
+        ));
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error saving shift:', error);
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   // Handle drag end
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     
     if (!over) return;
@@ -177,7 +368,7 @@ export const InteractiveShiftCalendar: React.FC<ShiftCalendarProps> = ({
       startTime: dropData.time,
       endTime: `${parseInt(dropData.time.split(':')[0]) + 8}:00`, // 8-hour shift
       shiftType: 'Day', // Default
-      department: staff.department === 'Both' ? 'PPC' : staff.department,
+      department: staff.department === 'Both' ? selectedPlant : staff.department,
     };
 
     // Check conflicts
@@ -187,8 +378,30 @@ export const InteractiveShiftCalendar: React.FC<ShiftCalendarProps> = ({
       return;
     }
 
+    // Add to local state first for immediate feedback
     setShifts(prev => [...prev, newShift]);
+    
+    // Save to backend
+    const saved = await saveShiftToBackend(newShift);
+    if (!saved) {
+      // Rollback if save failed
+      setShifts(prev => prev.filter(s => s.id !== newShift.id));
+      alert('Failed to save shift. Please try again.');
+      return;
+    }
+    
     onShiftUpdate?.(newShift);
+  };
+
+  // Delete shift from backend
+  const deleteShiftFromBackend = async (shiftId: string): Promise<boolean> => {
+    try {
+      const response = await clamflowAPI.deleteShiftAssignment(shiftId);
+      return response.success;
+    } catch (error) {
+      console.error('Error deleting shift:', error);
+      return false;
+    }
   };
 
   // Handle shift click for editing
@@ -204,8 +417,23 @@ export const InteractiveShiftCalendar: React.FC<ShiftCalendarProps> = ({
         <div className="header-left">
           <img src="/logo-relish.png" alt="Relish ClamFlow" className="logo" />
           <h1>Shift Scheduling - Production & QC</h1>
+          {isSaving && <span className="saving-indicator">💾 Saving...</span>}
         </div>
         <div className="header-controls">
+          <div className="plant-selector">
+            <button 
+              className={selectedPlant === 'PPC' ? 'active' : ''}
+              onClick={() => setSelectedPlant('PPC')}
+            >
+              🏭 PPC
+            </button>
+            <button 
+              className={selectedPlant === 'FP' ? 'active' : ''}
+              onClick={() => setSelectedPlant('FP')}
+            >
+              📦 FP
+            </button>
+          </div>
           <button 
             onClick={() => setViewMode(viewMode === 'week' ? 'day' : 'week')}
             className="view-toggle"
@@ -249,14 +477,33 @@ export const InteractiveShiftCalendar: React.FC<ShiftCalendarProps> = ({
                 exit={{ opacity: 0 }}
                 className="staff-list"
               >
-                {['Production', 'QC', 'Supervisor', 'Maintenance'].map(role => (
-                  <div key={role} className="staff-category">
-                    <h4>{role}</h4>
-                    {STAFF_DATA.filter(staff => staff.role === role).map(staff => (
-                      <DraggableStaff key={staff.id} staff={staff} />
-                    ))}
+                {isLoadingStaff ? (
+                  <div className="loading-state">
+                    <div className="spinner" />
+                    <p>Loading staff...</p>
                   </div>
-                ))}
+                ) : staffError ? (
+                  <div className="error-state">
+                    <p>⚠️ {staffError}</p>
+                  </div>
+                ) : staffData.length === 0 ? (
+                  <div className="empty-state">
+                    <p>No staff members available</p>
+                  </div>
+                ) : (
+                  ['Production', 'QC', 'Supervisor', 'Maintenance'].map(role => {
+                    const roleStaff = staffData.filter(staff => staff.role === role);
+                    if (roleStaff.length === 0) return null;
+                    return (
+                      <div key={role} className="staff-category">
+                        <h4>{role}</h4>
+                        {roleStaff.map(staff => (
+                          <DraggableStaff key={staff.id} staff={staff} />
+                        ))}
+                      </div>
+                    );
+                  })
+                )}
               </motion.div>
             )}
           </AnimatePresence>
@@ -292,40 +539,46 @@ export const InteractiveShiftCalendar: React.FC<ShiftCalendarProps> = ({
                 </div>
 
                 {/* Staff Rows */}
-                {STAFF_DATA.map(staff => (
-                  <div key={staff.id} className="staff-row">
-                    <div className="staff-row-header">
-                      <div className="staff-avatar">{staff.name.charAt(0)}</div>
-                      <div className="staff-details">
-                        <div className="staff-name">{staff.name}</div>
-                        <div className="staff-role">{staff.role}</div>
+                {isLoadingStaff ? (
+                  <div className="grid-loading">Loading schedule...</div>
+                ) : staffData.length === 0 ? (
+                  <div className="grid-empty">No staff members to display</div>
+                ) : (
+                  staffData.map(staff => (
+                    <div key={staff.id} className="staff-row">
+                      <div className="staff-row-header">
+                        <div className="staff-avatar">{staff.name.charAt(0)}</div>
+                        <div className="staff-details">
+                          <div className="staff-name">{staff.name}</div>
+                          <div className="staff-role">{staff.role}</div>
+                        </div>
                       </div>
-                    </div>
                     
-                    {weekDays.map(day => (
-                      <div key={`${staff.id}-${day.toISOString()}`} className="day-column">
-                        {timeSlots.map(time => {
-                          const existingShift = shifts.find(s => 
-                            s.staffId === staff.id && 
-                            isSameDay(s.date, day) &&
-                            s.startTime === time
-                          );
+                      {weekDays.map(day => (
+                        <div key={`${staff.id}-${day.toISOString()}`} className="day-column">
+                          {timeSlots.map(time => {
+                            const existingShift = shifts.find(s => 
+                              s.staffId === staff.id && 
+                              isSameDay(s.date, day) &&
+                              s.startTime === time
+                            );
                           
-                          return (
-                            <TimeSlot
-                              key={`${staff.id}-${day.toISOString()}-${time}`}
-                              date={day}
-                              time={time}
-                              staffId={staff.id}
-                              shift={existingShift}
-                              onShiftClick={handleShiftClick}
-                            />
-                          );
-                        })}
-                      </div>
-                    ))}
-                  </div>
-                ))}
+                            return (
+                              <TimeSlot
+                                key={`${staff.id}-${day.toISOString()}-${time}`}
+                                date={day}
+                                time={time}
+                                staffId={staff.id}
+                                shift={existingShift}
+                                onShiftClick={handleShiftClick}
+                              />
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </div>
+                  ))
+                )}
               </div>
             )}
           </motion.div>
@@ -345,6 +598,12 @@ export const InteractiveShiftCalendar: React.FC<ShiftCalendarProps> = ({
               <label>Staff: {selectedShift.staffName}</label>
             </div>
             <div className="form-group">
+              <label>Date: {format(selectedShift.date, 'MMM dd, yyyy')}</label>
+            </div>
+            <div className="form-group">
+              <label>Time: {selectedShift.startTime} - {selectedShift.endTime}</label>
+            </div>
+            <div className="form-group">
               <label>Shift Type:</label>
               <select 
                 value={selectedShift.shiftType} 
@@ -360,16 +619,59 @@ export const InteractiveShiftCalendar: React.FC<ShiftCalendarProps> = ({
               </select>
             </div>
             <div className="modal-actions">
+              <button 
+                className="delete-btn"
+                onClick={async () => {
+                  if (confirm('Are you sure you want to delete this shift?')) {
+                    const deleted = await deleteShiftFromBackend(selectedShift.id);
+                    if (deleted) {
+                      setShifts(prev => prev.filter(s => s.id !== selectedShift.id));
+                      setShowEditModal(false);
+                    } else {
+                      alert('Failed to delete shift. Please try again.');
+                    }
+                  }
+                }}
+              >
+                Delete Shift
+              </button>
               <button onClick={() => setShowEditModal(false)}>Cancel</button>
-              <button onClick={() => {
-                // Update shift logic
-                setShifts(prev => prev.map(s => 
-                  s.id === selectedShift.id ? selectedShift : s
-                ));
-                setShowEditModal(false);
-                onShiftUpdate?.(selectedShift);
-              }}>
-                Save Changes
+              <button 
+                className="save-btn"
+                disabled={isSaving}
+                onClick={async () => {
+                  setIsSaving(true);
+                  try {
+                    // Find matching shift definition
+                    const shiftDef = shiftDefinitions.find(d => 
+                      mapShiftCodeToType(d.code) === selectedShift.shiftType
+                    );
+                    
+                    if (shiftDef) {
+                      const response = await clamflowAPI.updateShiftAssignment(selectedShift.id, {
+                        shift_definition_id: shiftDef.id,
+                        notes: `Updated shift type to ${selectedShift.shiftType}`
+                      });
+                      
+                      if (response.success) {
+                        setShifts(prev => prev.map(s => 
+                          s.id === selectedShift.id ? selectedShift : s
+                        ));
+                        setShowEditModal(false);
+                        onShiftUpdate?.(selectedShift);
+                      } else {
+                        alert('Failed to update shift. Please try again.');
+                      }
+                    }
+                  } catch (error) {
+                    console.error('Error updating shift:', error);
+                    alert('Failed to update shift. Please try again.');
+                  } finally {
+                    setIsSaving(false);
+                  }
+                }}
+              >
+                {isSaving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>

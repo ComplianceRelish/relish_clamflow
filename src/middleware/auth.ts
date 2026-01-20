@@ -219,10 +219,7 @@ async function validateSession(token: string): Promise<UserSession | null> {
 
 async function fetchUserProfile(userId: string): Promise<UserSession | null> {
   try {
-    // In a real implementation, this would query your user profiles table
-    // For now, we'll return a mock profile based on the user ID
-    
-    // Try to fetch from your backend API
+    // Fetch user profile from backend API
     const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${userId}`, {
       headers: {
         'Content-Type': 'application/json',
@@ -233,34 +230,15 @@ async function fetchUserProfile(userId: string): Promise<UserSession | null> {
       return await response.json();
     }
 
-    // Fallback to mock data for development
-    return {
-      id: userId,
-      email: 'mock@clamflow.com',
-      role: 'qa_technician',
-      permissions: ['read', 'write'],
-      plant_id: 'plant_001',
-      department: 'Quality Assurance',
-      status: 'active',
-      is_active: true,
-      last_login: new Date().toISOString()
-    };
+    // Production: Return null if API fails - no mock data fallback
+    console.warn('Failed to fetch user profile from API:', response.status);
+    return null;
   } catch (rawError) {
     const error = rawError instanceof Error ? rawError : new Error(String(rawError));
     console.error('Error fetching user profile:', error);
     
-    // Return mock data for development
-    return {
-      id: userId,
-      email: 'mock@clamflow.com',
-      role: 'qa_technician',
-      permissions: ['read', 'write'],
-      plant_id: 'plant_001',
-      department: 'Quality Assurance',
-      status: 'active',
-      is_active: true,
-      last_login: new Date().toISOString()
-    };
+    // Production: Return null on error - no mock data fallback
+    return null;
   }
 }
 

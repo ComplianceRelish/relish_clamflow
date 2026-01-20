@@ -78,11 +78,147 @@ export interface AuditLog {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://clamflowbackend-production.up.railway.app';
 
+// ============================================
+// STATIONS API INTERFACES - Per FRONTEND_API_INTEGRATION.md
+// ============================================
+
+export interface StationDefinition {
+  id: string;
+  name: string;
+  code: string;
+  plant_type: 'PPC' | 'FP';
+  station_type: string;
+  capacity: number;
+  status: 'operational' | 'maintenance' | 'offline';
+  location: string | null;
+  station_order: number;
+  description: string | null;
+  required_skills: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StationAssignment {
+  id: string;
+  station_id: string;
+  staff_id: string;
+  shift_assignment_id: string | null;
+  assigned_date: string;
+  start_time: string | null;
+  end_time: string | null;
+  status: 'active' | 'completed' | 'cancelled';
+  notes: string | null;
+  assigned_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StationWithAssignments extends StationDefinition {
+  assignments: Array<{
+    id: string;
+    staff_id: string;
+    staff_name: string;
+    assigned_date: string;
+    start_time: string | null;
+    end_time: string | null;
+    status: string;
+  }>;
+}
+
+// ============================================
+// SHIFTS API INTERFACES - Per FRONTEND_API_INTEGRATION.md
+// ============================================
+
+export interface ShiftDefinition {
+  id: string;
+  name: string;
+  code: string;
+  start_time: string;
+  end_time: string;
+  break_duration_minutes: number;
+  color: string;
+  is_active: boolean;
+  applies_to_plants: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ShiftAssignment {
+  id: string;
+  staff_id: string;
+  shift_definition_id: string;
+  date: string;
+  plant: 'PPC' | 'FP';
+  status: 'scheduled' | 'completed' | 'cancelled' | 'no_show';
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StaffForScheduler {
+  id: string;
+  full_name: string;
+  employee_id: string;
+  department: string;
+  plant: string;
+  is_active: boolean;
+}
+
+// ============================================
+// FORMS INTERFACES
+// ============================================
+
+// Weight Note interface matching backend response
 interface WeightNoteFormData {
+  id: string;
   lot_id: string;
   supplier_id: string;
   box_number: string;
   weight: number;
+  gross_weight?: number;
+  tare_weight?: number;
+  net_weight?: number;
+  temperature?: number;
+  visual_quality?: string;
+  shell_condition?: string;
+  notes?: string;
+  status?: string;
+  qc_staff_name?: string;
+  created_at: string;
+  updated_at: string;
+  created_by?: string;
+}
+
+// PPC Form interface matching backend response
+interface PPCFormData {
+  id: string;
+  lot_id: string;
+  box_number: string;
+  product_type?: string;
+  grade?: string;
+  weight?: number;
+  status?: string;
+  qc_staff_name?: string;
+  created_at: string;
+  updated_at: string;
+  created_by?: string;
+}
+
+// FP Form interface matching backend response
+interface FPFormData {
+  id: string;
+  lot_id: string;
+  box_number: string;
+  rfid_tag?: string;
+  product_type?: string;
+  grade?: string;
+  weight?: number;
+  status?: string;
+  qc_staff_name?: string;
+  created_at: string;
+  updated_at: string;
+  created_by?: string;
 }
 
 interface AdminFormData {
@@ -381,6 +517,206 @@ class ClamFlowAPI {
     return this.get('/api/operations/bottlenecks');
   }
 
+  // LIVE OPERATIONS - Real-time dashboard data
+  async getLiveOperations(): Promise<ApiResponse<{
+    stations: Array<{
+      id: string;
+      name: string;
+      code: string;
+      plant_type: string;
+      status: string;
+      current_staff: Array<{ id: string; name: string }>;
+      active_lot: { lot_number: string; product: string } | null;
+    }>;
+    active_lots: Array<{
+      lot_number: string;
+      status: string;
+      current_station: string;
+      progress_percentage: number;
+    }>;
+    bottlenecks: Array<{
+      station: string;
+      queue_count: number;
+      wait_time_minutes: number;
+    }>;
+    timestamp: string;
+  }>> {
+    return this.get('/api/operations/live');
+  }
+
+  // ============================================
+  // STATIONS API - Per FRONTEND_API_INTEGRATION.md
+  // ============================================
+
+  // Station Definitions
+  async getStationDefinitions(plantType?: 'PPC' | 'FP', status?: string): Promise<ApiResponse<StationDefinition[]>> {
+    const params = new URLSearchParams();
+    if (plantType) params.append('plant_type', plantType);
+    if (status) params.append('status', status);
+    const query = params.toString();
+    return this.get(`/api/stations/${query ? '?' + query : ''}`);
+  }
+
+  async getStationsWithAssignments(date: string, plantType?: 'PPC' | 'FP'): Promise<ApiResponse<StationWithAssignments[]>> {
+    const params = new URLSearchParams({ date });
+    if (plantType) params.append('plant_type', plantType);
+    return this.get(`/api/stations/with-assignments?${params.toString()}`);
+  }
+
+  async getStation(stationId: string): Promise<ApiResponse<StationDefinition>> {
+    return this.get(`/api/stations/${stationId}`);
+  }
+
+  async createStation(stationData: Partial<StationDefinition>): Promise<ApiResponse<StationDefinition>> {
+    return this.post('/api/stations/', stationData);
+  }
+
+  async updateStation(stationId: string, stationData: Partial<StationDefinition>): Promise<ApiResponse<StationDefinition>> {
+    return this.put(`/api/stations/${stationId}`, stationData);
+  }
+
+  async deleteStation(stationId: string): Promise<ApiResponse<void>> {
+    return this.delete(`/api/stations/${stationId}`);
+  }
+
+  // Station Assignments
+  async getStationAssignments(params?: {
+    station_id?: string;
+    staff_id?: string;
+    date?: string;
+    start_date?: string;
+    end_date?: string;
+    status?: 'active' | 'completed' | 'cancelled';
+  }): Promise<ApiResponse<StationAssignment[]>> {
+    const urlParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value) urlParams.append(key, value);
+      });
+    }
+    const query = urlParams.toString();
+    return this.get(`/api/stations/assignments/${query ? '?' + query : ''}`);
+  }
+
+  async getStationAssignment(assignmentId: string): Promise<ApiResponse<StationAssignment>> {
+    return this.get(`/api/stations/assignments/${assignmentId}`);
+  }
+
+  async createStationAssignment(assignmentData: {
+    station_id: string;
+    staff_id: string;
+    assigned_date: string;
+    start_time?: string;
+    end_time?: string;
+    shift_assignment_id?: string;
+    notes?: string;
+  }): Promise<ApiResponse<StationAssignment>> {
+    return this.post('/api/stations/assignments/', assignmentData);
+  }
+
+  async updateStationAssignment(assignmentId: string, assignmentData: Partial<StationAssignment>): Promise<ApiResponse<StationAssignment>> {
+    return this.put(`/api/stations/assignments/${assignmentId}`, assignmentData);
+  }
+
+  async deleteStationAssignment(assignmentId: string): Promise<ApiResponse<void>> {
+    return this.delete(`/api/stations/assignments/${assignmentId}`);
+  }
+
+  async bulkCreateStationAssignments(data: {
+    date: string;
+    assignments: Array<{
+      station_id: string;
+      staff_id: string;
+      start_time?: string;
+      end_time?: string;
+      notes?: string;
+    }>;
+  }): Promise<ApiResponse<{ created: number; updated: number; assignments: StationAssignment[] }>> {
+    return this.post('/api/stations/assignments/bulk', data);
+  }
+
+  async clearAssignmentsForDate(date: string): Promise<ApiResponse<void>> {
+    return this.delete(`/api/stations/assignments/by-date/${date}`);
+  }
+
+  // ============================================
+  // SHIFTS API - Per FRONTEND_API_INTEGRATION.md
+  // ============================================
+
+  // Shift Definitions
+  async getShiftDefinitions(): Promise<ApiResponse<ShiftDefinition[]>> {
+    return this.get('/api/shifts/shift-definitions');
+  }
+
+  async getShiftDefinition(definitionId: string): Promise<ApiResponse<ShiftDefinition>> {
+    return this.get(`/api/shifts/shift-definitions/${definitionId}`);
+  }
+
+  async createShiftDefinition(shiftData: {
+    name: string;
+    code: string;
+    start_time: string;
+    end_time: string;
+    break_duration_minutes?: number;
+    color?: string;
+    applies_to_plants?: string[];
+  }): Promise<ApiResponse<ShiftDefinition>> {
+    return this.post('/api/shifts/shift-definitions', shiftData);
+  }
+
+  async updateShiftDefinition(definitionId: string, shiftData: Partial<ShiftDefinition>): Promise<ApiResponse<ShiftDefinition>> {
+    return this.put(`/api/shifts/shift-definitions/${definitionId}`, shiftData);
+  }
+
+  async deleteShiftDefinition(definitionId: string): Promise<ApiResponse<void>> {
+    return this.delete(`/api/shifts/shift-definitions/${definitionId}`);
+  }
+
+  // Shift Assignments
+  async getShiftAssignments(params?: {
+    staff_id?: string;
+    shift_definition_id?: string;
+    start_date?: string;
+    end_date?: string;
+    plant?: 'PPC' | 'FP';
+  }): Promise<ApiResponse<ShiftAssignment[]>> {
+    const urlParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value) urlParams.append(key, value);
+      });
+    }
+    const query = urlParams.toString();
+    return this.get(`/api/shifts/shift-assignments${query ? '?' + query : ''}`);
+  }
+
+  async getShiftAssignment(assignmentId: string): Promise<ApiResponse<ShiftAssignment>> {
+    return this.get(`/api/shifts/shift-assignments/${assignmentId}`);
+  }
+
+  async createShiftAssignment(assignmentData: {
+    staff_id: string;
+    shift_definition_id: string;
+    date: string;
+    plant: 'PPC' | 'FP';
+    notes?: string;
+  }): Promise<ApiResponse<ShiftAssignment>> {
+    return this.post('/api/shifts/shift-assignments', assignmentData);
+  }
+
+  async updateShiftAssignment(assignmentId: string, assignmentData: Partial<ShiftAssignment>): Promise<ApiResponse<ShiftAssignment>> {
+    return this.put(`/api/shifts/shift-assignments/${assignmentId}`, assignmentData);
+  }
+
+  async deleteShiftAssignment(assignmentId: string): Promise<ApiResponse<void>> {
+    return this.delete(`/api/shifts/shift-assignments/${assignmentId}`);
+  }
+
+  // Staff for Scheduler
+  async getStaffForScheduler(): Promise<ApiResponse<StaffForScheduler[]>> {
+    return this.get('/api/shifts/staff-for-scheduler');
+  }
+
   // GATE & VEHICLES
   async getVehicles(): Promise<ApiResponse<VehicleLog[]>> {
     return this.get('/api/gate/vehicles');
@@ -471,11 +807,11 @@ class ClamFlowAPI {
   }
 
   // QA/QC FORMS - Required by QAFlowDashboard and QCFlowDashboard
-  async getPPCForms(): Promise<ApiResponse<unknown[]>> {
+  async getPPCForms(): Promise<ApiResponse<PPCFormData[]>> {
     return this.get('/api/ppc-forms');
   }
 
-  async getFPForms(): Promise<ApiResponse<unknown[]>> {
+  async getFPForms(): Promise<ApiResponse<FPFormData[]>> {
     return this.get('/api/fp-forms');
   }
 
