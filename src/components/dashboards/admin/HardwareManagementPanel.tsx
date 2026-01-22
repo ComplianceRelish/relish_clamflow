@@ -225,9 +225,16 @@ export default function HardwareManagementPanel() {
       // Fixed: Type assertion to resolve 'unknown' error
       const data = response.data as { devices: HardwareDevice[] } | null
       setDevices(data?.devices || [])
-    } catch (err) {
-      setError('Failed to load hardware devices')
-      console.error(err)
+      setError(null)
+    } catch (err: any) {
+      // Handle 404 gracefully - endpoint may not be implemented yet
+      if (err?.response?.status === 404 || err?.message?.includes('404')) {
+        console.warn('Hardware devices endpoint not available yet')
+        setDevices([])
+      } else {
+        setError('Failed to load hardware devices')
+        console.error(err)
+      }
     } finally {
       setLoading(false)
     }
@@ -240,8 +247,13 @@ export default function HardwareManagementPanel() {
       // Fixed: Type assertion to resolve 'unknown' error
       const data = response.data as HardwareStats
       setStats(data)
-    } catch (err) {
-      console.error('Failed to load hardware statistics:', err)
+    } catch (err: any) {
+      // Handle 404 gracefully - endpoint may not be implemented yet
+      if (err?.response?.status === 404 || err?.message?.includes('404')) {
+        console.warn('Hardware stats endpoint not available yet')
+      } else {
+        console.error('Failed to load hardware statistics:', err)
+      }
     }
   }
 

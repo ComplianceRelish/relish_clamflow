@@ -58,6 +58,22 @@ const QCFlowDashboard: React.FC<QCFlowDashboardProps> = ({ currentUser }) => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string>('')
   const [selectedTest, setSelectedTest] = useState<QCTest | null>(null)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+
+  // Detect mobile screen size
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+      if (window.innerWidth >= 768) {
+        setIsSidebarOpen(false)
+      }
+    }
+    
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   useEffect(() => {
     loadQCData()
@@ -238,6 +254,14 @@ const QCFlowDashboard: React.FC<QCFlowDashboardProps> = ({ currentUser }) => {
     { id: 'compliance', label: 'Compliance', icon: '📋' }
   ]
 
+  // Handle navigation - close sidebar on mobile after selection
+  const handleNavClick = (viewId: 'dashboard' | 'new_test' | 'depuration' | 'results' | 'compliance') => {
+    setActiveView(viewId)
+    if (isMobile) {
+      setIsSidebarOpen(false)
+    }
+  }
+
   if (loading && activeTests.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -250,19 +274,49 @@ const QCFlowDashboard: React.FC<QCFlowDashboardProps> = ({ currentUser }) => {
   }
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen bg-gray-100 relative">
+      {/* Mobile Overlay */}
+      {isMobile && isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar Navigation */}
-      <div className="w-64 bg-white shadow-lg">
+      <div 
+        className={`
+          ${isMobile 
+            ? `fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`
+            : 'relative flex-shrink-0'
+          }
+          w-64 bg-white shadow-lg
+        `}
+      >
         <div className="p-6 border-b">
-          <h1 className="text-xl font-bold text-gray-900">QC Control</h1>
-          <p className="text-sm text-gray-600">Quality Control Center</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">QC Control</h1>
+              <p className="text-sm text-gray-600">Quality Control Center</p>
+            </div>
+            {isMobile && (
+              <button 
+                onClick={() => setIsSidebarOpen(false)}
+                className="text-gray-500 p-1 hover:bg-gray-100 rounded"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
         
-        <nav className="p-4">
+        <nav className="p-4 overflow-y-auto max-h-[calc(100vh-100px)]">
           {navigationItems.map(item => (
             <button
               key={item.id}
-              onClick={() => setActiveView(item.id as any)}
+              onClick={() => handleNavClick(item.id as any)}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg mb-2 text-left transition-colors ${
                 activeView === item.id
                   ? 'bg-green-100 text-green-700 border-l-4 border-green-700'
@@ -277,21 +331,32 @@ const QCFlowDashboard: React.FC<QCFlowDashboardProps> = ({ currentUser }) => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto min-w-0">
         {/* Header */}
-        <div className="bg-white shadow-sm p-6 border-b">
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">
+        <div className="bg-white shadow-sm p-4 md:p-6 border-b sticky top-0 z-10">
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Hamburger Menu Button for Mobile */}
+            {isMobile && (
+              <button 
+                onClick={() => setIsSidebarOpen(true)}
+                className="p-2 rounded-lg hover:bg-gray-100 text-gray-700"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+            )}
+            <div className="flex-1 min-w-0">
+              <h2 className="text-xl md:text-2xl font-bold text-gray-900 truncate">
                 {navigationItems.find(item => item.id === activeView)?.label}
               </h2>
-              <p className="text-gray-600">
-                QC Inspector: {currentUser?.full_name} • {currentUser?.role}
+              <p className="text-gray-600 text-sm truncate">
+                QC Inspector: {currentUser?.full_name}
               </p>
             </div>
             
-            <div className="flex items-center space-x-3">
-              <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className={`px-3 py-1 rounded-full text-xs md:text-sm font-medium ${
                 qcMetrics.complianceRate >= 95 ? 'bg-green-100 text-green-800' :
                 qcMetrics.complianceRate >= 85 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
               }`}>
@@ -300,9 +365,9 @@ const QCFlowDashboard: React.FC<QCFlowDashboardProps> = ({ currentUser }) => {
               <button
                 onClick={loadQCData}
                 disabled={loading}
-                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+                className="px-3 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 disabled:opacity-50"
               >
-                {loading ? 'Refreshing...' : 'Refresh'}
+                {loading ? '...' : 'Refresh'}
               </button>
             </div>
           </div>

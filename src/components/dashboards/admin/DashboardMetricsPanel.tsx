@@ -61,47 +61,56 @@ const FormProgress: React.FC<{
 const metricsAPI = {
   dashboard: {
     getMetrics: async ({ timeRange }: { timeRange: string }) => {
-      const response = await clamflowAPI.getDashboardMetrics();
-      if (response.success && response.data) {
-        // Map backend response to expected format
-        return {
-          overview: {
-            total_forms_today: response.data.totalLots || 0,
-            total_forms_week: response.data.totalLots || 0,
-            active_users: response.data.activeUsers || 0,
-            completion_rate: 0,
-            avg_processing_time: 0,
-            quality_score: 0
-          },
-          production: {
-            daily_throughput: 0,
-            weekly_throughput: 0,
-            yield_percentage: 0,
-            waste_percentage: 0,
-            efficiency_score: 0,
-            stations_active: 0
-          },
-          quality: {
-            passed_inspections: 0,
-            failed_inspections: 0,
-            pending_reviews: response.data.pendingApprovals || 0,
-            compliance_rate: 0,
-            defect_rate: 0,
-            rework_rate: 0
-          },
-          trends: {
-            daily_production: [],
-            form_submissions: [],
-            user_activity: [],
-            quality_trends: []
-          },
-          alerts: {
-            critical: response.data.systemHealth === 'critical' ? 1 : 0,
-            warning: response.data.systemHealth === 'warning' ? 1 : 0,
-            info: 0,
-            recent_alerts: []
-          }
-        };
+      try {
+        const response = await clamflowAPI.getDashboardMetrics();
+        if (response.success && response.data) {
+          // Map backend response to expected format
+          return {
+            overview: {
+              total_forms_today: response.data.totalLots || 0,
+              total_forms_week: response.data.totalLots || 0,
+              active_users: response.data.activeUsers || 0,
+              completion_rate: 0,
+              avg_processing_time: 0,
+              quality_score: 0
+            },
+            production: {
+              daily_throughput: 0,
+              weekly_throughput: 0,
+              yield_percentage: 0,
+              waste_percentage: 0,
+              efficiency_score: 0,
+              stations_active: 0
+            },
+            quality: {
+              passed_inspections: 0,
+              failed_inspections: 0,
+              pending_reviews: response.data.pendingApprovals || 0,
+              compliance_rate: 0,
+              defect_rate: 0,
+              rework_rate: 0
+            },
+            trends: {
+              daily_production: [],
+              form_submissions: [],
+              user_activity: [],
+              quality_trends: []
+            },
+            alerts: {
+              critical: response.data.systemHealth === 'critical' ? 1 : 0,
+              warning: response.data.systemHealth === 'warning' ? 1 : 0,
+              info: 0,
+              recent_alerts: []
+            }
+          };
+        }
+      } catch (err: any) {
+        // Handle 403 gracefully - user may not have Super Admin access
+        if (err?.message?.includes('403') || err?.message?.includes('Super Admin')) {
+          console.warn('Dashboard metrics requires Super Admin access - showing empty data')
+        } else {
+          console.error('Dashboard metrics error:', err)
+        }
       }
       // Return empty structure if API fails
       return {
