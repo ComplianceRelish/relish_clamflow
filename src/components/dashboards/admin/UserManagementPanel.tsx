@@ -113,7 +113,7 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
       setError(null);
 
       // Fetch users from API
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://clamflowbackend-production.up.railway.app'}/users/`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://clamflowbackend-production.up.railway.app'}/api/users/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -162,7 +162,7 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
 
       // Try API first
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://clamflowbackend-production.up.railway.app'}/users/`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://clamflowbackend-production.up.railway.app'}/api/users/`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -240,7 +240,7 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
     try {
       // Try API first
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://clamflowbackend-production.up.railway.app'}/users/${userId}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://clamflowbackend-production.up.railway.app'}/api/users/${userId}`, {
           method: 'PUT',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -275,7 +275,7 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
     try {
       // Try API first
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://clamflowbackend-production.up.railway.app'}/users/${userId}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://clamflowbackend-production.up.railway.app'}/api/users/${userId}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`,

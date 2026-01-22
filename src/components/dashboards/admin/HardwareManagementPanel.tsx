@@ -220,7 +220,7 @@ export default function HardwareManagementPanel() {
   const loadDevices = async () => {
     try {
       setLoading(true)
-      const response = await apiClient.get('/hardware/devices')
+      const response = await apiClient.get('/api/admin/hardware/devices')
       
       // Fixed: Type assertion to resolve 'unknown' error
       const data = response.data as { devices: HardwareDevice[] } | null
@@ -272,7 +272,7 @@ export default function HardwareManagementPanel() {
 
   const handleCreateDevice = async (deviceData: Partial<HardwareDevice>) => {
     try {
-      await apiClient.post('/hardware/devices', deviceData)
+      await apiClient.post('/api/admin/hardware/devices', deviceData)
       setIsCreateDialogOpen(false)
       loadDevices()
       loadHardwareStats()
@@ -284,7 +284,7 @@ export default function HardwareManagementPanel() {
 
   const handleUpdateDevice = async (deviceId: string, deviceData: Partial<HardwareDevice>) => {
     try {
-      await apiClient.put(`/hardware/devices/${deviceId}`, deviceData)
+      await apiClient.put(`/api/admin/hardware/devices/${deviceId}`, deviceData)
       setIsEditDialogOpen(false)
       setSelectedDevice(null)
       loadDevices()
@@ -299,7 +299,7 @@ export default function HardwareManagementPanel() {
     if (!confirm('Are you sure you want to delete this device?')) return
     
     try {
-      await apiClient.delete(`/hardware/devices/${deviceId}`)
+      await apiClient.delete(`/api/admin/hardware/devices/${deviceId}`)
       loadDevices()
       loadHardwareStats()
     } catch (err) {
@@ -310,7 +310,7 @@ export default function HardwareManagementPanel() {
 
   const handleRebootDevice = async (deviceId: string) => {
     try {
-      await apiClient.post(`/hardware/devices/${deviceId}/reboot`)
+      await apiClient.post(`/api/admin/hardware/devices/${deviceId}/reboot`)
       loadDevices()
     } catch (err) {
       setError('Failed to reboot device')

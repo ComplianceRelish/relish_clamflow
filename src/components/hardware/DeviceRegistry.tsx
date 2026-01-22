@@ -32,7 +32,7 @@ export const DeviceRegistry: React.FC = () => {
   const loadDevices = async () => {
     try {
       const token = localStorage.getItem('clamflow_token');
-      const response = await fetch('https://clamflowbackend-production.up.railway.app/admin/hardware/devices', {
+      const response = await fetch('https://clamflowbackend-production.up.railway.app/api/admin/hardware/devices', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -48,7 +48,7 @@ export const DeviceRegistry: React.FC = () => {
   const addDevice = async () => {
     try {
       const token = localStorage.getItem('clamflow_token');
-      const response = await fetch('https://clamflowbackend-production.up.railway.app/admin/hardware/devices', {
+      const response = await fetch('https://clamflowbackend-production.up.railway.app/api/admin/hardware/devices', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -76,7 +76,7 @@ export const DeviceRegistry: React.FC = () => {
   const toggleDevice = async (deviceId: string, isActive: boolean) => {
     try {
       const token = localStorage.getItem('clamflow_token');
-      await fetch(`https://clamflowbackend-production.up.railway.app/admin/hardware/devices/${deviceId}`, {
+      await fetch(`https://clamflowbackend-production.up.railway.app/api/admin/hardware/devices/${deviceId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

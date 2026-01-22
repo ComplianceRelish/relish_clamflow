@@ -6,27 +6,27 @@ export class ExampleAPIService {
   
   // Using the generic GET method
   async getUsers() {
-    return await apiClient.get('/users')
+    return await apiClient.get('/api/users/')
   }
 
   // Using the generic POST method
   async createUser(userData: any) {
-    return await apiClient.post('/users', userData)
+    return await apiClient.post('/api/users/', userData)
   }
 
   // Using the generic PUT method
   async updateUser(id: string, userData: any) {
-    return await apiClient.put(`/users/${id}`, userData)
+    return await apiClient.put(`/api/users/${id}`, userData)
   }
 
   // Using the generic DELETE method
   async deleteUser(id: string) {
-    return await apiClient.delete(`/users/${id}`)
+    return await apiClient.delete(`/api/users/${id}`)
   }
 
   // Using the generic PATCH method
   async updateUserPartial(id: string, userData: any) {
-    return await apiClient.patch(`/users/${id}`, userData)
+    return await apiClient.patch(`/api/users/${id}`, userData)
   }
 
   // Example with custom configuration

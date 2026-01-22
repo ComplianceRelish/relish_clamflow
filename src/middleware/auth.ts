@@ -220,7 +220,7 @@ async function validateSession(token: string): Promise<UserSession | null> {
 async function fetchUserProfile(userId: string): Promise<UserSession | null> {
   try {
     // Fetch user profile from backend API
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${userId}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}`, {
       headers: {
         'Content-Type': 'application/json',
       }

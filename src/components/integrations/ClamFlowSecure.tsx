@@ -65,7 +65,7 @@ const ClamFlowSecure: React.FC<ClamFlowSecureProps> = ({
       
       // Production: Detect actual connected hardware devices
       const token = localStorage.getItem('clamflow_token');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/hardware/devices`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/admin/hardware/devices`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
