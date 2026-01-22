@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -194,18 +194,7 @@ export default function DashboardMetricsPanel({ currentUser }: DashboardMetricsP
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8']
 
-  useEffect(() => {
-    loadMetrics()
-    
-    // Set up auto-refresh every 5 minutes
-    const interval = setInterval(() => {
-      loadMetrics(true)
-    }, 300000)
-    
-    return () => clearInterval(interval)
-  }, [timeRange])
-
-  const loadMetrics = async (isRefresh = false) => {
+  const loadMetrics = useCallback(async (isRefresh = false) => {
     try {
       if (isRefresh) {
         setRefreshing(true)
@@ -222,7 +211,18 @@ export default function DashboardMetricsPanel({ currentUser }: DashboardMetricsP
       setLoading(false)
       setRefreshing(false)
     }
-  }
+  }, [timeRange])
+
+  useEffect(() => {
+    loadMetrics()
+    
+    // Set up auto-refresh every 5 minutes
+    const interval = setInterval(() => {
+      loadMetrics(true)
+    }, 300000)
+    
+    return () => clearInterval(interval)
+  }, [loadMetrics])
 
   const handleRefresh = () => {
     loadMetrics(true)

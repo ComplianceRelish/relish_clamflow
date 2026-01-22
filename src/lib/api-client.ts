@@ -1,6 +1,13 @@
 // src/lib/api-client.ts
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { supabase } from './supabase';
+
+// Helper to get token from localStorage (used by AuthContext)
+const getStoredToken = (): string | null => {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('clamflow_token');
+  }
+  return null;
+};
 
 // Request configuration interface
 interface RequestConfig {
@@ -90,14 +97,14 @@ class APIClient {
       },
     });
 
-    // Request interceptor to add JWT token
+    // Request interceptor to add JWT token from localStorage
     this.client.interceptors.request.use(
       async (config) => {
         try {
-          const { data: { session } } = await supabase.auth.getSession();
+          const token = getStoredToken();
           
-          if (session?.access_token) {
-            config.headers.Authorization = `Bearer ${session.access_token}`;
+          if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
           }
         } catch (error) {
           console.error('Error getting auth token:', error);
@@ -116,7 +123,11 @@ class APIClient {
       async (error) => {
         if (error.response?.status === 401) {
           console.error('Unauthorized access - redirecting to login');
-          await supabase.auth.signOut();
+          // Clear localStorage tokens
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('clamflow_token');
+            localStorage.removeItem('clamflow_user');
+          }
           window.location.href = '/login';
         }
         return Promise.reject(error);

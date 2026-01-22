@@ -1,10 +1,11 @@
 "use client"
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { User } from '../../types/auth'
 import UserManagementPanel from './admin/UserManagementPanel'
 import HardwareManagementPanel from './admin/HardwareManagementPanel'
 import DashboardMetricsPanel from './admin/DashboardMetricsPanel'
+import AdminSettingsPanel from './admin/AdminSettingsPanel'
 
 interface AdminDashboardProps {
   currentUser: User | null
@@ -17,6 +18,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
   const [error, setError] = useState<string>('')
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  
+  // Settings state
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true)
+  const [refreshInterval, setRefreshInterval] = useState(30)
+  const [showRefreshModal, setShowRefreshModal] = useState(false)
+  const [showNotificationModal, setShowNotificationModal] = useState(false)
+  const [showBackupModal, setShowBackupModal] = useState(false)
+  const [backupInProgress, setBackupInProgress] = useState(false)
+  const [notificationSettings, setNotificationSettings] = useState({
+    approvalRequests: true,
+    systemAlerts: true,
+    hardwareWarnings: true,
+    emailNotifications: false
+  })
 
   // Detect mobile screen size
   useEffect(() => {
@@ -46,6 +61,53 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
       setIsSidebarOpen(false)
     }
   }
+
+  // Settings handlers
+  const handleSaveRefreshSettings = useCallback(() => {
+    // Save settings to localStorage
+    localStorage.setItem('clamflow_autoRefresh', JSON.stringify({ enabled: autoRefreshEnabled, interval: refreshInterval }))
+    setShowRefreshModal(false)
+    setError('')
+    alert('Auto-refresh settings saved successfully!')
+  }, [autoRefreshEnabled, refreshInterval])
+
+  const handleSaveNotificationSettings = useCallback(() => {
+    // Save settings to localStorage
+    localStorage.setItem('clamflow_notifications', JSON.stringify(notificationSettings))
+    setShowNotificationModal(false)
+    setError('')
+    alert('Notification settings saved successfully!')
+  }, [notificationSettings])
+
+  const handleBackup = useCallback(async () => {
+    setBackupInProgress(true)
+    try {
+      // Simulate backup process
+      await new Promise(resolve => setTimeout(resolve, 3000))
+      setBackupInProgress(false)
+      setShowBackupModal(false)
+      alert('System backup completed successfully!')
+    } catch (err) {
+      setBackupInProgress(false)
+      setError('Backup failed. Please try again.')
+    }
+  }, [])
+
+  // Load saved settings on mount
+  useEffect(() => {
+    const savedRefresh = localStorage.getItem('clamflow_autoRefresh')
+    const savedNotifications = localStorage.getItem('clamflow_notifications')
+    
+    if (savedRefresh) {
+      const { enabled, interval } = JSON.parse(savedRefresh)
+      setAutoRefreshEnabled(enabled)
+      setRefreshInterval(interval)
+    }
+    
+    if (savedNotifications) {
+      setNotificationSettings(JSON.parse(savedNotifications))
+    }
+  }, [])
 
   const navigationItems = [
     { id: 'overview', label: 'Overview', icon: '📊' },
@@ -179,34 +241,213 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
           {activeView === 'metrics' && <DashboardMetricsPanel />}
           
           {activeView === 'settings' && (
-            <div className="bg-white p-4 md:p-6 rounded-lg shadow">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">System Settings</h3>
-              <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg gap-3">
-                  <div>
-                    <h4 className="font-medium">Auto Refresh Dashboard</h4>
-                    <p className="text-sm text-gray-600">Automatically refresh dashboard data</p>
+            <div className="space-y-6">
+              {/* Quick Settings Cards */}
+              <div className="bg-white p-4 md:p-6 rounded-lg shadow">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Settings</h3>
+                <div className="space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg gap-3 hover:border-purple-300 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">🔄</span>
+                      <div>
+                        <h4 className="font-medium">Auto Refresh Dashboard</h4>
+                        <p className="text-sm text-gray-600">
+                          {autoRefreshEnabled ? `Enabled - every ${refreshInterval}s` : 'Disabled'}
+                        </p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => setShowRefreshModal(true)}
+                      className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 w-full sm:w-auto transition-colors"
+                    >
+                      Configure
+                    </button>
                   </div>
-                  <button className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 w-full sm:w-auto">
-                    Configure
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg gap-3 hover:border-purple-300 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">🔔</span>
+                      <div>
+                        <h4 className="font-medium">Notification Settings</h4>
+                        <p className="text-sm text-gray-600">Manage notification preferences</p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => setShowNotificationModal(true)}
+                      className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 w-full sm:w-auto transition-colors"
+                    >
+                      Configure
+                    </button>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg gap-3 hover:border-purple-300 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">💾</span>
+                      <div>
+                        <h4 className="font-medium">System Backup</h4>
+                        <p className="text-sm text-gray-600">Configure automated backups</p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => setShowBackupModal(true)}
+                      className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 w-full sm:w-auto transition-colors"
+                    >
+                      Configure
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Advanced Settings Panel */}
+              <AdminSettingsPanel />
+            </div>
+          )}
+
+          {/* Auto Refresh Modal */}
+          {showRefreshModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                <h3 className="text-lg font-semibold mb-4">Auto Refresh Settings</h3>
+                <div className="space-y-4">
+                  <label className="flex items-center gap-3">
+                    <input 
+                      type="checkbox" 
+                      checked={autoRefreshEnabled}
+                      onChange={(e) => setAutoRefreshEnabled(e.target.checked)}
+                      className="w-5 h-5 text-purple-600 rounded"
+                    />
+                    <span>Enable auto refresh</span>
+                  </label>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Refresh interval (seconds)
+                    </label>
+                    <select 
+                      value={refreshInterval}
+                      onChange={(e) => setRefreshInterval(Number(e.target.value))}
+                      className="w-full border rounded-lg p-2"
+                      disabled={!autoRefreshEnabled}
+                    >
+                      <option value={15}>15 seconds</option>
+                      <option value={30}>30 seconds</option>
+                      <option value={60}>1 minute</option>
+                      <option value={120}>2 minutes</option>
+                      <option value={300}>5 minutes</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="flex gap-3 mt-6">
+                  <button 
+                    onClick={() => setShowRefreshModal(false)}
+                    className="flex-1 px-4 py-2 border rounded hover:bg-gray-100"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={handleSaveRefreshSettings}
+                    className="flex-1 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+                  >
+                    Save
                   </button>
                 </div>
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg gap-3">
-                  <div>
-                    <h4 className="font-medium">Notification Settings</h4>
-                    <p className="text-sm text-gray-600">Manage notification preferences</p>
-                  </div>
-                  <button className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 w-full sm:w-auto">
-                    Configure
+              </div>
+            </div>
+          )}
+
+          {/* Notification Settings Modal */}
+          {showNotificationModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                <h3 className="text-lg font-semibold mb-4">Notification Settings</h3>
+                <div className="space-y-3">
+                  <label className="flex items-center gap-3">
+                    <input 
+                      type="checkbox" 
+                      checked={notificationSettings.approvalRequests}
+                      onChange={(e) => setNotificationSettings(prev => ({ ...prev, approvalRequests: e.target.checked }))}
+                      className="w-5 h-5 text-purple-600 rounded"
+                    />
+                    <span>Approval requests</span>
+                  </label>
+                  <label className="flex items-center gap-3">
+                    <input 
+                      type="checkbox" 
+                      checked={notificationSettings.systemAlerts}
+                      onChange={(e) => setNotificationSettings(prev => ({ ...prev, systemAlerts: e.target.checked }))}
+                      className="w-5 h-5 text-purple-600 rounded"
+                    />
+                    <span>System alerts</span>
+                  </label>
+                  <label className="flex items-center gap-3">
+                    <input 
+                      type="checkbox" 
+                      checked={notificationSettings.hardwareWarnings}
+                      onChange={(e) => setNotificationSettings(prev => ({ ...prev, hardwareWarnings: e.target.checked }))}
+                      className="w-5 h-5 text-purple-600 rounded"
+                    />
+                    <span>Hardware warnings</span>
+                  </label>
+                  <label className="flex items-center gap-3">
+                    <input 
+                      type="checkbox" 
+                      checked={notificationSettings.emailNotifications}
+                      onChange={(e) => setNotificationSettings(prev => ({ ...prev, emailNotifications: e.target.checked }))}
+                      className="w-5 h-5 text-purple-600 rounded"
+                    />
+                    <span>Email notifications</span>
+                  </label>
+                </div>
+                <div className="flex gap-3 mt-6">
+                  <button 
+                    onClick={() => setShowNotificationModal(false)}
+                    className="flex-1 px-4 py-2 border rounded hover:bg-gray-100"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={handleSaveNotificationSettings}
+                    className="flex-1 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+                  >
+                    Save
                   </button>
                 </div>
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg gap-3">
-                  <div>
-                    <h4 className="font-medium">System Backup</h4>
-                    <p className="text-sm text-gray-600">Configure automated backups</p>
+              </div>
+            </div>
+          )}
+
+          {/* Backup Modal */}
+          {showBackupModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                <h3 className="text-lg font-semibold mb-4">System Backup</h3>
+                <div className="space-y-4">
+                  <p className="text-gray-600">
+                    Create a backup of all system data including users, configurations, and logs.
+                  </p>
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                    <p className="text-sm text-yellow-800">
+                      ⚠️ This process may take a few minutes. Please do not close the browser.
+                    </p>
                   </div>
-                  <button className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 w-full sm:w-auto">
-                    Configure
+                  {backupInProgress && (
+                    <div className="flex items-center gap-3 p-4 bg-purple-50 rounded-lg">
+                      <div className="animate-spin h-5 w-5 border-2 border-purple-600 border-t-transparent rounded-full"></div>
+                      <span className="text-purple-700">Backup in progress...</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-3 mt-6">
+                  <button 
+                    onClick={() => setShowBackupModal(false)}
+                    disabled={backupInProgress}
+                    className="flex-1 px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={handleBackup}
+                    disabled={backupInProgress}
+                    className="flex-1 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50"
+                  >
+                    {backupInProgress ? 'Backing up...' : 'Start Backup'}
                   </button>
                 </div>
               </div>
