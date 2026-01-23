@@ -201,6 +201,7 @@ export default function HardwareManagementPanel() {
   const [stats, setStats] = useState<HardwareStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [apiNotReady, setApiNotReady] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterType, setFilterType] = useState('all')
   const [filterStatus, setFilterStatus] = useState('all')
@@ -226,11 +227,17 @@ export default function HardwareManagementPanel() {
       const data = response.data as { devices: HardwareDevice[] } | null
       setDevices(data?.devices || [])
       setError(null)
-    } catch (err: any) {
-      // Handle 404 gracefully - endpoint may not be implemented yet
-      if (err?.response?.status === 404 || err?.message?.includes('404')) {
+      setApiNotReady(false)
+    } catch (err: unknown) {
+      const error = err as { response?: { status?: number }; message?: string }
+      // Handle 404/500/CORS gracefully - endpoint may not be implemented yet
+      if (error?.response?.status === 404 || error?.response?.status === 500 || 
+          error?.message?.includes('404') || error?.message?.includes('Network Error') ||
+          error?.message?.includes('CORS')) {
         console.warn('Hardware devices endpoint not available yet')
         setDevices([])
+        setApiNotReady(true)
+        setError(null)
       } else {
         setError('Failed to load hardware devices')
         console.error(err)
@@ -247,9 +254,11 @@ export default function HardwareManagementPanel() {
       // Fixed: Type assertion to resolve 'unknown' error
       const data = response.data as HardwareStats
       setStats(data)
-    } catch (err: any) {
-      // Handle 404 gracefully - endpoint may not be implemented yet
-      if (err?.response?.status === 404 || err?.message?.includes('404')) {
+    } catch (err: unknown) {
+      const error = err as { response?: { status?: number }; message?: string }
+      // Handle 404/500/CORS gracefully - endpoint may not be implemented yet
+      if (error?.response?.status === 404 || error?.response?.status === 500 ||
+          error?.message?.includes('404') || error?.message?.includes('Network Error')) {
         console.warn('Hardware stats endpoint not available yet')
       } else {
         console.error('Failed to load hardware statistics:', err)
@@ -362,6 +371,26 @@ export default function HardwareManagementPanel() {
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
+      )}
+
+      {/* API Not Ready Notice */}
+      {apiNotReady && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl">🔧</span>
+            <div>
+              <h4 className="font-medium text-amber-800">Hardware API Not Available</h4>
+              <p className="text-sm text-amber-700 mt-1">
+                The hardware management backend endpoints are not configured yet. 
+                This panel will automatically connect when the API is ready.
+              </p>
+              <p className="text-xs text-amber-600 mt-2">
+                Required endpoints: <code className="bg-amber-100 px-1 rounded">/api/admin/hardware/devices</code>, 
+                <code className="bg-amber-100 px-1 rounded">/hardware/stats</code>
+              </p>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Hardware Statistics */}

@@ -6,12 +6,13 @@ import UserManagementPanel from './admin/UserManagementPanel'
 import HardwareManagementPanel from './admin/HardwareManagementPanel'
 import DashboardMetricsPanel from './admin/DashboardMetricsPanel'
 import AdminSettingsPanel from './admin/AdminSettingsPanel'
+import DeviceRegistryPanel from './admin/DeviceRegistryPanel'
 
 interface AdminDashboardProps {
   currentUser: User | null
 }
 
-type AdminView = 'overview' | 'users' | 'hardware' | 'metrics' | 'settings'
+type AdminView = 'overview' | 'users' | 'hardware' | 'device-registry' | 'metrics' | 'settings'
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
   const [activeView, setActiveView] = useState<AdminView>('overview')
@@ -30,8 +31,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
     approvalRequests: true,
     systemAlerts: true,
     hardwareWarnings: true,
-    emailNotifications: false
+    emailNotifications: false,
+    soundEnabled: true,
+    soundType: 'default'
   })
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default')
 
   // Detect mobile screen size
   useEffect(() => {
@@ -107,12 +111,97 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
     if (savedNotifications) {
       setNotificationSettings(JSON.parse(savedNotifications))
     }
+
+    // Check notification permission
+    if ('Notification' in window) {
+      setNotificationPermission(Notification.permission)
+    }
   }, [])
+
+  // Request notification permission
+  const requestNotificationPermission = useCallback(async () => {
+    if ('Notification' in window) {
+      const permission = await Notification.requestPermission()
+      setNotificationPermission(permission)
+      return permission === 'granted'
+    }
+    return false
+  }, [])
+
+  // Play notification sound using Web Audio API
+  const playNotificationSound = useCallback((soundType: string = 'default') => {
+    try {
+      const audioContext = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)()
+      const oscillator = audioContext.createOscillator()
+      const gainNode = audioContext.createGain()
+      
+      oscillator.connect(gainNode)
+      gainNode.connect(audioContext.destination)
+      
+      // Different sound patterns for different types
+      switch (soundType) {
+        case 'alert':
+          oscillator.frequency.setValueAtTime(880, audioContext.currentTime) // A5
+          oscillator.frequency.setValueAtTime(440, audioContext.currentTime + 0.1) // A4
+          oscillator.frequency.setValueAtTime(880, audioContext.currentTime + 0.2) // A5
+          break
+        case 'success':
+          oscillator.frequency.setValueAtTime(523, audioContext.currentTime) // C5
+          oscillator.frequency.setValueAtTime(659, audioContext.currentTime + 0.1) // E5
+          oscillator.frequency.setValueAtTime(784, audioContext.currentTime + 0.2) // G5
+          break
+        case 'chime':
+          oscillator.frequency.setValueAtTime(1047, audioContext.currentTime) // C6
+          oscillator.frequency.setValueAtTime(784, audioContext.currentTime + 0.15) // G5
+          break
+        default:
+          oscillator.frequency.setValueAtTime(587, audioContext.currentTime) // D5
+          oscillator.frequency.setValueAtTime(880, audioContext.currentTime + 0.1) // A5
+      }
+      
+      oscillator.type = 'sine'
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4)
+      
+      oscillator.start(audioContext.currentTime)
+      oscillator.stop(audioContext.currentTime + 0.4)
+    } catch (err) {
+      console.log('Web Audio API not supported')
+    }
+  }, [])
+
+  // Test notification with sound
+  const testNotification = useCallback(async () => {
+    if (notificationPermission !== 'granted') {
+      const granted = await requestNotificationPermission()
+      if (!granted) {
+        alert('Please enable notifications in your browser settings to receive ClamFlow alerts.')
+        return
+      }
+    }
+
+    // Play sound if enabled
+    if (notificationSettings.soundEnabled) {
+      playNotificationSound(notificationSettings.soundType)
+    }
+
+    // Show browser notification
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification('ClamFlow Test Notification', {
+        body: 'Notifications are working! You will receive alerts for important events.',
+        icon: '/icons/icon-192x192.png',
+        badge: '/icons/icon-72x72.png',
+        tag: 'test-notification',
+        requireInteraction: false
+      })
+    }
+  }, [notificationPermission, notificationSettings.soundEnabled, notificationSettings.soundType, requestNotificationPermission, playNotificationSound])
 
   const navigationItems = [
     { id: 'overview', label: 'Overview', icon: '📊' },
     { id: 'users', label: 'User Management', icon: '👥' },
-    { id: 'hardware', label: 'Hardware', icon: '🔧' },
+    { id: 'hardware', label: 'Hardware Config', icon: '🔧' },
+    { id: 'device-registry', label: 'Device Registry', icon: '📋' },
     { id: 'metrics', label: 'Metrics', icon: '📈' },
     { id: 'settings', label: 'Settings', icon: '⚙️' }
   ]
@@ -238,6 +327,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
           {/* Components */}
           {activeView === 'users' && <UserManagementPanel />}
           {activeView === 'hardware' && <HardwareManagementPanel />}
+          {activeView === 'device-registry' && <DeviceRegistryPanel />}
           {activeView === 'metrics' && <DashboardMetricsPanel />}
           
           {activeView === 'settings' && (
@@ -355,9 +445,33 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
           {/* Notification Settings Modal */}
           {showNotificationModal && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
                 <h3 className="text-lg font-semibold mb-4">Notification Settings</h3>
+                
+                {/* Browser Notification Permission */}
+                <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-sm">Browser Notifications</p>
+                      <p className="text-xs text-gray-500">
+                        {notificationPermission === 'granted' && '✅ Enabled'}
+                        {notificationPermission === 'denied' && '❌ Blocked - Enable in browser settings'}
+                        {notificationPermission === 'default' && '⚠️ Not configured'}
+                      </p>
+                    </div>
+                    {notificationPermission !== 'granted' && (
+                      <button
+                        onClick={requestNotificationPermission}
+                        className="px-3 py-1 text-sm bg-purple-600 text-white rounded hover:bg-purple-700"
+                      >
+                        Enable
+                      </button>
+                    )}
+                  </div>
+                </div>
+
                 <div className="space-y-3">
+                  <p className="text-sm font-medium text-gray-700">Notify me about:</p>
                   <label className="flex items-center gap-3">
                     <input 
                       type="checkbox" 
@@ -395,6 +509,47 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
                     <span>Email notifications</span>
                   </label>
                 </div>
+
+                {/* Sound Settings */}
+                <div className="mt-4 pt-4 border-t space-y-3">
+                  <p className="text-sm font-medium text-gray-700">Sound Settings:</p>
+                  <label className="flex items-center gap-3">
+                    <input 
+                      type="checkbox" 
+                      checked={notificationSettings.soundEnabled}
+                      onChange={(e) => setNotificationSettings(prev => ({ ...prev, soundEnabled: e.target.checked }))}
+                      className="w-5 h-5 text-purple-600 rounded"
+                    />
+                    <span>🔔 Enable notification sounds</span>
+                  </label>
+                  
+                  {notificationSettings.soundEnabled && (
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">Sound type:</label>
+                      <select
+                        value={notificationSettings.soundType}
+                        onChange={(e) => setNotificationSettings(prev => ({ ...prev, soundType: e.target.value }))}
+                        className="w-full border rounded-lg p-2"
+                      >
+                        <option value="default">Default</option>
+                        <option value="chime">Chime</option>
+                        <option value="alert">Alert</option>
+                        <option value="success">Success</option>
+                      </select>
+                    </div>
+                  )}
+                </div>
+
+                {/* Test Notification */}
+                <div className="mt-4 pt-4 border-t">
+                  <button
+                    onClick={testNotification}
+                    className="w-full px-4 py-2 border-2 border-dashed border-purple-300 text-purple-600 rounded-lg hover:bg-purple-50 transition-colors"
+                  >
+                    🔔 Test Notification
+                  </button>
+                </div>
+
                 <div className="flex gap-3 mt-6">
                   <button 
                     onClick={() => setShowNotificationModal(false)}

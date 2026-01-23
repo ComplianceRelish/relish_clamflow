@@ -34,7 +34,6 @@ const nextConfig = {
   // 🔥 CRITICAL: Experimental settings to fix cache issues
   experimental: {
     missingSuspenseWithCSRBailout: true,
-    isrMemoryCacheSize: 0,  // 🔥 Disable ISR cache completely
   },
 
   // 🔥 CRITICAL: Ensure static export is disabled
