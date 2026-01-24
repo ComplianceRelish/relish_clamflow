@@ -2,7 +2,7 @@
 
 **Date:** January 3, 2026  
 **Target:** Vercel Production Environment  
-**Backend:** Railway (https://clamflowbackend-production.up.railway.app)
+**Backend:** Railway (https://clamflow-backend-production.up.railway.app)
 
 ---
 
@@ -43,7 +43,7 @@
 ### **Required Environment Variables**
 ```bash
 # Production (Vercel)
-NEXT_PUBLIC_API_URL=https://clamflowbackend-production.up.railway.app
+NEXT_PUBLIC_API_URL=https://clamflow-backend-production.up.railway.app
 NEXT_PUBLIC_SUPABASE_URL=<your-supabase-url>
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-supabase-anon-key>
 
@@ -53,7 +53,7 @@ NEXT_PUBLIC_APP_VERSION=2.0.0
 ```
 
 ### **Backend Configuration**
-- [x] Railway backend running: https://clamflowbackend-production.up.railway.app
+- [x] Railway backend running: https://clamflow-backend-production.up.railway.app
 - [x] CORS configured for Vercel domain
 - [x] JWT authentication working
 - [x] Database connection stable (Supabase)
@@ -120,7 +120,7 @@ Testing:
 - ✅ Proper error handling and loading states
 
 Status: READY FOR PRODUCTION DEPLOYMENT
-Backend: https://clamflowbackend-production.up.railway.app
+Backend: https://clamflow-backend-production.up.railway.app
 ```
 
 ---
@@ -358,7 +358,7 @@ git push origin main
 
 ## **Contact & Support**
 
-**Backend API:** https://clamflowbackend-production.up.railway.app  
+**Backend API:** https://clamflow-backend-production.up.railway.app  
 **Frontend:** https://clamflowcloud.vercel.app  
 **Repository:** ComplianceRelish/relish_clamflow  
 **Documentation:** See FRONTEND_BACKEND_INTEGRATION_STATUS_ASSESSMENT.md

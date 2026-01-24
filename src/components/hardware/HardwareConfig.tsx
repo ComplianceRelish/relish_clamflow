@@ -5,6 +5,9 @@ import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Label } from '../ui/Label';
 
+// Use environment variable for API URL
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://clamflow-backend-production.up.railway.app';
+
 interface HardwareConfigProps {
   hardwareType: 'rfid' | 'label_printer' | 'face_recognition' | 'qr_code';
 }
@@ -49,7 +52,7 @@ export const HardwareConfig: React.FC<HardwareConfigProps> = ({ hardwareType }) 
     setIsLoading(true);
     try {
       const token = localStorage.getItem('clamflow_token');
-      const response = await fetch(`https://clamflowbackend-production.up.railway.app/admin/hardware/configurations/${hardwareType}`, {
+      const response = await fetch(`${API_BASE_URL}/admin/hardware/configurations/${hardwareType}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -68,7 +71,7 @@ export const HardwareConfig: React.FC<HardwareConfigProps> = ({ hardwareType }) 
     setIsSaving(true);
     try {
       const token = localStorage.getItem('clamflow_token');
-      const response = await fetch('https://clamflowbackend-production.up.railway.app/admin/hardware/configurations', {
+      const response = await fetch(`${API_BASE_URL}/admin/hardware/configurations`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

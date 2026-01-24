@@ -3,6 +3,9 @@ import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { Alert } from '../ui/Alert';
 
+// Use environment variable for API URL
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://clamflow-backend-production.up.railway.app';
+
 interface FaceCaptureProps {
   mode?: 'attendance' | 'registration';
   onCapture?: (imageData: string, result?: any) => void;
@@ -84,7 +87,7 @@ export const FaceCapture: React.FC<FaceCaptureProps> = ({
 
       if (mode === 'attendance') {
         // Send to backend for authentication
-        const response = await fetch('https://clamflowbackend-production.up.railway.app/biometric/authenticate-face', {
+        const response = await fetch(`${API_BASE_URL}/biometric/authenticate-face`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -97,17 +100,17 @@ export const FaceCapture: React.FC<FaceCaptureProps> = ({
         const result = await response.json();
 
         if (result.authenticated) {
-          // Record attendance
+          // Record attendance - Backend: /attendance/ (POST)
           const token = localStorage.getItem('clamflow_token');
-          await fetch('https://clamflowbackend-production.up.railway.app/secure/attendance/face', {
+          await fetch(`${API_BASE_URL}/attendance/`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              staff_id: result.staff_id,
-              method: 'face_capture',
+              person_id: result.staff_id,
+              method: 'face',
               device_type: deviceType
             })
           });

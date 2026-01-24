@@ -73,21 +73,21 @@ const ClamYieldDashboard: React.FC<ClamYieldDashboardProps> = ({ currentUser }) 
       const yields: YieldData[] = []
 
       if (lotsResponse.success && lotsResponse.data) {
-        lotsResponse.data.forEach(lot => {
+        lotsResponse.data.forEach((lot: any) => {
           // Get raw material weight from weight notes
           const lotWeightNotes = weightNotesResponse.success ? 
-            weightNotesResponse.data?.filter(note => note.lot_id === lot.id) || [] : []
+            weightNotesResponse.data?.filter((note: any) => note.lot_id === lot.id) || [] : []
           const rawMaterialWeight = lotWeightNotes.reduce((sum, note) => sum + (note.weight || 0), 0)
 
           // Get processed weight from PPC forms
           const lotPPCForms = ppcFormsResponse.success ? 
-            ppcFormsResponse.data?.filter(form => form.lot_id === lot.id) || [] : []
-          const processedWeight = lotPPCForms.reduce((sum, form) => sum + (form.weight || 0), 0)
+            ppcFormsResponse.data?.filter((form: any) => form.lot_id === lot.id) || [] : []
+          const processedWeight = lotPPCForms.reduce((sum: number, form: any) => sum + (form.weight || 0), 0)
 
           // Get final product weight from FP forms
           const lotFPForms = fpFormsResponse.success ? 
-            fpFormsResponse.data?.filter(form => form.lot_id === lot.id) || [] : []
-          const finalProductWeight = lotFPForms.reduce((sum, form) => sum + (form.weight || 0), 0)
+            fpFormsResponse.data?.filter((form: any) => form.lot_id === lot.id) || [] : []
+          const finalProductWeight = lotFPForms.reduce((sum: number, form: any) => sum + (form.weight || 0), 0)
 
           // Calculate yield percentage
           const yieldPercentage = rawMaterialWeight > 0 ? 
@@ -176,7 +176,7 @@ const ClamYieldDashboard: React.FC<ClamYieldDashboardProps> = ({ currentUser }) 
   }
 
   const getStatusColor = (status: string): string => {
-    const colors = {
+    const colors: Record<string, string> = {
       'processing': 'bg-yellow-100 text-yellow-800',
       'completed': 'bg-green-100 text-green-800',
       'shipped': 'bg-blue-100 text-blue-800'
@@ -191,7 +191,7 @@ const ClamYieldDashboard: React.FC<ClamYieldDashboardProps> = ({ currentUser }) 
   }
 
   const getTrendIcon = (trend: string): string => {
-    const icons = {
+    const icons: Record<string, string> = {
       'improving': '📈',
       'declining': '📉',
       'stable': '➡️'
@@ -257,19 +257,19 @@ const ClamYieldDashboard: React.FC<ClamYieldDashboardProps> = ({ currentUser }) 
         </div>
         <div className="bg-white p-6 rounded-lg shadow border-l-4 border-green-500">
           <h3 className="text-sm font-medium text-gray-500">Avg Yield</h3>
-          <p className="text-2xl font-bold text-green-600">{yieldMetrics.avgYieldPercentage.toFixed(1)}%</p>
+          <p className="text-2xl font-bold text-green-600">{(yieldMetrics.avgYieldPercentage ?? 0).toFixed(1)}%</p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow border-l-4 border-purple-500">
           <h3 className="text-sm font-medium text-gray-500">Raw Material</h3>
-          <p className="text-2xl font-bold text-purple-600">{yieldMetrics.totalRawMaterial.toFixed(0)} kg</p>
+          <p className="text-2xl font-bold text-purple-600">{(yieldMetrics.totalRawMaterial ?? 0).toFixed(0)} kg</p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow border-l-4 border-emerald-500">
           <h3 className="text-sm font-medium text-gray-500">Final Product</h3>
-          <p className="text-2xl font-bold text-emerald-600">{yieldMetrics.totalFinalProduct.toFixed(0)} kg</p>
+          <p className="text-2xl font-bold text-emerald-600">{(yieldMetrics.totalFinalProduct ?? 0).toFixed(0)} kg</p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow border-l-4 border-red-500">
           <h3 className="text-sm font-medium text-gray-500">Waste</h3>
-          <p className="text-2xl font-bold text-red-600">{yieldMetrics.totalWaste.toFixed(0)} kg</p>
+          <p className="text-2xl font-bold text-red-600">{(yieldMetrics.totalWaste ?? 0).toFixed(0)} kg</p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow border-l-4 border-yellow-500">
           <h3 className="text-sm font-medium text-gray-500">Best Lot</h3>
@@ -314,15 +314,15 @@ const ClamYieldDashboard: React.FC<ClamYieldDashboardProps> = ({ currentUser }) 
                 yieldData.map(item => (
                   <tr key={item.lotId} className="hover:bg-gray-50">
                     <td className="px-6 py-4 font-mono text-sm text-gray-900">{item.lotNumber}</td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{item.rawMaterialWeight.toFixed(1)}</td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{item.processedWeight.toFixed(1)}</td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{item.finalProductWeight.toFixed(1)}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{(item.rawMaterialWeight ?? 0).toFixed(1)}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{(item.processedWeight ?? 0).toFixed(1)}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{(item.finalProductWeight ?? 0).toFixed(1)}</td>
                     <td className="px-6 py-4">
                       <span className={`font-bold ${getYieldColor(item.yieldPercentage)}`}>
-                        {item.yieldPercentage.toFixed(1)}%
+                        {(item.yieldPercentage ?? 0).toFixed(1)}%
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{item.wastePercentage.toFixed(1)}%</td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{(item.wastePercentage ?? 0).toFixed(1)}%</td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(item.status)}`}>
                         {item.status}
@@ -347,7 +347,7 @@ const ClamYieldDashboard: React.FC<ClamYieldDashboardProps> = ({ currentUser }) 
             <div className="flex justify-between">
               <span className="text-gray-600">Overall Efficiency:</span>
               <span className={`font-medium ${getYieldColor(yieldMetrics.avgYieldPercentage)}`}>
-                {yieldMetrics.avgYieldPercentage.toFixed(1)}%
+                {(yieldMetrics.avgYieldPercentage ?? 0).toFixed(1)}%
               </span>
             </div>
             <div className="flex justify-between">

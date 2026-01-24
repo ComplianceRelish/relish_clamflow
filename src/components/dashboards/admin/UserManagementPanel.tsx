@@ -11,6 +11,9 @@ import { Search, Plus, Edit2, Trash2, UserPlus, AlertTriangle } from 'lucide-rea
 import { sendWelcomeMessage } from '@/services/whatsapp-service';
 import { useAuth } from '@/context/AuthContext';
 
+// Use environment variable for API URL - standardized to NEXT_PUBLIC_API_URL
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://clamflow-backend-production.up.railway.app';
+
 // Custom Select component
 const FormSelect: React.FC<{
   value: string;
@@ -113,7 +116,7 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
       setError(null);
 
       // Fetch users from API
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://clamflowbackend-production.up.railway.app'}/api/users/`, {
+      const response = await fetch(`${API_BASE_URL}/api/users/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -162,7 +165,7 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
 
       // Try API first
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://clamflowbackend-production.up.railway.app'}/api/users/`, {
+        const response = await fetch(`${API_BASE_URL}/api/users/`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -240,7 +243,7 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
     try {
       // Try API first
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://clamflowbackend-production.up.railway.app'}/api/users/${userId}`, {
+        const response = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
           method: 'PUT',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -275,7 +278,7 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
     try {
       // Try API first
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://clamflowbackend-production.up.railway.app'}/api/users/${userId}`, {
+        const response = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`,

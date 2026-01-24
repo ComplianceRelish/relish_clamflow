@@ -85,7 +85,7 @@ const dashboardAPI = {
       });
 
       if (!response.ok) {
-        throw new Error(&apos;Failed to reject item&apos;);
+        throw new Error('Failed to reject item');
       }
     } catch (error) {
       console.error('Failed to reject item:', error);
@@ -170,10 +170,10 @@ const PendingApprovals: React.FC = () => {
 
   const getUrgencyIcon = (urgency: string) => {
     switch (urgency) {
-      case &apos;critical&apos;: return <AlertCircle className="h-4 w-4 text-red-600" />;
-      case &apos;high&apos;: return <AlertCircle className="h-4 w-4 text-red-500" />;
-      case &apos;medium&apos;: return <Clock className="h-4 w-4 text-yellow-500" />;
-      case &apos;low&apos;: return <CheckCircle2 className="h-4 w-4 text-green-500" />;
+      case 'critical': return <AlertCircle className="h-4 w-4 text-red-600" />;
+      case 'high': return <AlertCircle className="h-4 w-4 text-red-500" />;
+      case 'medium': return <Clock className="h-4 w-4 text-yellow-500" />;
+      case 'low': return <CheckCircle2 className="h-4 w-4 text-green-500" />;
       default: return <Clock className="h-4 w-4 text-gray-500" />;
     }
   };
@@ -185,7 +185,7 @@ const PendingApprovals: React.FC = () => {
       case 'vendor_approval': return 'Vendor Approval';
       case 'equipment_request': return 'Equipment Request';
       case 'quality_override': return 'Quality Override';
-      default: return type.replace('_', &apos; &apos;).toUpperCase();
+      default: return type.replace('_', ' ').toUpperCase();
     }
   };
 
@@ -283,7 +283,7 @@ const PendingApprovals: React.FC = () => {
                         <div className="text-xs text-gray-500 mt-2">
                           {Object.entries(approval.metadata).map(([key, value]) => (
                             <span key={key} className="inline-block mr-3">
-                              <strong>{key.replace('_', &apos; &apos;)}:</strong> {value}
+                              <strong>{key.replace('_', ' ')}:</strong> {value}
                             </span>
                           ))}
                         </div>
@@ -298,10 +298,10 @@ const PendingApprovals: React.FC = () => {
                     size="sm"
                     onClick={() => handleReject(approval.id)}
                     disabled={actionLoading === approval.id}
-                    className=&quot;text-red-600 border-red-200 hover:bg-red-50&quot;
+                    className="text-red-600 border-red-200 hover:bg-red-50"
                   >
                     <XCircle className="h-4 w-4 mr-1" />
-                    {actionLoading === approval.id ? 'Processing...' : &apos;Reject&apos;}
+                    {actionLoading === approval.id ? 'Processing...' : 'Reject'}
                   </Button>
                   
                   <Button
@@ -309,10 +309,10 @@ const PendingApprovals: React.FC = () => {
                     size="sm"
                     onClick={() => handleApprove(approval.id)}
                     disabled={actionLoading === approval.id}
-                    className=&quot;bg-green-600 hover:bg-green-700&quot;
+                    className="bg-green-600 hover:bg-green-700"
                   >
                     <CheckCircle2 className="h-4 w-4 mr-1" />
-                    {actionLoading === approval.id ? 'Processing...' : &apos;Approve&apos;}
+                    {actionLoading === approval.id ? 'Processing...' : 'Approve'}
                   </Button>
                 </div>
               </div>

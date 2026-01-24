@@ -1,5 +1,5 @@
 // src/services/weight-note-service.ts
-import { apiClient, type ApiResponse, type PaginatedResponse, type BaseFilters } from './api';
+import { apiClient, ApiResponse, PaginatedResponse, BaseFilters } from './api';
 
 export interface WeightNote {
   id?: string;
@@ -29,7 +29,8 @@ export interface WeightNoteFilters extends BaseFilters {
 }
 
 export class WeightNoteService {
-  private baseUrl = '/api/weight-notes';
+  // Backend: /weight-notes/ (not /api/weight-notes)
+  private baseUrl = '/weight-notes';
 
   async create(data: Omit<WeightNote, 'id' | 'created_at' | 'updated_at'>): Promise<WeightNote> {
     try {

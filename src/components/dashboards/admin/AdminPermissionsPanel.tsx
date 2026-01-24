@@ -74,7 +74,7 @@ const AdminPermissionsPanel: React.FC = () => {
       setError(null);
       const token = localStorage.getItem('clamflow_token');
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/permissions`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/permissions`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -100,7 +100,7 @@ const AdminPermissionsPanel: React.FC = () => {
       setError(null);
       const token = localStorage.getItem('clamflow_token');
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/roles`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/roles`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -127,7 +127,7 @@ const AdminPermissionsPanel: React.FC = () => {
       setError(null);
       const token = localStorage.getItem('clamflow_token');
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/user-roles`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/user-roles`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -152,7 +152,7 @@ const AdminPermissionsPanel: React.FC = () => {
       setLoading(true);
       const token = localStorage.getItem('clamflow_token');
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/roles`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/roles`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -181,7 +181,7 @@ const AdminPermissionsPanel: React.FC = () => {
       setLoading(true);
       const token = localStorage.getItem('clamflow_token');
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/roles/${roleId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/roles/${roleId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -212,7 +212,7 @@ const AdminPermissionsPanel: React.FC = () => {
         setLoading(true);
         const token = localStorage.getItem('clamflow_token');
         
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/roles/${roleId}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/roles/${roleId}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`,

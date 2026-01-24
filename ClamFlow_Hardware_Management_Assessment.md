@@ -54,7 +54,7 @@ src/components/
 ```
 
 ### **Integration Points - Enhanced**
-- **Railway Backend**: `https://clamflowbackend-production.up.railway.app`
+- **Railway Backend**: `https://clamflow-backend-production.up.railway.app`
 - **Supabase Database**: Real-time subscriptions, 13+ tables with perfect schema alignment
 - **Authentication System**: JWT tokens + biometric + RFID multi-factor authentication
 - **WebSocket Connections**: Real-time device monitoring and data streaming

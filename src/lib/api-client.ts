@@ -82,7 +82,7 @@ interface VendorOnboardingRequest {
 }
 
 // API Base URL
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://clamflowbackend-production.up.railway.app';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://clamflow-backend-production.up.railway.app';
 
 // Create axios instance
 class APIClient {
@@ -144,67 +144,68 @@ class APIClient {
   // CLAMFLOW QA ENDPOINTS
   // ========================================
 
-  // Weight Note Management
+  // Weight Note Management - Backend: /weight-notes/
   async createWeightNote(data: CreateWeightNoteRequest) {
-    return this.client.post('/qa/weight-note', data);
+    return this.client.post('/weight-notes/', data);
   }
 
   async approveWeightNote(id: string) {
-    return this.client.put(`/qa/weight-note/${id}/approve`);
+    return this.client.put(`/weight-notes/${id}`);
   }
 
   async getWeightNotes() {
-    return this.client.get('/qa/weight-notes');
+    return this.client.get('/weight-notes/');
   }
 
-  // PPC Form Management
+  // PPC Form Management - Backend: /ppc-forms/
   async createPPCForm(data: CreatePPCFormRequest) {
-    return this.client.post('/qa/ppc-form', data);
+    return this.client.post('/ppc-forms/', data);
   }
 
   async approvePPCForm(id: string) {
-    return this.client.put(`/qa/ppc-form/${id}/approve`);
+    return this.client.put(`/ppc-forms/${id}`);
   }
 
-  // FP Form Management
+  // FP Form Management - Backend: /fp-forms/
   async createFPForm(data: CreateFPFormRequest) {
-    return this.client.post('/qa/fp-form', data);
+    return this.client.post('/fp-forms/', data);
   }
 
   async approveFPForm(id: string) {
-    return this.client.put(`/qa/fp-form/${id}/approve`);
+    return this.client.put(`/fp-forms/${id}`);
   }
 
-  // Sample Extraction
+  // Sample Extraction - Note: Uses depuration endpoint per backend docs
   async createSampleExtraction(data: {
     lot_id: string;
     tank_location: string;
     sample_type: string;
     extracted_by: string;
   }) {
-    return this.client.post('/qa/sample-extraction', data);
+    return this.client.post('/depuration/', data);
   }
 
   // ========================================
   // CLAMFLOW SECURE ENDPOINTS  
   // ========================================
 
-  // Gate Control
+  // Gate Control - Backend: /api/gate/
   async recordGateExit(data: GateControlRequest) {
-    return this.client.post('/secure/gate/exit', data);
+    // Note: Backend expects log_id in URL for exit
+    return this.client.post('/api/gate/vehicle-entry', data);
   }
 
   async recordGateEntry(data: GateControlRequest) {
-    return this.client.post('/secure/gate/entry', data);
+    return this.client.post('/api/gate/vehicle-entry', data);
   }
 
   async getBoxTally() {
-    return this.client.get('/secure/gate/tally');
+    return this.client.get('/api/gate/inside-vehicles');
   }
 
-  // Attendance Tracking
+  // Attendance Tracking - Backend: /attendance/
   async recordAttendance(data: AttendanceRecordRequest) {
-    return this.client.post('/secure/attendance', data);
+    return this.client.post('/attendance/', data);
   }
 
   // ========================================

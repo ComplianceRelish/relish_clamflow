@@ -123,7 +123,7 @@ import InventoryShipmentsDashboard from './operations/InventoryShipmentsDashboar
 
 ### **API Integration:**
 - All components connect to `clamflow-api.ts` methods
-- Backend endpoints: `clamflowbackend-production.up.railway.app`
+- Backend endpoints: `clamflow-backend-production.up.railway.app`
 - API methods return `ApiResponse<T>` with proper typing
 - Error responses handled gracefully
 - Mock data structure matches production data format

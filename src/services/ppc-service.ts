@@ -84,7 +84,8 @@ export interface PPCFormFilters {
 }
 
 export class PPCService {
-  private baseUrl = '/api/ppc-forms';
+  // Backend: /ppc-forms/ (not /api/ppc-forms)
+  private baseUrl = '/ppc-forms';
 
   async create(data: Omit<PPCForm, 'id' | 'created_at' | 'updated_at'>): Promise<PPCForm> {
     try {

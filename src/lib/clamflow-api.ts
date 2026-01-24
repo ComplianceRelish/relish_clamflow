@@ -76,7 +76,8 @@ export interface AuditLog {
   status: string;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://clamflowbackend-production.up.railway.app';
+// Standardized to NEXT_PUBLIC_API_URL
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://clamflow-backend-production.up.railway.app';
 
 // ============================================
 // STATIONS API INTERFACES - Per FRONTEND_API_INTEGRATION.md
@@ -429,17 +430,17 @@ class ClamFlowAPI {
     return this.delete(`/api/users/${userId}`);
   }
 
-  // FORMS
+  // FORMS - Backend: /weight-notes/
   async getWeightNotes(): Promise<ApiResponse<WeightNoteFormData[]>> {
-    return this.get('/api/weight-notes');
+    return this.get('/weight-notes/');
   }
 
   async createWeightNote(formData: WeightNoteFormData): Promise<ApiResponse<WeightNoteFormData>> {
-    return this.post('/api/weight-notes', formData);
+    return this.post('/weight-notes/', formData);
   }
 
   async approveWeightNote(noteId: string): Promise<ApiResponse<WeightNoteFormData>> {
-    return this.put(`/api/weight-notes/${noteId}/approve`);
+    return this.put(`/weight-notes/${noteId}`);
   }
 
   // DASHBOARD - Updated to match backend

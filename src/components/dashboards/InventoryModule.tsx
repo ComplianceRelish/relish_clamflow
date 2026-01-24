@@ -74,14 +74,14 @@ const InventoryModule: React.FC<InventoryModuleProps> = ({ currentUser }) => {
       
       // Add weight notes as raw inventory
       if (weightNotesResponse.success && weightNotesResponse.data) {
-        weightNotesResponse.data.forEach(note => {
+        weightNotesResponse.data.forEach((note: any) => {
           if (note.status === 'approved') {
             inventoryItems.push({
               id: note.id,
               lot_id: note.lot_id,
-              box_number: note.box_number,
-              product_type: note.raw_material_type,
-              weight: note.weight,
+              box_number: note.box_number ?? '',
+              product_type: note.raw_material_type ?? note.product_type ?? 'Unknown',
+              weight: note.weight ?? 0,
               status: 'in_stock',
               location: 'Raw Material Storage',
               created_at: note.created_at,
@@ -93,14 +93,14 @@ const InventoryModule: React.FC<InventoryModuleProps> = ({ currentUser }) => {
 
       // Add PPC forms as processed inventory
       if (ppcFormsResponse.success && ppcFormsResponse.data) {
-        ppcFormsResponse.data.forEach(form => {
+        ppcFormsResponse.data.forEach((form: any) => {
           if (form.status === 'approved') {
             inventoryItems.push({
               id: form.id,
               lot_id: form.lot_id,
-              box_number: form.box_number,
-              product_type: form.product_type,
-              weight: form.weight,
+              box_number: form.box_number ?? '',
+              product_type: form.product_type ?? 'Processed',
+              weight: form.weight ?? 0,
               status: 'processing',
               location: 'Processing Area',
               created_at: form.created_at,
@@ -112,17 +112,17 @@ const InventoryModule: React.FC<InventoryModuleProps> = ({ currentUser }) => {
 
       // Add FP forms as finished inventory
       if (fpFormsResponse.success && fpFormsResponse.data) {
-        fpFormsResponse.data.forEach(form => {
+        fpFormsResponse.data.forEach((form: any) => {
           if (form.status === 'approved') {
             inventoryItems.push({
               id: form.id,
               lot_id: form.lot_id,
-              box_number: form.box_number,
-              product_type: form.product_type,
-              weight: form.weight,
+              box_number: form.box_number ?? '',
+              product_type: form.product_type ?? 'Finished Product',
+              weight: form.weight ?? 0,
               status: 'in_stock',
               location: 'Finished Goods',
-              expiry_date: form.expiry_date,
+              expiry_date: form.expiry_date ?? form.best_before_date,
               created_at: form.created_at,
               updated_at: form.updated_at
             })
@@ -161,7 +161,7 @@ const InventoryModule: React.FC<InventoryModuleProps> = ({ currentUser }) => {
   }
 
   const getStatusColor = (status: string): string => {
-    const colors = {
+    const colors: Record<string, string> = {
       'in_stock': 'bg-green-100 text-green-800',
       'processing': 'bg-yellow-100 text-yellow-800',
       'shipped': 'bg-blue-100 text-blue-800',
@@ -216,7 +216,7 @@ const InventoryModule: React.FC<InventoryModuleProps> = ({ currentUser }) => {
         </div>
         <div className="bg-green-50 p-4 rounded-lg">
           <h3 className="text-sm font-medium text-green-600">Total Weight</h3>
-          <p className="text-2xl font-bold text-green-900">{stats.totalWeight.toFixed(1)} kg</p>
+          <p className="text-2xl font-bold text-green-900">{(stats.totalWeight ?? 0).toFixed(1)} kg</p>
         </div>
         <div className="bg-yellow-50 p-4 rounded-lg">
           <h3 className="text-sm font-medium text-yellow-600">Processing</h3>

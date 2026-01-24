@@ -38,7 +38,7 @@
 - **Database**: PostgreSQL with Supabase (13+ tables, real-time subscriptions)
 - **Styling**: Tailwind CSS with responsive design
 - **PWA**: Progressive Web App capabilities
-- **Backend API**: FastAPI on Railway (https://clamflowbackend-production.up.railway.app)
+- **Backend API**: FastAPI on Railway (https://clamflow-backend-production.up.railway.app)
 - **Hardware**: Biometric authentication, RFID scanning, QR generation
 
 ---
@@ -497,7 +497,7 @@ const enterpriseCredentials = [
 
 ### 1. Railway Backend API
 
-#### **Base URL**: `https://clamflowbackend-production.up.railway.app`
+#### **Base URL**: `https://clamflow-backend-production.up.railway.app`
 
 #### **Authentication Endpoints**
 - `POST /auth/login` - User authentication

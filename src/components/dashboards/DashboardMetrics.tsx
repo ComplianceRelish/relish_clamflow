@@ -50,7 +50,7 @@ const DashboardMetrics: React.FC<DashboardMetricsProps> = ({ metrics }) => {
       value: metrics.pendingApprovals,
       change: '-5%',
       changeType: 'negative',
-      icon: &apos;⏳&apos;
+      icon: '⏳'
     }
   ];
 

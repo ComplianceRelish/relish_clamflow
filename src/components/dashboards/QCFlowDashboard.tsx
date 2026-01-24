@@ -105,7 +105,7 @@ const QCFlowDashboard: React.FC<QCFlowDashboardProps> = ({ currentUser }) => {
 
       // Add QC forms as tests
       if (qcFormsResponse.success && qcFormsResponse.data) {
-        qcFormsResponse.data.forEach(form => {
+        qcFormsResponse.data.forEach((form: any) => {
           tests.push({
             id: form.id,
             test_type: form.form_type || 'General QC',
@@ -124,7 +124,7 @@ const QCFlowDashboard: React.FC<QCFlowDashboardProps> = ({ currentUser }) => {
 
       // Add depuration tests
       if (depurationResponse.success && depurationResponse.data) {
-        depurationResponse.data.forEach(form => {
+        depurationResponse.data.forEach((form: any) => {
           tests.push({
             id: form.id,
             test_type: 'Depuration Quality Check',
@@ -153,7 +153,7 @@ const QCFlowDashboard: React.FC<QCFlowDashboardProps> = ({ currentUser }) => {
   }
 
   const mapFormStatusToTestStatus = (status: string): 'pending' | 'in_progress' | 'passed' | 'failed' | 'conditional' => {
-    const statusMap = {
+    const statusMap: Record<string, 'pending' | 'in_progress' | 'passed' | 'failed' | 'conditional'> = {
       'pending': 'pending',
       'pending_approval': 'in_progress',
       'approved': 'passed',
@@ -226,7 +226,7 @@ const QCFlowDashboard: React.FC<QCFlowDashboardProps> = ({ currentUser }) => {
   }
 
   const getStatusColor = (status: string): string => {
-    const colors = {
+    const colors: Record<string, string> = {
       'pending': 'bg-gray-100 text-gray-800',
       'in_progress': 'bg-blue-100 text-blue-800',
       'passed': 'bg-green-100 text-green-800',
@@ -237,7 +237,7 @@ const QCFlowDashboard: React.FC<QCFlowDashboardProps> = ({ currentUser }) => {
   }
 
   const getPriorityColor = (priority: string): string => {
-    const colors = {
+    const colors: Record<string, string> = {
       'low': 'bg-gray-50 border-gray-200 text-gray-700',
       'medium': 'bg-yellow-50 border-yellow-200 text-yellow-800',
       'high': 'bg-orange-50 border-orange-200 text-orange-800',
@@ -357,10 +357,10 @@ const QCFlowDashboard: React.FC<QCFlowDashboardProps> = ({ currentUser }) => {
             
             <div className="flex items-center gap-2 flex-wrap">
               <div className={`px-3 py-1 rounded-full text-xs md:text-sm font-medium ${
-                qcMetrics.complianceRate >= 95 ? 'bg-green-100 text-green-800' :
-                qcMetrics.complianceRate >= 85 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
+                (qcMetrics.complianceRate ?? 0) >= 95 ? 'bg-green-100 text-green-800' :
+                (qcMetrics.complianceRate ?? 0) >= 85 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
               }`}>
-                Compliance: {qcMetrics.complianceRate.toFixed(1)}%
+                Compliance: {(qcMetrics.complianceRate ?? 0).toFixed(1)}%
               </div>
               <button
                 onClick={loadQCData}
@@ -407,11 +407,11 @@ const QCFlowDashboard: React.FC<QCFlowDashboardProps> = ({ currentUser }) => {
                 </div>
                 <div className="bg-white p-4 rounded-lg shadow border-l-4 border-indigo-500">
                   <h3 className="text-sm font-medium text-gray-500">Avg Time (hrs)</h3>
-                  <p className="text-2xl font-bold text-indigo-600">{qcMetrics.averageTestTime.toFixed(1)}</p>
+                  <p className="text-2xl font-bold text-indigo-600">{(qcMetrics.averageTestTime ?? 0).toFixed(1)}</p>
                 </div>
                 <div className="bg-white p-4 rounded-lg shadow border-l-4 border-emerald-500">
                   <h3 className="text-sm font-medium text-gray-500">Compliance</h3>
-                  <p className="text-2xl font-bold text-emerald-600">{qcMetrics.complianceRate.toFixed(1)}%</p>
+                  <p className="text-2xl font-bold text-emerald-600">{(qcMetrics.complianceRate ?? 0).toFixed(1)}%</p>
                 </div>
                 <div className="bg-white p-4 rounded-lg shadow border-l-4 border-rose-500">
                   <h3 className="text-sm font-medium text-gray-500">Critical</h3>
@@ -552,10 +552,10 @@ const QCFlowDashboard: React.FC<QCFlowDashboardProps> = ({ currentUser }) => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div className="text-center p-6 border rounded-lg">
                   <div className={`text-4xl font-bold mb-2 ${
-                    qcMetrics.complianceRate >= 95 ? 'text-green-600' :
-                    qcMetrics.complianceRate >= 85 ? 'text-yellow-600' : 'text-red-600'
+                    (qcMetrics.complianceRate ?? 0) >= 95 ? 'text-green-600' :
+                    (qcMetrics.complianceRate ?? 0) >= 85 ? 'text-yellow-600' : 'text-red-600'
                   }`}>
-                    {qcMetrics.complianceRate.toFixed(1)}%
+                    {(qcMetrics.complianceRate ?? 0).toFixed(1)}%
                   </div>
                   <p className="text-gray-600">Overall Compliance Rate</p>
                 </div>

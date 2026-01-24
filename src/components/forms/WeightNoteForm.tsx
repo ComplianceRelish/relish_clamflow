@@ -64,8 +64,8 @@ const WeightNoteForm: React.FC<WeightNoteFormProps> = ({
     }
 
     try {
-      // Simulate API call
-      const response = await fetch('/api/weight-notes', {
+      // Backend: /weight-notes/ (POST to create)
+      const response = await fetch('/weight-notes/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

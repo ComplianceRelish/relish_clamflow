@@ -13,7 +13,7 @@ const WeightNoteForm: React.FC<WeightNoteFormProps> = ({ onSuccess }) => {
     supplier_name: '',
     vehicle_number: '',
     total_weight: '',
-    notes: &apos;&apos;
+    notes: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +31,7 @@ const WeightNoteForm: React.FC<WeightNoteFormProps> = ({ onSuccess }) => {
       onSuccess();
     } catch (err) {
       setError('Failed to create weight note');
-      console.error(&apos;Error creating weight note:&apos;, err);
+      console.error('Error creating weight note:', err);
     } finally {
       setLoading(false);
     }
@@ -102,7 +102,7 @@ const WeightNoteForm: React.FC<WeightNoteFormProps> = ({ onSuccess }) => {
 
       <div className="flex justify-end space-x-2">
         <Button type="submit" disabled={loading}>
-          {loading ? 'Creating...' : &apos;Create Weight Note&apos;}
+          {loading ? 'Creating...' : 'Create Weight Note'}
         </Button>
       </div>
     </form>

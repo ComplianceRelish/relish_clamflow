@@ -37,7 +37,7 @@ interface SelectValueProps {
   placeholder?: string;
 }
 
-export const Select: React.FC<SelectProps> = ({ value, onValueChange, children, className = &quot;&quot; }) => {
+export const Select: React.FC<SelectProps> = ({ value, onValueChange, children, className = "" }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -78,7 +78,7 @@ export const Select: React.FC<SelectProps> = ({ value, onValueChange, children, 
 };
 
 export const SelectTrigger: React.FC<SelectTriggerProps> = ({ 
-  className = &quot;&quot;, 
+  className = "", 
   children, 
   onClick,
   value,
@@ -96,7 +96,7 @@ export const SelectTrigger: React.FC<SelectTriggerProps> = ({
 };
 
 export const SelectContent: React.FC<SelectContentProps> = ({ 
-  className = &quot;&quot;, 
+  className = "", 
   children,
   value,
   onValueChange,
@@ -121,7 +121,7 @@ export const SelectContent: React.FC<SelectContentProps> = ({
 
 export const SelectItem: React.FC<SelectItemProps> = ({ 
   value,
-  className = &quot;&quot;, 
+  className = "", 
   children,
   onClick,
   isSelected 
@@ -136,6 +136,6 @@ export const SelectItem: React.FC<SelectItemProps> = ({
   );
 };
 
-export const SelectValue: React.FC<SelectValueProps> = ({ className = &quot;&quot;, placeholder }) => {
+export const SelectValue: React.FC<SelectValueProps> = ({ className = "", placeholder }) => {
   return <span className={className}>{placeholder}</span>;
 };

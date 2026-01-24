@@ -36,7 +36,7 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ currentUser }
       const token = localStorage.getItem('clamflow_token');
       const user = localStorage.getItem('clamflow_user');
       
-      console.log('🔄 Loading dashboard data from:', process.env.NEXT_PUBLIC_API_BASE_URL)
+      console.log('🔄 Loading dashboard data from:', process.env.NEXT_PUBLIC_API_URL)
       console.log('🔑 Auth Token exists?', !!token)
       console.log('👤 Current User:', user ? JSON.parse(user) : 'No user')
       

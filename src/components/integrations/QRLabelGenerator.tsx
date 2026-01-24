@@ -1,5 +1,8 @@
 import React, { useState, useRef } from 'react';
 
+// Use environment variable for API URL
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://clamflow-backend-production.up.railway.app';
+
 interface QRLabelGeneratorProps {
   authToken?: string;
   onGenerate?: (labelData: LabelData) => void;
@@ -224,7 +227,7 @@ const QRLabelGenerator: React.FC<QRLabelGeneratorProps> = ({
       }
 
       // Send to backend for printing
-      const response = await fetch('https://clamflowbackend-production.up.railway.app/hardware/print-label', {
+      const response = await fetch(`${API_BASE_URL}/hardware/print-label`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -280,7 +283,7 @@ const QRLabelGenerator: React.FC<QRLabelGeneratorProps> = ({
     }
 
     try {
-      const response = await fetch('https://clamflowbackend-production.up.railway.app/hardware/print-label', {
+      const response = await fetch(`${API_BASE_URL}/hardware/print-label`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

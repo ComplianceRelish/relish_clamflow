@@ -70,7 +70,7 @@ const SystemConfigurationPanel: React.FC = () => {
       setError(null);
       const token = localStorage.getItem('clamflow_token');
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/hardware/configurations`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/hardware/configurations`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -96,7 +96,7 @@ const SystemConfigurationPanel: React.FC = () => {
     try {
       const token = localStorage.getItem('clamflow_token');
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/hardware/status`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/hardware/status`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -134,7 +134,7 @@ const SystemConfigurationPanel: React.FC = () => {
       setLoading(true);
       const token = localStorage.getItem('clamflow_token');
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/hardware/configurations/${configId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/hardware/configurations/${configId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

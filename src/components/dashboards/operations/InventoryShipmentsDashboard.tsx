@@ -99,7 +99,7 @@ const InventoryShipmentsDashboard: React.FC = () => {
         </div>
         <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
           <div className="text-sm font-medium text-gray-600">Total Stock Weight</div>
-          <div className="text-3xl font-bold text-gray-900 mt-2">{totalWeight.toFixed(1)}</div>
+          <div className="text-3xl font-bold text-gray-900 mt-2">{(totalWeight ?? 0).toFixed(1)}</div>
           <div className="text-xs text-gray-500 mt-1">Kilograms</div>
         </div>
       </div>
@@ -193,7 +193,7 @@ const InventoryShipmentsDashboard: React.FC = () => {
                         {product.totalBoxes}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                        {product.totalWeight.toFixed(2)}
+                        {(product.totalWeight ?? 0).toFixed(2)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${getStatusColor(product.status)}`}>
@@ -262,7 +262,7 @@ const InventoryShipmentsDashboard: React.FC = () => {
                         {item.quantity}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                        {item.weight.toFixed(2)}
+                        {(item.weight ?? 0).toFixed(2)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                         {item.location}

@@ -69,8 +69,8 @@ const AuthenticationWorkflow: React.FC<AuthenticationWorkflowProps> = ({
   const validateStaff = async (identifier: string, method: 'rfid' | 'face_recognition'): Promise<UserProfile> => {
     const token = localStorage.getItem('clamflow_token');
     const endpoint = method === 'rfid' 
-      ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/rfid/validate`
-      : `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/face-recognition`;
+      ? `${process.env.NEXT_PUBLIC_API_URL}/api/rfid/validate`
+      : `${process.env.NEXT_PUBLIC_API_URL}/api/auth/face-recognition`;
     
     const response = await fetch(endpoint, {
       method: 'POST',

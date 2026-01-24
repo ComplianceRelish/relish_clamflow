@@ -236,12 +236,12 @@ const ProductionAnalytics: React.FC = () => {
                   <div key={index} className="flex justify-between items-center">
                     <span className="text-sm text-gray-700">{station.station}</span>
                     <div className="flex items-center gap-4">
-                      <span className="text-sm font-medium text-green-600">{station.passRate.toFixed(1)}% Pass</span>
+                      <span className="text-sm font-medium text-green-600">{(station.passRate ?? 0).toFixed(1)}% Pass</span>
                       <span className="text-sm text-gray-500">{station.totalTests} tests</span>
                       <div className="w-32 bg-gray-200 rounded-full h-2">
                         <div
                           className="bg-green-500 h-2 rounded-full"
-                          style={{ width: `${station.passRate}%` }}
+                          style={{ width: `${station.passRate ?? 0}%` }}
                         />
                       </div>
                     </div>

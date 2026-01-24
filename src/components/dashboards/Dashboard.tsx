@@ -158,7 +158,7 @@ const Dashboard: React.FC = () => {
           memory_usage: 0,
           cpu_usage: 0,
           last_backup: new Date().toISOString(),
-          uptime: &quot;0h 0m&quot;
+          uptime: "0h 0m"
         };
 
       const pendingApprovals = pendingApprovalsResponse.status === 'fulfilled' ? (pendingApprovalsResponse.value || []) : [];
@@ -175,7 +175,7 @@ const Dashboard: React.FC = () => {
 
     } catch (err: any) {
       console.error('Dashboard refresh error:', err);
-      setError(err.message || &apos;Failed to refresh dashboard data&apos;);
+      setError(err.message || 'Failed to refresh dashboard data');
     } finally {
       setLoading(false);
     }
@@ -191,7 +191,7 @@ const Dashboard: React.FC = () => {
       'qc_lead': 'QC Lead',
       'production_staff': 'Production Staff',
       'qc_staff': 'QC Staff',
-      'security_guard': &apos;Security Guard&apos;
+      'security_guard': 'Security Guard'
     };
     return roleMap[role] || role;
   };
@@ -224,7 +224,7 @@ const Dashboard: React.FC = () => {
             </button>
             <button 
               onClick={() => window.location.reload()}
-              className=&quot;px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700&quot;
+              className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
             >
               Reload Page
             </button>
@@ -264,7 +264,7 @@ const Dashboard: React.FC = () => {
                   {loading ? (
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
                   ) : (
-                    &apos;🔄 Refresh&apos;
+                    '🔄 Refresh'
                   )}
                 </button>
               </div>
@@ -361,8 +361,8 @@ const Dashboard: React.FC = () => {
             {/* Weight Note Creation (QC Staff) */}
             <QCStaffAccess>
               <button 
-                onClick={() => window.location.href = &apos;/weight-notes/create&apos;}
-                className=&quot;bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-lg text-center transition-colors&quot;
+                onClick={() => window.location.href = '/weight-notes/create'}
+                className="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-lg text-center transition-colors"
               >
                 <div className="text-2xl mb-2">📊</div>
                 <div className="text-sm font-medium">Create Weight Note</div>
@@ -372,8 +372,8 @@ const Dashboard: React.FC = () => {
             {/* PPC Form (Production Staff) */}
             <ProductionAccess>
               <button 
-                onClick={() => window.location.href = &apos;/ppc-forms/create&apos;}
-                className=&quot;bg-green-600 hover:bg-green-700 text-white p-4 rounded-lg text-center transition-colors&quot;
+                onClick={() => window.location.href = '/ppc-forms/create'}
+                className="bg-green-600 hover:bg-green-700 text-white p-4 rounded-lg text-center transition-colors"
               >
                 <div className="text-2xl mb-2">🔬</div>
                 <div className="text-sm font-medium">Create PPC Form</div>
@@ -383,8 +383,8 @@ const Dashboard: React.FC = () => {
             {/* FP Form (Production Staff) */}
             <ProductionAccess>
               <button 
-                onClick={() => window.location.href = &apos;/fp-forms/create&apos;}
-                className=&quot;bg-purple-600 hover:bg-purple-700 text-white p-4 rounded-lg text-center transition-colors&quot;
+                onClick={() => window.location.href = '/fp-forms/create'}
+                className="bg-purple-600 hover:bg-purple-700 text-white p-4 rounded-lg text-center transition-colors"
               >
                 <div className="text-2xl mb-2">📋</div>
                 <div className="text-sm font-medium">Create FP Form</div>
@@ -394,8 +394,8 @@ const Dashboard: React.FC = () => {
             {/* User Management (Admin) */}
             <AdminOnly>
               <button 
-                onClick={() => window.location.href = &apos;/admin/users&apos;}
-                className=&quot;bg-red-600 hover:bg-red-700 text-white p-4 rounded-lg text-center transition-colors&quot;
+                onClick={() => window.location.href = '/admin/users'}
+                className="bg-red-600 hover:bg-red-700 text-white p-4 rounded-lg text-center transition-colors"
               >
                 <div className="text-2xl mb-2">👥</div>
                 <div className="text-sm font-medium">Manage Users</div>
@@ -405,8 +405,8 @@ const Dashboard: React.FC = () => {
             {/* Lot Management */}
             <RoleBasedAccess allowedRoles={['super_admin', 'admin', 'production_lead', 'production_staff']}>
               <button 
-                onClick={() => window.location.href = &apos;/lots&apos;}
-                className=&quot;bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-lg text-center transition-colors&quot;
+                onClick={() => window.location.href = '/lots'}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-lg text-center transition-colors"
               >
                 <div className="text-2xl mb-2">🏭</div>
                 <div className="text-sm font-medium">View Lots</div>
@@ -416,8 +416,8 @@ const Dashboard: React.FC = () => {
             {/* Audit Logs (Admin Only) */}
             <AdminOnly>
               <button 
-                onClick={() => window.location.href = &apos;/admin/audit&apos;}
-                className=&quot;bg-gray-600 hover:bg-gray-700 text-white p-4 rounded-lg text-center transition-colors&quot;
+                onClick={() => window.location.href = '/admin/audit'}
+                className="bg-gray-600 hover:bg-gray-700 text-white p-4 rounded-lg text-center transition-colors"
               >
                 <div className="text-2xl mb-2">📝</div>
                 <div className="text-sm font-medium">Audit Logs</div>
@@ -448,7 +448,7 @@ const Dashboard: React.FC = () => {
                 dashboardData.systemStatus.overall_status === 'warning' ? 'text-yellow-600' : 'text-red-600'
               }`}>
                 {dashboardData.systemStatus.overall_status === 'healthy' ? '✅' : 
-                 dashboardData.systemStatus.overall_status === 'warning' ? '⚠️' : &apos;❌&apos;}
+                 dashboardData.systemStatus.overall_status === 'warning' ? '⚠️' : '❌'}
               </div>
               <div className="text-sm text-gray-500">System Status</div>
               <div className="text-xs text-gray-400">Uptime: {dashboardData.systemStatus.uptime}</div>

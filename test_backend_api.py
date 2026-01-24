@@ -5,7 +5,7 @@ import requests
 import json
 
 # Backend URL
-backend_url = "https://clamflowbackend-production.up.railway.app"
+backend_url = "https://clamflow-backend-production.up.railway.app"
 
 # Test 1: Try to login (will fail but shows us the error)
 print("=" * 60)
@@ -37,7 +37,7 @@ print()
 print("=" * 60)
 print("NEXT STEPS:")
 print("=" * 60)
-print("1. Go to: https://clamflowbackend-production.up.railway.app/docs")
+print("1. Go to: https://clamflow-backend-production.up.railway.app/docs")
 print("2. Find the user creation endpoint (usually POST /users or /auth/register)")
 print("3. Create the user through the API with password 'Phes0061'")
 print("=" * 60)

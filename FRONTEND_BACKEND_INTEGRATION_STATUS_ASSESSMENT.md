@@ -24,7 +24,7 @@ The ClamFlow frontend has been **SUCCESSFULLY INTEGRATED** with the Railway back
 ## **Backend Reference Analysis**
 
 ### **✅ Backend Production System Status**
-- **Production API**: `https://clamflowbackend-production.up.railway.app`
+- **Production API**: `https://clamflow-backend-production.up.railway.app`
 - **Framework**: FastAPI 2.0.0 (Complete Enterprise Edition)
 - **Database**: PostgreSQL 15+ via Supabase
 - **Authentication**: JWT with HS256 (24-hour expiry)
@@ -473,7 +473,7 @@ The ClamFlow frontend is now **FULLY INTEGRATED** with the Railway backend API. 
 
 ### **Deployment:**
 - Frontend: Vercel (https://clamflowcloud.vercel.app)
-- Backend: Railway (https://clamflowbackend-production.up.railway.app)
+- Backend: Railway (https://clamflow-backend-production.up.railway.app)
 - Database: Supabase Cloud
 
 ---
@@ -482,7 +482,7 @@ The ClamFlow frontend is now **FULLY INTEGRATED** with the Railway backend API. 
 
 ### **Required Frontend Environment Variables:**
 ```bash
-NEXT_PUBLIC_API_URL=https://clamflowbackend-production.up.railway.app
+NEXT_PUBLIC_API_URL=https://clamflow-backend-production.up.railway.app
 NEXT_PUBLIC_SUPABASE_URL=<supabase-project-url>
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<supabase-anon-key>
 ```

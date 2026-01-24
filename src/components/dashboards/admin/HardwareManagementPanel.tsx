@@ -48,14 +48,21 @@ interface HardwareDevice {
 }
 
 interface HardwareStats {
-  total_devices: number
-  online_devices: number
-  offline_devices: number
-  maintenance_due: number
-  critical_alerts: number
-  by_type: Record<string, number>
-  by_station: Record<string, number>
-  average_uptime: number
+  // Backend returns camelCase properties inside data.data
+  totalDevices: number
+  onlineDevices: number
+  offlineDevices: number
+  maintenanceDevices: number
+  unknownDevices: number
+  enabledDevices: number
+  disabledDevices: number
+  systemStatus: string
+  uptime: number
+  utilization: number
+  healthScore: number
+  deviceTypes: Array<{ type: string; count: number }>
+  components: Record<string, { enabled: boolean; status: string }>
+  lastUpdated: string
 }
 
 // ✅ FIXED: Removed empty interface
@@ -251,9 +258,19 @@ export default function HardwareManagementPanel() {
     try {
       const response = await apiClient.get('/hardware/stats')
       
-      // Fixed: Type assertion to resolve 'unknown' error
-      const data = response.data as HardwareStats
-      setStats(data)
+      // Backend returns { success: true, data: { ...stats } }
+      // Access the nested data object properly
+      const responseData = response.data as { success?: boolean; data?: HardwareStats } | HardwareStats
+      
+      // Handle both nested and flat response structures
+      if (responseData && typeof responseData === 'object') {
+        if ('data' in responseData && responseData.data) {
+          setStats(responseData.data)
+        } else if ('totalDevices' in responseData) {
+          // Flat structure (already HardwareStats)
+          setStats(responseData as HardwareStats)
+        }
+      }
     } catch (err: unknown) {
       const error = err as { response?: { status?: number }; message?: string }
       // Handle 404/500/CORS gracefully - endpoint may not be implemented yet
@@ -402,7 +419,7 @@ export default function HardwareManagementPanel() {
                 <Cpu className="h-5 w-5 text-blue-500" />
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Total Devices</p>
-                  <p className="text-2xl font-bold">{stats.total_devices}</p>
+                  <p className="text-2xl font-bold">{stats.totalDevices ?? 0}</p>
                 </div>
               </div>
             </CardContent>
@@ -414,7 +431,7 @@ export default function HardwareManagementPanel() {
                 <Wifi className="h-5 w-5 text-green-500" />
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Online</p>
-                  <p className="text-2xl font-bold text-green-600">{stats.online_devices}</p>
+                  <p className="text-2xl font-bold text-green-600">{stats.onlineDevices ?? 0}</p>
                 </div>
               </div>
             </CardContent>
@@ -425,8 +442,8 @@ export default function HardwareManagementPanel() {
               <div className="flex items-center space-x-2">
                 <Activity className="h-5 w-5 text-orange-500" />
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Average Uptime</p>
-                  <p className="text-2xl font-bold text-orange-600">{stats.average_uptime.toFixed(1)}%</p>
+                  <p className="text-sm font-medium text-muted-foreground">System Uptime</p>
+                  <p className="text-2xl font-bold text-orange-600">{(stats.uptime ?? 0).toFixed(1)}%</p>
                 </div>
               </div>
             </CardContent>
@@ -437,8 +454,8 @@ export default function HardwareManagementPanel() {
               <div className="flex items-center space-x-2">
                 <AlertCircle className="h-5 w-5 text-red-500" />
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Critical Alerts</p>
-                  <p className="text-2xl font-bold text-red-600">{stats.critical_alerts}</p>
+                  <p className="text-sm font-medium text-muted-foreground">Offline Devices</p>
+                  <p className="text-2xl font-bold text-red-600">{stats.offlineDevices ?? 0}</p>
                 </div>
               </div>
             </CardContent>

@@ -3,6 +3,9 @@ import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { Alert } from '../ui/Alert';
 
+// Use environment variable for API URL
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://clamflow-backend-production.up.railway.app';
+
 interface TestResult {
   success: boolean;
   message: string;
@@ -26,7 +29,7 @@ export const HardwareTest: React.FC = () => {
     
     try {
       const token = localStorage.getItem('clamflow_token');
-      const response = await fetch(`https://clamflowbackend-production.up.railway.app/admin/hardware/test/${hardwareType}`, {
+      const response = await fetch(`${API_BASE_URL}/admin/hardware/test/${hardwareType}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -140,7 +143,7 @@ export const HardwareTest: React.FC = () => {
       <Card className="system-diagnostics">
         <h3>📊 System Diagnostics</h3>
         <Button
-          onClick={() => window.open('https://clamflowbackend-production.up.railway.app/admin/hardware/diagnostics', '_blank')}
+          onClick={() => window.open(`${API_BASE_URL}/admin/hardware/diagnostics`, '_blank')}
         >
           🔍 View Full Diagnostics
         </Button>

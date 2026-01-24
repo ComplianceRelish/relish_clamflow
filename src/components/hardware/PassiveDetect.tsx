@@ -5,6 +5,9 @@ import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Label } from '../ui/Label';
 
+// Use environment variable for API URL
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://clamflow-backend-production.up.railway.app';
+
 interface PassiveDetectionCamera {
   id: string;
   location: string;
@@ -53,7 +56,7 @@ export const PassiveDetect: React.FC = () => {
       const token = localStorage.getItem('clamflow_token');
       
       // Load cameras
-      const camerasResponse = await fetch('https://clamflowbackend-production.up.railway.app/admin/hardware/passive-detection/cameras', {
+      const camerasResponse = await fetch(`${API_BASE_URL}/admin/hardware/passive-detection/cameras`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
@@ -63,7 +66,7 @@ export const PassiveDetect: React.FC = () => {
       }
 
       // Load monitors  
-      const monitorsResponse = await fetch('https://clamflowbackend-production.up.railway.app/admin/hardware/passive-detection/monitors', {
+      const monitorsResponse = await fetch(`${API_BASE_URL}/admin/hardware/passive-detection/monitors`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -81,7 +84,7 @@ export const PassiveDetect: React.FC = () => {
     try {
       const token = localStorage.getItem('clamflow_token');
       
-      const response = await fetch('https://clamflowbackend-production.up.railway.app/admin/hardware/passive-detection/cameras', {
+      const response = await fetch(`${API_BASE_URL}/admin/hardware/passive-detection/cameras`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -114,7 +117,7 @@ export const PassiveDetect: React.FC = () => {
     try {
       const token = localStorage.getItem('clamflow_token');
       
-      const response = await fetch('https://clamflowbackend-production.up.railway.app/admin/hardware/passive-detection/monitors', {
+      const response = await fetch(`${API_BASE_URL}/admin/hardware/passive-detection/monitors`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -151,7 +154,7 @@ export const PassiveDetect: React.FC = () => {
     try {
       const token = localStorage.getItem('clamflow_token');
       
-      await fetch('https://clamflowbackend-production.up.railway.app/admin/hardware/passive-detection/assign', {
+      await fetch(`${API_BASE_URL}/admin/hardware/passive-detection/assign`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

@@ -1,5 +1,6 @@
 // src/services/onboarding.ts
-import { apiClient } from '@/lib/api-client';
+import { apiClient, ApiResponse } from './api';
+import { AxiosResponse } from 'axios';
 
 export interface StaffOnboardingData {
   entity_type: string;
@@ -40,14 +41,11 @@ export interface OnboardingResponse {
   approved_at?: string;
 }
 
-// ✅ IMPORT ApiResponse from where it's defined
-import type { ApiResponse } from '@/lib/api-client';
-
 class OnboardingService {
   private baseUrl = '/api/onboarding';
 
-  // ✅ Now ApiResponse is recognized
-  async create(staffData: StaffOnboardingData): Promise<ApiResponse<OnboardingResponse>> {
+  // Returns AxiosResponse matching apiClient.post return type
+  async create(staffData: StaffOnboardingData): Promise<AxiosResponse<OnboardingResponse>> {
     return await apiClient.post<OnboardingResponse>(
       `${this.baseUrl}/staff`,
       staffData

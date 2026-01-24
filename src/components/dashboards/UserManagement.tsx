@@ -26,7 +26,7 @@ const UserManagement: React.FC = () => {
           });
         }
       } catch (error) {
-        console.error(&apos;Failed to fetch user stats:&apos;, error);
+        console.error('Failed to fetch user stats:', error);
       } finally {
         setLoading(false);
       }

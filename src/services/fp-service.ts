@@ -12,10 +12,12 @@ import {
   FPFormDetailed,
   FPWorkflowHistory
 } from '../types/forms';
+import { API_BASE_URL } from './api';
 
 class FPFormsService {
-  private baseUrl = 'https://clamflowbackend-production.up.railway.app/qa/fp-form';
-  private backendUrl = 'https://clamflowbackend-production.up.railway.app';
+  // Backend: /fp-forms/
+  private baseUrl = `${API_BASE_URL}/fp-forms`;
+  private backendUrl = API_BASE_URL;
 
   private getAuthHeaders(): HeadersInit {
     const token = localStorage.getItem('clamflow_token');

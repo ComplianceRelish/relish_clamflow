@@ -65,7 +65,7 @@ const ClamFlowSecure: React.FC<ClamFlowSecureProps> = ({
       
       // Production: Detect actual connected hardware devices
       const token = localStorage.getItem('clamflow_token');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/admin/hardware/devices`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/hardware/devices`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
@@ -180,7 +180,7 @@ const ClamFlowSecure: React.FC<ClamFlowSecureProps> = ({
       
       // Production: Call biometric authentication API
       const token = localStorage.getItem('clamflow_token');
-      const authResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/biometric`, {
+      const authResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/biometric`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -301,7 +301,7 @@ const ClamFlowSecure: React.FC<ClamFlowSecureProps> = ({
                   </Badge>
                 </div>
                 <div className="text-sm text-gray-600 space-y-1">
-                  <div>Accuracy: {(device.accuracy * 100).toFixed(1)}%</div>
+                  <div>Accuracy: {((device.accuracy ?? 0) * 100).toFixed(1)}%</div>
                   <div>ID: {device.id}</div>
                   <div>Last Seen: {new Date(device.lastSeen).toLocaleTimeString()}</div>
                 </div>

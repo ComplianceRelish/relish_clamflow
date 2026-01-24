@@ -5,6 +5,9 @@ import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Label } from '../ui/Label';
 
+// Use environment variable for API URL
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://clamflow-backend-production.up.railway.app';
+
 interface Device {
   id: string;
   device_type: string;
@@ -32,7 +35,7 @@ export const DeviceRegistry: React.FC = () => {
   const loadDevices = async () => {
     try {
       const token = localStorage.getItem('clamflow_token');
-      const response = await fetch('https://clamflowbackend-production.up.railway.app/api/admin/hardware/devices', {
+      const response = await fetch(`${API_BASE_URL}/api/admin/hardware/devices`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -48,7 +51,7 @@ export const DeviceRegistry: React.FC = () => {
   const addDevice = async () => {
     try {
       const token = localStorage.getItem('clamflow_token');
-      const response = await fetch('https://clamflowbackend-production.up.railway.app/api/admin/hardware/devices', {
+      const response = await fetch(`${API_BASE_URL}/api/admin/hardware/devices`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -76,7 +79,7 @@ export const DeviceRegistry: React.FC = () => {
   const toggleDevice = async (deviceId: string, isActive: boolean) => {
     try {
       const token = localStorage.getItem('clamflow_token');
-      await fetch(`https://clamflowbackend-production.up.railway.app/api/admin/hardware/devices/${deviceId}`, {
+      await fetch(`${API_BASE_URL}/api/admin/hardware/devices/${deviceId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

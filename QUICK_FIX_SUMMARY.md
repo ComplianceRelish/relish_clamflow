@@ -4,7 +4,7 @@
 
 ### 1. ❌ Missing Environment Variable
 **Problem**: Code uses `NEXT_PUBLIC_API_BASE_URL` but `.env.production` only had `NEXT_PUBLIC_API_URL`
-**Fix**: Added `NEXT_PUBLIC_API_BASE_URL=https://clamflowbackend-production.up.railway.app` to `.env.production`
+**Fix**: Added `NEXT_PUBLIC_API_BASE_URL=https://clamflow-backend-production.up.railway.app` to `.env.production`
 
 ### 2. ❌ Cached localStorage Data
 **Problem**: Browser was loading OLD user data from localStorage with `requires_password_change: true`

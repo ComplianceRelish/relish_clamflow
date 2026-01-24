@@ -50,7 +50,7 @@ export default function ShiftSchedulingPage() {
 
   const handleShiftUpdate = async (shift: any) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/scheduling/shifts`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/scheduling/shifts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

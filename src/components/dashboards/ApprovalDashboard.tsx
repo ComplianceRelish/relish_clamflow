@@ -114,7 +114,7 @@ const ApprovalDashboard: React.FC<ApprovalDashboardProps> = ({ currentUser }) =>
   }
 
   const getPriorityColor = (priority: string): string => {
-    const colors = {
+    const colors: Record<string, string> = {
       'high': 'bg-red-100 text-red-800 border-red-200',
       'medium': 'bg-yellow-100 text-yellow-800 border-yellow-200',
       'low': 'bg-green-100 text-green-800 border-green-200'
@@ -129,7 +129,7 @@ const ApprovalDashboard: React.FC<ApprovalDashboardProps> = ({ currentUser }) =>
   }
 
   const formatFormType = (type: string): string => {
-    const typeMap = {
+    const typeMap: Record<string, string> = {
       'weight_note': 'Weight Note',
       'ppc_form': 'PPC Form',
       'fp_form': 'Final Product',
@@ -153,7 +153,7 @@ const ApprovalDashboard: React.FC<ApprovalDashboardProps> = ({ currentUser }) =>
     if (!currentUser) return false
     
     const role = currentUser.role
-    const approvalMatrix = {
+    const approvalMatrix: Record<string, string[]> = {
       'weight_note': ['Super Admin', 'Admin', 'Production Lead'],
       'ppc_form': ['Super Admin', 'Admin', 'Production Lead'],
       'fp_form': ['Super Admin', 'Admin', 'Production Lead'],
@@ -258,7 +258,7 @@ const ApprovalDashboard: React.FC<ApprovalDashboardProps> = ({ currentUser }) =>
             </div>
             <div className="bg-white p-6 rounded-lg shadow border-l-4 border-purple-500">
               <h3 className="text-sm font-medium text-gray-500">Avg Time (hrs)</h3>
-              <p className="text-2xl font-bold text-purple-600">{stats.avgApprovalTime.toFixed(1)}</p>
+              <p className="text-2xl font-bold text-purple-600">{(stats.avgApprovalTime ?? 0).toFixed(1)}</p>
             </div>
           </div>
 

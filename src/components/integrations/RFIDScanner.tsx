@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 
+// Use environment variable for API URL
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://clamflow-backend-production.up.railway.app';
+
 interface RFIDScannerProps {
   onScan?: (data: RFIDScanData) => void;
   authToken?: string;
@@ -39,7 +42,7 @@ const RFIDScanner: React.FC<RFIDScannerProps> = ({
     const checkConnection = async () => {
       try {
         const token = localStorage.getItem('clamflow_token');
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/hardware/rfid/status`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/hardware/rfid/status`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (response.ok) {
@@ -114,14 +117,15 @@ const RFIDScanner: React.FC<RFIDScannerProps> = ({
 
   const processAttendanceScan = async (scanData: RFIDScanData): Promise<RFIDScanResult> => {
     try {
-      const response = await fetch('https://clamflowbackend-production.up.railway.app/secure/attendance', {
+      // Backend: /attendance/ (POST)
+      const response = await fetch(`${API_BASE_URL}/attendance/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${authToken}`
         },
         body: JSON.stringify({
-          employee_id: scanData.rfid_tag,
+          person_id: scanData.rfid_tag,
           method: 'rfid',
           timestamp: scanData.timestamp
         })
@@ -151,14 +155,16 @@ const RFIDScanner: React.FC<RFIDScannerProps> = ({
 
   const processGateExitScan = async (scanData: RFIDScanData): Promise<RFIDScanResult> => {
     try {
-      const response = await fetch('https://clamflowbackend-production.up.railway.app/secure/gate/exit', {
+      // Backend: /api/gate/vehicle-entry (POST) - gate logging
+      const response = await fetch(`${API_BASE_URL}/api/gate/vehicle-entry`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${authToken}`
         },
         body: JSON.stringify({
-          rfid_tags: [scanData.rfid_tag],
+          vehicle_number: scanData.rfid_tag,
+          entry_type: 'exit',
           timestamp: scanData.timestamp
         })
       });
@@ -187,14 +193,16 @@ const RFIDScanner: React.FC<RFIDScannerProps> = ({
 
   const processGateEntryScan = async (scanData: RFIDScanData): Promise<RFIDScanResult> => {
     try {
-      const response = await fetch('https://clamflowbackend-production.up.railway.app/secure/gate/entry', {
+      // Backend: /api/gate/vehicle-entry (POST)
+      const response = await fetch(`${API_BASE_URL}/api/gate/vehicle-entry`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${authToken}`
         },
         body: JSON.stringify({
-          rfid_tags: [scanData.rfid_tag],
+          vehicle_number: scanData.rfid_tag,
+          entry_type: 'entry',
           timestamp: scanData.timestamp
         })
       });

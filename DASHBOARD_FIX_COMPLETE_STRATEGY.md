@@ -226,7 +226,7 @@ If issues persist after backend fix:
 4. **Test Individual Endpoints:**
    ```bash
    curl -H "Authorization: Bearer YOUR_TOKEN" \
-     https://clamflowbackend-production.up.railway.app/api/operations/stations
+     https://clamflow-backend-production.up.railway.app/api/operations/stations
    ```
 
 ---

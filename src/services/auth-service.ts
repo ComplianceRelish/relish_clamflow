@@ -1,12 +1,5 @@
 // src/services/auth-service.ts  
-import { apiClient } from '../types/api';
-
-// Define ApiResponse interface for wrapped responses
-interface ApiResponse<T> {
-  data: T;
-  message?: string;
-  status?: number;
-}
+import { apiClient, ApiResponse } from './api';
 
 export interface LoginCredentials {
   email: string;
