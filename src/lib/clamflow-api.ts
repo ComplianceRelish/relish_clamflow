@@ -807,37 +807,323 @@ class ClamFlowAPI {
     return this.get('/api/inventory/pending-approvals');
   }
 
-  // QA/QC FORMS - Required by QAFlowDashboard and QCFlowDashboard
+  // ============================================
+  // QC WORKFLOW API - Per PRODUCTION_WORKFLOW_INTEGRATION.md
+  // ============================================
+
+  // PPC Forms (PPC Station)
   async getPPCForms(): Promise<ApiResponse<PPCFormData[]>> {
-    return this.get('/api/ppc-forms');
+    return this.get('/api/ppc-forms/');
   }
 
+  async createPPCForm(formData: Partial<PPCFormData>): Promise<ApiResponse<PPCFormData>> {
+    return this.post('/api/ppc-forms/', formData);
+  }
+
+  async getPPCForm(id: string): Promise<ApiResponse<PPCFormData>> {
+    return this.get(`/api/ppc-forms/${id}`);
+  }
+
+  async updatePPCForm(id: string, formData: Partial<PPCFormData>): Promise<ApiResponse<PPCFormData>> {
+    return this.put(`/api/ppc-forms/${id}`, formData);
+  }
+
+  async addPPCBox(formId: string, boxData: unknown): Promise<ApiResponse<unknown>> {
+    return this.post(`/api/ppc-forms/${formId}/boxes`, boxData);
+  }
+
+  async submitPPCFormForQC(formId: string): Promise<ApiResponse<unknown>> {
+    return this.put(`/api/ppc-forms/${formId}/submit`);
+  }
+
+  // FP Forms (FP Station)
   async getFPForms(): Promise<ApiResponse<FPFormData[]>> {
-    return this.get('/api/fp-forms');
+    return this.get('/api/fp-forms/');
   }
 
-  async getQCForms(): Promise<ApiResponse<unknown[]>> {
-    return this.get('/api/qc-forms');
+  async createFPForm(formData: Partial<FPFormData>): Promise<ApiResponse<FPFormData>> {
+    return this.post('/api/fp-forms/', formData);
   }
 
-  async getDepurationForms(): Promise<ApiResponse<unknown[]>> {
-    return this.get('/api/depuration-forms');
+  async getFPForm(id: string): Promise<ApiResponse<FPFormData>> {
+    return this.get(`/api/fp-forms/${id}`);
   }
 
-  async getLots(): Promise<ApiResponse<unknown[]>> {
-    return this.get('/api/lots');
+  async updateFPForm(id: string, formData: Partial<FPFormData>): Promise<ApiResponse<FPFormData>> {
+    return this.put(`/api/fp-forms/${id}`, formData);
   }
 
-  async getStaff(): Promise<ApiResponse<unknown[]>> {
-    return this.get('/api/staff');
+  async addFPBox(formId: string, boxData: unknown): Promise<ApiResponse<unknown>> {
+    return this.post(`/api/fp-forms/${formId}/boxes`, boxData);
   }
 
-  async createQCForm(formData: unknown): Promise<ApiResponse<unknown>> {
-    return this.post('/api/qc-forms', formData);
+  async submitFPFormForQC(formId: string): Promise<ApiResponse<unknown>> {
+    return this.put(`/api/fp-forms/${formId}/submit`);
+  }
+
+  // QC Dashboard & Metrics (QC Flow Dashboard)
+  async getQCForms(status?: string, formType?: string): Promise<ApiResponse<QCFormResponse[]>> {
+    const params = new URLSearchParams();
+    if (status) params.append('status', status);
+    if (formType) params.append('form_type', formType);
+    const queryString = params.toString();
+    return this.get(`/api/qc/forms${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async getQCMetrics(): Promise<ApiResponse<QCMetricsResponse>> {
+    return this.get('/api/qc/metrics');
+  }
+
+  async getPendingQCForms(): Promise<ApiResponse<QCFormResponse[]>> {
+    return this.get('/api/forms/pending');
+  }
+
+  // Form Approval Workflow (QC Staff & Leads)
+  async approveQCForm(formId: string, observations?: string): Promise<ApiResponse<ApprovalResponse>> {
+    return this.put(`/api/forms/${formId}/approve`, { observations });
+  }
+
+  async rejectQCForm(formId: string, rejectionReason: string): Promise<ApiResponse<ApprovalResponse>> {
+    return this.put(`/api/forms/${formId}/reject`, { rejection_reason: rejectionReason });
+  }
+
+  // Production Lead Approval (for PPC → Gate Pass)
+  async productionLeadApprovePPC(formId: string, observations?: string): Promise<ApiResponse<ApprovalResponse>> {
+    return this.put(`/api/forms/${formId}/production-lead-approve`, { observations });
+  }
+
+  // QC Lead Approval (for FP → Inventory)
+  async qcLeadApproveFP(formId: string, observations?: string): Promise<ApiResponse<ApprovalResponse>> {
+    return this.put(`/api/forms/${formId}/qc-lead-approve`, { observations });
+  }
+
+  // Depuration Workflow (Part of PPC)
+  async getDepurationForms(): Promise<ApiResponse<DepurationFormResponse[]>> {
+    return this.get('/api/v1/depuration/forms');
+  }
+
+  async extractSample(sampleData: SampleExtractionRequest): Promise<ApiResponse<unknown>> {
+    return this.post('/api/v1/depuration/sample', sampleData);
+  }
+
+  async submitDepurationForm(formData: unknown): Promise<ApiResponse<unknown>> {
+    return this.post('/api/v1/depuration/form', formData);
+  }
+
+  async approveDepuration(depurationId: string): Promise<ApiResponse<unknown>> {
+    return this.put(`/api/v1/depuration/${depurationId}/approve`);
+  }
+
+  // Lots Management
+  async getLots(): Promise<ApiResponse<LotResponse[]>> {
+    return this.get('/api/v1/lots/');
+  }
+
+  async createLot(lotData: CreateLotRequest): Promise<ApiResponse<LotResponse>> {
+    return this.post('/api/v1/lots/', lotData);
+  }
+
+  async getLot(lotId: string): Promise<ApiResponse<LotResponse>> {
+    return this.get(`/api/v1/lots/${lotId}`);
+  }
+
+  async updateLotStatus(lotId: string, status: string): Promise<ApiResponse<LotResponse>> {
+    return this.put(`/api/v1/lots/${lotId}`, { status });
+  }
+
+  // Staff
+  async getStaff(): Promise<ApiResponse<StaffMember[]>> {
+    return this.get('/api/staff/');
+  }
+
+  async getQCStaff(): Promise<ApiResponse<StaffMember[]>> {
+    return this.get('/api/staff/?role=qc');
+  }
+
+  // RFID Operations
+  async linkRFIDTag(rfidData: RFIDLinkRequest): Promise<ApiResponse<RFIDTagResponse>> {
+    return this.post('/api/rfid/link', rfidData);
+  }
+
+  async scanRFIDTag(tagId: string): Promise<ApiResponse<RFIDTagResponse>> {
+    return this.get(`/api/rfid/scan/${tagId}`);
+  }
+
+  async getRFIDTags(): Promise<ApiResponse<RFIDTagResponse[]>> {
+    return this.get('/api/rfid/tags');
+  }
+
+  async updateRFIDTag(tagId: string, data: Partial<RFIDTagResponse>): Promise<ApiResponse<RFIDTagResponse>> {
+    return this.put(`/api/rfid/tags/${tagId}`, data);
+  }
+
+  // QR Label Generation (FP Workflow)
+  async generateQRLabel(labelData: QRLabelRequest): Promise<ApiResponse<QRLabelResponse>> {
+    return this.post('/api/fp-forms/generate-qr-label', labelData);
+  }
+
+  // DEPRECATED: QC forms are created through station workflows, not directly
+  // Use approveQCForm() or rejectQCForm() instead
+  async createQCForm(_formData: unknown): Promise<ApiResponse<never>> {
+    console.warn('DEPRECATED: createQCForm() - QC forms are not created directly. Use approval endpoints.');
+    return { success: false, error: 'QC forms are not created directly. Use approval endpoints.' };
   }
 }
 
-// PERMISSION UTILITIES
+// ============================================
+// QC WORKFLOW INTERFACES
+// ============================================
+
+export interface QCFormResponse {
+  id: string;
+  formType: 'weight_note' | 'ppc_form' | 'fp_form' | 'depuration_form';
+  status: 'pending' | 'qc_approved' | 'qc_rejected' | 'production_lead_approved' | 'qc_lead_approved';
+  lotNumber: string | null;
+  lotId: string | null;
+  createdAt: string;
+  submittedAt: string | null;
+  submittedBy: string | null;
+  stationId: string | null;
+  formData: Record<string, unknown>;
+}
+
+export interface QCMetricsResponse {
+  pending: number;
+  approved: number;
+  rejected: number;
+  byFormType: {
+    weight_notes: { pending: number; approved: number; rejected: number };
+    ppc_forms: { pending: number; approved: number; rejected: number };
+    fp_forms: { pending: number; approved: number; rejected: number };
+    depuration_forms: { pending: number; approved: number; rejected: number };
+  };
+}
+
+export interface ApprovalResponse {
+  success: boolean;
+  formId: string;
+  newStatus: string;
+  approvedBy: string;
+  approvedAt: string;
+  message?: string;
+}
+
+export interface DepurationFormResponse {
+  id: string;
+  sampleId: string;
+  lotId: string;
+  depurationTankId: string;
+  startTime: string;
+  plannedDuration: number;
+  status: 'pending' | 'in_progress' | 'completed' | 'approved' | 'rejected';
+  qcStaffId: string;
+  qcStaffName?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SampleExtractionRequest {
+  lotId: string;
+  sampleType: string;
+  extractionPoint: string;
+  sampleSize: number;
+  containerType: string;
+  preservationMethod: string;
+  qcStaffId: string;
+  extractionTime: string;
+  storageTemperature: number;
+  testingRequirements?: {
+    microbiological?: boolean;
+    chemical?: boolean;
+    physical?: boolean;
+    nutritional?: boolean;
+    heavyMetals?: boolean;
+    pesticides?: boolean;
+  };
+  notes?: string;
+}
+
+export interface LotResponse {
+  id: string;
+  lotNumber: string;
+  supplierId: string;
+  supplierName?: string;
+  status: 'received' | 'washing' | 'depuration' | 'ppc' | 'fp' | 'shipped' | 'archived';
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: string;
+  weightNoteId?: string;
+}
+
+export interface CreateLotRequest {
+  supplierId: string;
+  weightNoteId: string;
+  notes?: string;
+}
+
+export interface StaffMember {
+  id: string;
+  fullName: string;
+  employeeId: string;
+  role: string;
+  department?: string;
+  stationAssignments?: string[];
+  isActive: boolean;
+}
+
+export interface RFIDLinkRequest {
+  tagId: string;
+  boxNumber: string;
+  lotId: string;
+  productType: string;
+  grade: string;
+  weight: number;
+  staffId: string;
+}
+
+export interface RFIDTagResponse {
+  id: string;
+  tagId: string;
+  boxNumber: string;
+  lotId: string;
+  productType: string;
+  grade: string;
+  weight: number;
+  linkedAt: string;
+  linkedBy: string;
+  status: 'active' | 'inactive' | 'transferred';
+}
+
+export interface QRLabelRequest {
+  lotId: string;
+  boxNumber: string;
+  productType: string;
+  grade: string;
+  weight: number;
+  rfidTagId?: string;
+  staffId: string;
+  originalBoxNumber?: string;
+}
+
+export interface QRLabelResponse {
+  id: string;
+  qrCodeData: string;
+  qrCodeImage: string; // Base64
+  labelData: {
+    lotNumber: string;
+    boxNumber: string;
+    productType: string;
+    grade: string;
+    weight: number;
+    packDate: string;
+    expiryDate: string;
+    traceabilityCode: string;
+  };
+  generatedAt: string;
+  generatedBy: string;
+}
+
+// PERMISSION UTILITIES - Per PRODUCTION_WORKFLOW_INTEGRATION.md
 export function hasPermission(userRole: string, requiredRoles: string[]): boolean {
   return requiredRoles.includes(userRole);
 }
@@ -847,7 +1133,9 @@ export function canAccessModule(userRole: string, module: string): boolean {
     'production_forms': ["Super Admin", "Admin", "Production Lead", "Production Staff"],
     'quality_control': ["Super Admin", "Admin", "Production Lead", "QC Lead", "QC Staff"],
     'hr_management': ["Super Admin", "Admin", "Staff Lead"],
-    'gate_control': ["Super Admin", "Admin", "Production Lead", "Security Guard"]
+    'gate_control': ["Super Admin", "Admin", "Production Lead", "Security Guard"],
+    'qc_workflow': ["Super Admin", "Admin", "QC Lead", "QC Staff"],
+    'approval_dashboard': ["Super Admin", "Admin", "Production Lead", "QC Lead"]
   };
   
   return hasPermission(userRole, permissions[module] || []);
@@ -855,14 +1143,37 @@ export function canAccessModule(userRole: string, module: string): boolean {
 
 export function canApproveForm(userRole: string, formType: string): boolean {
   const approvalPermissions: { [key: string]: string[] } = {
-    'weight_note': ["Super Admin", "Admin", "Production Lead"],
-    'ppc_form': ["Super Admin", "Admin", "Production Lead"],
-    'fp_form': ["Super Admin", "Admin", "Production Lead"],
-    'qc_form': ["Super Admin", "Admin", "QC Lead"],
+    // Weight Note: QC Staff can approve, sends to Supervisor for Lot creation
+    'weight_note': ["Super Admin", "Admin", "QC Lead", "QC Staff"],
+    // PPC Form: QC Staff approves → Production Lead approves → Gate Pass
+    'ppc_form': ["Super Admin", "Admin", "QC Lead", "QC Staff"],
+    'ppc_form_production_lead': ["Super Admin", "Admin", "Production Lead"],
+    // FP Form: QC Staff approves → QC Lead approves → Inventory
+    'fp_form': ["Super Admin", "Admin", "QC Lead", "QC Staff"],
+    'fp_form_qc_lead': ["Super Admin", "Admin", "QC Lead"],
+    // Depuration: QC Lead approval
     'depuration_form': ["Super Admin", "Admin", "QC Lead"]
   };
   
   return hasPermission(userRole, approvalPermissions[formType] || []);
+}
+
+// QC Staff Station Assignments - Based on Figma workflow
+export const QC_STAFF_STATION_ASSIGNMENTS: Record<string, string[]> = {
+  "qc_staff_001": ["RM Station", "Depuration Station"],
+  "qc_staff_002": ["PPC Station", "Separation Station"],
+  "qc_staff_003": ["FP Station"]
+};
+
+export function getQCStaffAssignedStations(staffId: string): string[] {
+  return QC_STAFF_STATION_ASSIGNMENTS[staffId] || [];
+}
+
+export function canQCStaffApproveStation(staffId: string, stationName: string): boolean {
+  const assignedStations = getQCStaffAssignedStations(staffId);
+  return assignedStations.some(station => 
+    stationName.toLowerCase().includes(station.toLowerCase().replace(' Station', ''))
+  );
 }
 
 export const clamflowAPI = new ClamFlowAPI();

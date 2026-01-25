@@ -4,6 +4,7 @@ export * from './api';
 export * from './forms';
 export * from './inventory';
 export * from './rfid';
+export * from './qc-workflow';
 
 // Base entity interface used across all modules
 export interface BaseEntity {

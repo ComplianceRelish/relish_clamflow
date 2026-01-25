@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import clamflowAPI, { ApiResponse } from '../../lib/clamflow-api'
 import { User } from '../../types/auth'
 import QCFlowForm from './QCFlowForm'
@@ -75,14 +75,81 @@ const QCFlowDashboard: React.FC<QCFlowDashboardProps> = ({ currentUser }) => {
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-  useEffect(() => {
-    loadQCData()
-    // Refresh every 90 seconds for real-time QC monitoring
-    const interval = setInterval(loadQCData, 90000)
-    return () => clearInterval(interval)
-  }, [])
+  const loadQCData = useCallback(async () => {
+    // Helper functions defined inside useCallback to avoid dependency issues
+    const mapFormStatusToTestStatus = (status: string): 'pending' | 'in_progress' | 'passed' | 'failed' | 'conditional' => {
+      const statusMap: Record<string, 'pending' | 'in_progress' | 'passed' | 'failed' | 'conditional'> = {
+        'pending': 'pending',
+        'pending_approval': 'in_progress',
+        'approved': 'passed',
+        'rejected': 'failed',
+        'completed': 'passed',
+        'active': 'in_progress'
+      }
+      return statusMap[status] || 'pending'
+    }
 
-  const loadQCData = async () => {
+    const calculateAgeInHours = (createdAt: string): number => {
+      const now = new Date()
+      const created = new Date(createdAt)
+      return Math.round((now.getTime() - created.getTime()) / (1000 * 60 * 60))
+    }
+
+    const calculateTestPriority = (form: any): 'low' | 'medium' | 'high' | 'critical' => {
+      const age = calculateAgeInHours(form.created_at)
+      if (form.pass_fail_status === 'fail') return 'critical'
+      if (age > 24) return 'high'
+      if (age > 8) return 'medium'
+      return 'low'
+    }
+
+    const generateResultSummary = (form: any): string => {
+      if (form.pass_fail_status === 'pass') return 'All parameters within acceptable range'
+      if (form.pass_fail_status === 'fail') return 'Critical parameters failed - requires action'
+      if (form.pass_fail_status === 'conditional') return 'Conditional pass - monitoring required'
+      return 'Test in progress'
+    }
+
+    const calculateQCMetrics = (tests: QCTest[]) => {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+
+      const testsToday = tests.filter(test => {
+        const testDate = new Date(test.started_at)
+        return testDate >= today
+      }).length
+
+      const passedTests = tests.filter(test => test.status === 'passed').length
+      const failedTests = tests.filter(test => test.status === 'failed').length
+      const pendingTests = tests.filter(test => test.status === 'pending' || test.status === 'in_progress').length
+      const criticalFailures = tests.filter(test => test.priority === 'critical' && test.status === 'failed').length
+
+      const completedTests = tests.filter(test => test.completed_at)
+      const avgTestTime = completedTests.length > 0 ? 
+        completedTests.reduce((sum, test) => {
+          const start = new Date(test.started_at)
+          const end = new Date(test.completed_at!)
+          return sum + Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60))
+        }, 0) / completedTests.length : 0
+
+      const complianceTests = tests.filter(test => test.status !== 'pending' && test.status !== 'in_progress')
+      const complianceRate = complianceTests.length > 0 ? 
+        (complianceTests.filter(test => test.compliance_status).length / complianceTests.length) * 100 : 0
+
+      const metrics: QCMetrics = {
+        totalTests: tests.length,
+        passedTests,
+        failedTests,
+        pendingTests,
+        averageTestTime: avgTestTime,
+        complianceRate,
+        criticalFailures,
+        testsToday
+      }
+
+      setQCMetrics(metrics)
+    }
+
     setLoading(true)
     setError('')
 
@@ -150,80 +217,14 @@ const QCFlowDashboard: React.FC<QCFlowDashboardProps> = ({ currentUser }) => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const mapFormStatusToTestStatus = (status: string): 'pending' | 'in_progress' | 'passed' | 'failed' | 'conditional' => {
-    const statusMap: Record<string, 'pending' | 'in_progress' | 'passed' | 'failed' | 'conditional'> = {
-      'pending': 'pending',
-      'pending_approval': 'in_progress',
-      'approved': 'passed',
-      'rejected': 'failed',
-      'completed': 'passed',
-      'active': 'in_progress'
-    }
-    return statusMap[status] || 'pending'
-  }
-
-  const calculateTestPriority = (form: any): 'low' | 'medium' | 'high' | 'critical' => {
-    const age = calculateAgeInHours(form.created_at)
-    if (form.pass_fail_status === 'fail') return 'critical'
-    if (age > 24) return 'high'
-    if (age > 8) return 'medium'
-    return 'low'
-  }
-
-  const generateResultSummary = (form: any): string => {
-    if (form.pass_fail_status === 'pass') return 'All parameters within acceptable range'
-    if (form.pass_fail_status === 'fail') return 'Critical parameters failed - requires action'
-    if (form.pass_fail_status === 'conditional') return 'Conditional pass - monitoring required'
-    return 'Test in progress'
-  }
-
-  const calculateAgeInHours = (createdAt: string): number => {
-    const now = new Date()
-    const created = new Date(createdAt)
-    return Math.round((now.getTime() - created.getTime()) / (1000 * 60 * 60))
-  }
-
-  const calculateQCMetrics = (tests: QCTest[]) => {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-
-    const testsToday = tests.filter(test => {
-      const testDate = new Date(test.started_at)
-      return testDate >= today
-    }).length
-
-    const passedTests = tests.filter(test => test.status === 'passed').length
-    const failedTests = tests.filter(test => test.status === 'failed').length
-    const pendingTests = tests.filter(test => test.status === 'pending' || test.status === 'in_progress').length
-    const criticalFailures = tests.filter(test => test.priority === 'critical' && test.status === 'failed').length
-
-    const completedTests = tests.filter(test => test.completed_at)
-    const avgTestTime = completedTests.length > 0 ? 
-      completedTests.reduce((sum, test) => {
-        const start = new Date(test.started_at)
-        const end = new Date(test.completed_at!)
-        return sum + Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60))
-      }, 0) / completedTests.length : 0
-
-    const complianceTests = tests.filter(test => test.status !== 'pending' && test.status !== 'in_progress')
-    const complianceRate = complianceTests.length > 0 ? 
-      (complianceTests.filter(test => test.compliance_status).length / complianceTests.length) * 100 : 0
-
-    const metrics: QCMetrics = {
-      totalTests: tests.length,
-      passedTests,
-      failedTests,
-      pendingTests,
-      averageTestTime: avgTestTime,
-      complianceRate,
-      criticalFailures,
-      testsToday
-    }
-
-    setQCMetrics(metrics)
-  }
+  useEffect(() => {
+    loadQCData()
+    // Refresh every 90 seconds for real-time QC monitoring
+    const interval = setInterval(loadQCData, 90000)
+    return () => clearInterval(interval)
+  }, [loadQCData])
 
   const getStatusColor = (status: string): string => {
     const colors: Record<string, string> = {
