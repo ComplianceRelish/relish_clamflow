@@ -3,7 +3,7 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 
 // Use environment variable for API URL
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://clamflow-backend-production.up.railway.app';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://clamflowbackend-production.up.railway.app';
 
 // ============================================
 // COMMON TYPE DEFINITIONS

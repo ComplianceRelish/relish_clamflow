@@ -6,7 +6,7 @@ import { Select } from '../ui/Select';
 import { Label } from '../ui/Label';
 
 // Use environment variable for API URL
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://clamflow-backend-production.up.railway.app';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://clamflowbackend-production.up.railway.app';
 
 interface HardwareConfigProps {
   hardwareType: 'rfid' | 'label_printer' | 'face_recognition' | 'qr_code';

@@ -18,7 +18,7 @@ const nextConfig = {
     return [
       {
         source: '/api/backend/:path*',
-        destination: 'https://clamflow-backend-production.up.railway.app/:path*',
+        destination: 'https://clamflowbackend-production.up.railway.app/:path*',
       },
     ];
   },

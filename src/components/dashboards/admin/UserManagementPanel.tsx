@@ -12,7 +12,7 @@ import { sendWelcomeMessage } from '@/services/whatsapp-service';
 import { useAuth } from '@/context/AuthContext';
 
 // Use environment variable for API URL - standardized to NEXT_PUBLIC_API_URL
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://clamflow-backend-production.up.railway.app';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://clamflowbackend-production.up.railway.app';
 
 // Custom Select component
 const FormSelect: React.FC<{

@@ -77,7 +77,7 @@ export interface AuditLog {
 }
 
 // Standardized to NEXT_PUBLIC_API_URL
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://clamflow-backend-production.up.railway.app';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://clamflowbackend-production.up.railway.app';
 
 // ============================================
 // STATIONS API INTERFACES - Per FRONTEND_API_INTEGRATION.md

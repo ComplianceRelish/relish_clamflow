@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 
 // Use environment variable for API URL
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://clamflow-backend-production.up.railway.app';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://clamflowbackend-production.up.railway.app';
 
 interface QRLabelGeneratorProps {
   authToken?: string;
