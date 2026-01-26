@@ -123,12 +123,35 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
         }
       });
 
+      console.log('📡 Users API Response Status:', response.status);
+
       if (response.ok) {
         const data = await response.json();
-        setUsers(Array.isArray(data) ? data : []);
+        console.log('📦 Users API Raw Response:', data);
+        
+        // Handle various response formats from backend
+        let usersArray: User[] = [];
+        
+        if (Array.isArray(data)) {
+          // Direct array response
+          usersArray = data;
+        } else if (data && typeof data === 'object') {
+          // Check for common wrapper keys
+          if (Array.isArray(data.items)) {
+            usersArray = data.items;
+          } else if (Array.isArray(data.data)) {
+            usersArray = data.data;
+          } else if (Array.isArray(data.users)) {
+            usersArray = data.users;
+          }
+        }
+        
+        console.log('👥 Parsed users count:', usersArray.length);
+        setUsers(usersArray);
       } else {
-        console.error('Failed to fetch users:', response.status);
-        setError('Failed to load users from server');
+        const errorText = await response.text();
+        console.error('Failed to fetch users:', response.status, errorText);
+        setError(`Failed to load users from server (${response.status})`);
         setUsers([]);
       }
     } catch (err) {
