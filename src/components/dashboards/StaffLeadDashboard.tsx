@@ -53,7 +53,7 @@ const StaffLeadDashboard: React.FC<StaffLeadDashboardProps> = ({ currentUser }) 
   const renderContent = () => {
     switch (activeView) {
       case 'overview':
-        return <SupervisionOverview currentUser={currentUser} />
+        return <SupervisionOverview currentUser={currentUser} onNavigate={setActiveView} />
       case 'suppliers':
         return <SupplierOnboardingPanel currentUser={currentUser} />
       case 'security':
@@ -63,7 +63,7 @@ const StaffLeadDashboard: React.FC<StaffLeadDashboardProps> = ({ currentUser }) 
         // ✅ UPDATED: Staff Lead now has access to Staff Attendance & Locations (but not Performance)
         return <StaffLeadStaffPanel />
       default:
-        return <SupervisionOverview currentUser={currentUser} />
+        return <SupervisionOverview currentUser={currentUser} onNavigate={setActiveView} />
     }
   }
 

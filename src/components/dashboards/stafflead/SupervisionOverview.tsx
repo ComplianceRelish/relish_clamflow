@@ -6,6 +6,7 @@ import clamflowAPI from '../../../lib/clamflow-api';
 
 interface SupervisionOverviewProps {
   currentUser: User | null;
+  onNavigate?: (view: 'overview' | 'suppliers' | 'security' | 'staff') => void;
 }
 
 interface OverviewStats {
@@ -27,7 +28,7 @@ interface RecentActivity {
   severity: 'info' | 'warning' | 'success' | 'error';
 }
 
-const SupervisionOverview: React.FC<SupervisionOverviewProps> = ({ currentUser }) => {
+const SupervisionOverview: React.FC<SupervisionOverviewProps> = ({ currentUser, onNavigate }) => {
   const [stats, setStats] = useState<OverviewStats>({
     totalStaff: 0,
     checkedInStaff: 0,
@@ -358,22 +359,22 @@ const SupervisionOverview: React.FC<SupervisionOverviewProps> = ({ currentUser }
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <button
-            onClick={() => window.location.hash = '#suppliers'}
-            className="flex flex-col items-center p-4 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors"
+            onClick={() => onNavigate?.('suppliers')}
+            className="flex flex-col items-center p-4 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors cursor-pointer"
           >
             <span className="text-3xl mb-2">🚚</span>
             <span className="text-sm font-medium text-gray-700">Add Supplier</span>
           </button>
           <button
-            onClick={() => window.location.hash = '#security'}
-            className="flex flex-col items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+            onClick={() => onNavigate?.('security')}
+            className="flex flex-col items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors cursor-pointer"
           >
             <span className="text-3xl mb-2">📹</span>
             <span className="text-sm font-medium text-gray-700">View Security</span>
           </button>
           <button
-            onClick={() => window.location.hash = '#staff'}
-            className="flex flex-col items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
+            onClick={() => onNavigate?.('staff')}
+            className="flex flex-col items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors cursor-pointer"
           >
             <span className="text-3xl mb-2">👥</span>
             <span className="text-sm font-medium text-gray-700">Staff Status</span>
