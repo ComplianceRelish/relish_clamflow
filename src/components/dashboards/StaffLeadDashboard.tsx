@@ -1,11 +1,11 @@
 "use client"
 
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { User } from '../../types/auth'
-import SecuritySurveillance from './operations/SecuritySurveillance'
-import StaffManagementDashboard from './operations/StaffManagementDashboard'
 import SupplierOnboardingPanel from './stafflead/SupplierOnboardingPanel'
 import SupervisionOverview from './stafflead/SupervisionOverview'
+import SecuritySurveillance from './operations/SecuritySurveillance'
+import StaffLeadStaffPanel from './stafflead/StaffLeadStaffPanel'
 
 interface StaffLeadDashboardProps {
   currentUser: User | null
@@ -13,16 +13,36 @@ interface StaffLeadDashboardProps {
 
 type StaffLeadView = 'overview' | 'suppliers' | 'security' | 'staff'
 
+// Access Restricted Component for Admin-only sections
+const AccessRestrictedPanel: React.FC<{ title: string; description: string }> = ({ title, description }) => (
+  <div className="space-y-6">
+    <div>
+      <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
+      <p className="text-sm text-gray-500 mt-1">Access Restricted</p>
+    </div>
+    <div className="bg-amber-50 border border-amber-200 rounded-lg p-8 text-center">
+      <div className="text-6xl mb-4">🔒</div>
+      <h3 className="text-xl font-semibold text-amber-800 mb-2">Admin Access Required</h3>
+      <p className="text-amber-700 max-w-md mx-auto">
+        {description}
+      </p>
+      <p className="text-sm text-amber-600 mt-4">
+        Contact your system administrator if you need access to this section.
+      </p>
+    </div>
+  </div>
+)
+
 const StaffLeadDashboard: React.FC<StaffLeadDashboardProps> = ({ currentUser }) => {
   const [activeView, setActiveView] = useState<StaffLeadView>('overview')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
 
+  // ✅ UPDATED: Staff Lead now has access to Security & Staff Management per backend RBAC update
   const navigationItems = [
-    { id: 'overview', label: 'Supervision Overview', icon: '📊' },
-    { id: 'suppliers', label: 'Supplier Onboarding', icon: '🚚' },
-    { id: 'security', label: 'Security & Surveillance', icon: '🔒' },
-    { id: 'staff', label: 'Staff Management', icon: '👥' },
+    { id: 'overview', label: 'Supervision Overview', icon: '📊', restricted: false },
+    { id: 'suppliers', label: 'Supplier Onboarding', icon: '🚚', restricted: false },
+    { id: 'security', label: 'Security & Surveillance', icon: '📹', restricted: false },
+    { id: 'staff', label: 'Staff Management', icon: '👥', restricted: false },
   ]
 
   const handleNavClick = (view: StaffLeadView) => {
@@ -37,9 +57,11 @@ const StaffLeadDashboard: React.FC<StaffLeadDashboardProps> = ({ currentUser }) 
       case 'suppliers':
         return <SupplierOnboardingPanel currentUser={currentUser} />
       case 'security':
+        // ✅ UPDATED: Staff Lead now has access to Security & Surveillance
         return <SecuritySurveillance />
       case 'staff':
-        return <StaffManagementDashboard />
+        // ✅ UPDATED: Staff Lead now has access to Staff Attendance & Locations (but not Performance)
+        return <StaffLeadStaffPanel />
       default:
         return <SupervisionOverview currentUser={currentUser} />
     }
@@ -113,11 +135,14 @@ const StaffLeadDashboard: React.FC<StaffLeadDashboardProps> = ({ currentUser }) 
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg mb-2 text-left transition-all ${
                 activeView === item.id
                   ? 'bg-orange-700 text-white border-l-4 border-yellow-400 shadow-lg'
-                  : 'text-orange-100 hover:bg-orange-700 hover:shadow-md'
+                  : item.restricted 
+                    ? 'text-orange-200 hover:bg-orange-700/50 opacity-75'
+                    : 'text-orange-100 hover:bg-orange-700 hover:shadow-md'
               }`}
             >
               <span className="text-xl">{item.icon}</span>
-              <span className="font-medium text-sm md:text-base">{item.label}</span>
+              <span className="font-medium text-sm md:text-base flex-1">{item.label}</span>
+              {item.restricted && <span className="text-xs opacity-75">🔐</span>}
             </button>
           ))}
         </nav>

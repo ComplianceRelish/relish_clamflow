@@ -42,92 +42,156 @@ const SupervisionOverview: React.FC<SupervisionOverviewProps> = ({ currentUser }
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [accessRestrictions, setAccessRestrictions] = useState<string[]>([]);
 
   const fetchOverviewData = async () => {
     try {
       setError(null);
+      const restrictions: string[] = [];
 
-      // Fetch data from multiple endpoints in parallel
-      const [staffRes, suppliersRes, securityRes, attendanceRes] = await Promise.allSettled([
-        clamflowAPI.getStaffAttendance(),
+      // ✅ UPDATED: Staff Lead now has access to security and staff endpoints per backend RBAC
+      // Fetch data from all endpoints Staff Lead can access
+      const [
+        suppliersRes, 
+        pendingOnboardingRes,
+        securityEventsRes,
+        attendanceRes,
+        locationsRes
+      ] = await Promise.allSettled([
         clamflowAPI.getSuppliers(),
-        clamflowAPI.getSecurityEvents(),
-        clamflowAPI.getStaffLocations(),
+        clamflowAPI.getPendingOnboarding(),
+        clamflowAPI.getSecurityEvents(),    // ✅ Staff Lead now has access
+        clamflowAPI.getStaffAttendance(),   // ✅ Staff Lead now has access
+        clamflowAPI.getStaffLocations(),    // ✅ Staff Lead now has access
       ]);
 
-      // Process staff attendance
-      let checkedIn = 0;
-      let totalStaff = 0;
-      if (staffRes.status === 'fulfilled' && staffRes.value.success && staffRes.value.data) {
-        const staffData = Array.isArray(staffRes.value.data) ? staffRes.value.data : [];
-        totalStaff = staffData.length;
-        checkedIn = staffData.filter((s: any) => s.status === 'checked_in').length;
-      }
-
-      // Process suppliers
+      // Process suppliers (from gate/suppliers)
       let pendingSuppliers = 0;
       let approvedSuppliers = 0;
       if (suppliersRes.status === 'fulfilled' && suppliersRes.value.success && suppliersRes.value.data) {
         const supplierData = Array.isArray(suppliersRes.value.data) ? suppliersRes.value.data : [];
         approvedSuppliers = supplierData.length;
         pendingSuppliers = supplierData.filter((s: any) => s.status === 'pending').length;
+      } else {
+        if (suppliersRes.status === 'rejected' || 
+            (suppliersRes.status === 'fulfilled' && !suppliersRes.value.success)) {
+          restrictions.push('Supplier data requires elevated permissions');
+        }
       }
 
-      // Process security events
+      // Process pending onboarding requests
+      let pendingOnboarding = 0;
+      if (pendingOnboardingRes.status === 'fulfilled' && pendingOnboardingRes.value.success && pendingOnboardingRes.value.data) {
+        const onboardingData = Array.isArray(pendingOnboardingRes.value.data) ? pendingOnboardingRes.value.data : [];
+        pendingOnboarding = onboardingData.length;
+      }
+
+      // ✅ UPDATED: Process security events - Staff Lead now has access
       let securityAlerts = 0;
-      if (securityRes.status === 'fulfilled' && securityRes.value.success && securityRes.value.data) {
-        const securityData = Array.isArray(securityRes.value.data) ? securityRes.value.data : [];
+      if (securityEventsRes.status === 'fulfilled' && securityEventsRes.value.success && securityEventsRes.value.data) {
+        const securityData = Array.isArray(securityEventsRes.value.data) ? securityEventsRes.value.data : [];
+        // Count unresolved security events
         securityAlerts = securityData.filter((e: any) => !e.resolvedAt).length;
       }
 
-      // Process locations
-      let activeLocations = 0;
+      // ✅ UPDATED: Process attendance data - Staff Lead now has access
+      let totalStaff = 0;
+      let checkedInStaff = 0;
       if (attendanceRes.status === 'fulfilled' && attendanceRes.value.success && attendanceRes.value.data) {
-        const locationData = Array.isArray(attendanceRes.value.data) ? attendanceRes.value.data : [];
-        activeLocations = locationData.length;
+        const attendanceData = Array.isArray(attendanceRes.value.data) ? attendanceRes.value.data : [];
+        totalStaff = attendanceData.length;
+        checkedInStaff = attendanceData.filter((a: any) => a.status === 'checked_in').length;
       }
+
+      // ✅ UPDATED: Process locations data - Staff Lead now has access
+      let activeLocations = 0;
+      if (locationsRes.status === 'fulfilled' && locationsRes.value.success && locationsRes.value.data) {
+        const locationsData = Array.isArray(locationsRes.value.data) ? locationsRes.value.data : [];
+        activeLocations = locationsData.length;
+      }
+
+      // Note: Staff Lead does NOT have access to /api/staff/performance (Production/QC domain)
+      // This is intentional per BACKEND_STAFF_LEAD_ACCESS_REQUIREMENTS.md
+
+      setAccessRestrictions(restrictions);
 
       setStats({
         totalStaff,
-        checkedInStaff: checkedIn,
+        checkedInStaff,
         pendingSuppliers,
         approvedSuppliers,
         securityAlerts,
         activeLocations,
-        pendingApprovals: pendingSuppliers,
-        todayDeliveries: 0, // Would need separate endpoint
+        pendingApprovals: pendingSuppliers + pendingOnboarding,
+        todayDeliveries: 0,
       });
 
-      // Generate recent activity based on data
+      // Generate recent activity based on available data
       const activities: RecentActivity[] = [];
-      
-      if (securityAlerts > 0) {
-        activities.push({
-          id: 'sec-' + Date.now(),
-          type: 'security',
-          message: `${securityAlerts} unresolved security event${securityAlerts > 1 ? 's' : ''} requiring attention`,
-          timestamp: new Date().toISOString(),
-          severity: 'warning',
-        });
-      }
 
-      if (pendingSuppliers > 0) {
+      if (pendingOnboarding > 0) {
         activities.push({
-          id: 'sup-' + Date.now(),
+          id: 'onboard-' + Date.now(),
           type: 'supplier',
-          message: `${pendingSuppliers} supplier onboarding request${pendingSuppliers > 1 ? 's' : ''} pending approval`,
+          message: `${pendingOnboarding} onboarding request${pendingOnboarding > 1 ? 's' : ''} pending Admin approval`,
           timestamp: new Date().toISOString(),
           severity: 'info',
         });
       }
 
-      activities.push({
-        id: 'staff-' + Date.now(),
-        type: 'staff',
-        message: `${checkedIn} of ${totalStaff} staff members currently checked in`,
-        timestamp: new Date().toISOString(),
-        severity: checkedIn > 0 ? 'success' : 'info',
-      });
+      if (approvedSuppliers > 0) {
+        activities.push({
+          id: 'sup-' + Date.now(),
+          type: 'supplier',
+          message: `${approvedSuppliers} supplier${approvedSuppliers > 1 ? 's' : ''} registered in system`,
+          timestamp: new Date().toISOString(),
+          severity: 'success',
+        });
+      }
+
+      // ✅ UPDATED: Include security alerts in activity feed
+      if (securityAlerts > 0) {
+        activities.push({
+          id: 'security-' + Date.now(),
+          type: 'security',
+          message: `${securityAlerts} unresolved security event${securityAlerts > 1 ? 's' : ''} require attention`,
+          timestamp: new Date().toISOString(),
+          severity: securityAlerts > 3 ? 'warning' : 'info',
+        });
+      }
+
+      // ✅ UPDATED: Include staff attendance in activity feed
+      if (totalStaff > 0) {
+        const attendanceRate = totalStaff > 0 ? Math.round((checkedInStaff / totalStaff) * 100) : 0;
+        activities.push({
+          id: 'attendance-' + Date.now(),
+          type: 'staff',
+          message: `${checkedInStaff}/${totalStaff} staff checked in (${attendanceRate}% attendance)`,
+          timestamp: new Date().toISOString(),
+          severity: attendanceRate >= 80 ? 'success' : 'info',
+        });
+      }
+
+      // ✅ UPDATED: Include locations summary
+      if (activeLocations > 0) {
+        activities.push({
+          id: 'locations-' + Date.now(),
+          type: 'staff',
+          message: `Staff tracked across ${activeLocations} active location${activeLocations > 1 ? 's' : ''}`,
+          timestamp: new Date().toISOString(),
+          severity: 'info',
+        });
+      }
+
+      if (restrictions.length > 0) {
+        activities.push({
+          id: 'access-' + Date.now(),
+          type: 'staff',
+          message: 'Some supplier data requires elevated permissions',
+          timestamp: new Date().toISOString(),
+          severity: 'info',
+        });
+      }
 
       setRecentActivity(activities);
       setLastUpdated(new Date());
@@ -212,7 +276,35 @@ const SupervisionOverview: React.FC<SupervisionOverviewProps> = ({ currentUser }
         </div>
       )}
 
-      {/* Quick Stats Grid */}
+      {/* Access Info Notice - Updated for Staff Lead access */}
+      {accessRestrictions.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-lg">
+          <div className="flex items-start gap-2">
+            <span className="text-lg">ℹ️</span>
+            <div>
+              <p className="font-medium">Data Access Note</p>
+              <p className="text-sm mt-1">
+                Some supplier data may require additional permissions. Security and staff monitoring is fully available.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Staff Lead Access Banner */}
+      <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
+        <div className="flex items-start gap-2">
+          <span className="text-lg">✅</span>
+          <div>
+            <p className="font-medium">Full Staff Lead Access Enabled</p>
+            <p className="text-sm mt-1">
+              You have access to: Security & Surveillance, Staff Attendance, Staff Locations, and Supplier Onboarding.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Stats Grid - ✅ UPDATED: Staff Lead now has access to security and staff data */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
           <div className="flex items-center justify-between">
@@ -221,6 +313,7 @@ const SupervisionOverview: React.FC<SupervisionOverviewProps> = ({ currentUser }
               <div className="text-3xl font-bold text-gray-900 mt-2">
                 {stats.checkedInStaff}/{stats.totalStaff}
               </div>
+              <div className="text-xs text-gray-500 mt-1">Present today</div>
             </div>
             <div className="text-3xl">👥</div>
           </div>
@@ -240,10 +333,10 @@ const SupervisionOverview: React.FC<SupervisionOverviewProps> = ({ currentUser }
           <div className="flex items-center justify-between">
             <div>
               <div className="text-sm font-medium text-gray-600">Security Alerts</div>
-              <div className="text-3xl font-bold text-gray-900 mt-2">{stats.securityAlerts}</div>
-              {stats.securityAlerts > 0 && (
-                <div className="text-xs text-red-600 mt-1">Requires attention</div>
-              )}
+              <div className="text-3xl font-bold text-gray-900 mt-2">
+                {stats.securityAlerts}
+              </div>
+              <div className="text-xs text-gray-500 mt-1">Unresolved events</div>
             </div>
             <div className="text-3xl">🔒</div>
           </div>
