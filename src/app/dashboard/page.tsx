@@ -6,7 +6,11 @@ import { useAuth } from '@/context/AuthContext';
 import Header from '@/components/layout/Header';
 import SuperAdminDashboard from '@/components/dashboards/SuperAdminDashboard';
 import AdminDashboard from '@/components/dashboards/AdminDashboard';
+import StaffLeadDashboard from '@/components/dashboards/StaffLeadDashboard';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+
+// Roles that have dashboard access
+const DASHBOARD_ROLES = ['Super Admin', 'Admin', 'Staff Lead'];
 
 const DashboardPage: React.FC = () => {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -28,7 +32,7 @@ const DashboardPage: React.FC = () => {
     }
 
     // Check if user has dashboard access
-    if (!['Super Admin', 'Admin'].includes(user.role)) {
+    if (!DASHBOARD_ROLES.includes(user.role)) {
       setError(`Access denied. Role "${user.role}" does not have dashboard access.`);
       return;
     }
@@ -58,18 +62,42 @@ const DashboardPage: React.FC = () => {
     );
   }
 
+  // Get page title based on role
+  const getPageTitle = () => {
+    switch (user.role) {
+      case 'Super Admin':
+        return 'Super Admin Dashboard';
+      case 'Admin':
+        return 'Admin Dashboard';
+      case 'Staff Lead':
+        return 'Staff Lead Dashboard';
+      default:
+        return 'Dashboard';
+    }
+  };
+
+  // Render appropriate dashboard based on role
+  const renderDashboard = () => {
+    switch (user.role) {
+      case 'Super Admin':
+        return <SuperAdminDashboard currentUser={user} />;
+      case 'Admin':
+        return <AdminDashboard currentUser={user} />;
+      case 'Staff Lead':
+        return <StaffLeadDashboard currentUser={user} />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header 
-        pageTitle={user.role === 'Super Admin' ? 'Super Admin Dashboard' : 'Admin Dashboard'}
+        pageTitle={getPageTitle()}
         pageSubtitle={`Welcome back, ${user.full_name}`}
       />
       
-      {user.role === 'Super Admin' ? (
-        <SuperAdminDashboard currentUser={user} />
-      ) : (
-        <AdminDashboard currentUser={user} />
-      )}
+      {renderDashboard()}
     </div>
   );
 };

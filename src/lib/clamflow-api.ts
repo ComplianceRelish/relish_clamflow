@@ -940,6 +940,42 @@ class ClamFlowAPI {
     return this.get('/api/staff/?role=qc');
   }
 
+  // ============================================
+  // ONBOARDING API (Staff Lead)
+  // ============================================
+  
+  // Generic onboarding submission
+  async submitOnboarding(entityType: 'staff' | 'supplier' | 'vendor', data: Record<string, unknown>): Promise<ApiResponse<OnboardingResponse>> {
+    return this.post(`/api/onboarding/${entityType}`, data);
+  }
+
+  // Specific onboarding endpoints
+  async submitStaffOnboarding(data: StaffOnboardingRequest): Promise<ApiResponse<OnboardingResponse>> {
+    return this.post('/api/onboarding/staff', data);
+  }
+
+  async submitSupplierOnboarding(data: SupplierOnboardingRequest): Promise<ApiResponse<OnboardingResponse>> {
+    return this.post('/api/onboarding/supplier', data);
+  }
+
+  async submitVendorOnboarding(data: VendorOnboardingRequest): Promise<ApiResponse<OnboardingResponse>> {
+    return this.post('/api/onboarding/vendor', data);
+  }
+
+  // Onboarding approval (Admin only)
+  async approveOnboarding(id: string): Promise<ApiResponse<OnboardingResponse>> {
+    return this.put(`/api/onboarding/${id}/approve`);
+  }
+
+  async rejectOnboarding(id: string, reason?: string): Promise<ApiResponse<OnboardingResponse>> {
+    return this.put(`/api/onboarding/${id}/reject`, { reason });
+  }
+
+  // Get pending onboarding requests
+  async getPendingOnboarding(): Promise<ApiResponse<OnboardingResponse[]>> {
+    return this.get('/api/onboarding/pending');
+  }
+
   // RFID Operations
   async linkRFIDTag(rfidData: RFIDLinkRequest): Promise<ApiResponse<RFIDTagResponse>> {
     return this.post('/api/rfid/link', rfidData);
@@ -1071,6 +1107,56 @@ export interface StaffMember {
   isActive: boolean;
 }
 
+// ============================================
+// ONBOARDING INTERFACES (Staff Lead)
+// ============================================
+
+export interface StaffOnboardingRequest {
+  full_name: string;
+  email: string;
+  role: string;
+  department?: string;
+  phone?: string;
+}
+
+export interface SupplierOnboardingRequest {
+  name: string;
+  contact_info?: {
+    phone?: string;
+    email?: string;
+    address?: string;
+  };
+  boat_details?: {
+    boat_name?: string;
+    registration_number?: string;
+    capacity_kg?: number;
+  };
+}
+
+export interface VendorOnboardingRequest {
+  firm_name: string;
+  category: string;
+  contact_details?: {
+    phone?: string;
+    email?: string;
+    address?: string;
+  };
+}
+
+export interface OnboardingResponse {
+  id: string;
+  entityType: 'staff' | 'supplier' | 'vendor';
+  status: 'pending' | 'approved' | 'rejected';
+  data: Record<string, unknown>;
+  submittedBy: string;
+  submittedAt: string;
+  approvedBy?: string;
+  approvedAt?: string;
+  rejectedBy?: string;
+  rejectedAt?: string;
+  rejectionReason?: string;
+}
+
 export interface RFIDLinkRequest {
   tagId: string;
   boxNumber: string;
@@ -1135,7 +1221,11 @@ export function canAccessModule(userRole: string, module: string): boolean {
     'hr_management': ["Super Admin", "Admin", "Staff Lead"],
     'gate_control': ["Super Admin", "Admin", "Production Lead", "Security Guard"],
     'qc_workflow': ["Super Admin", "Admin", "QC Lead", "QC Staff"],
-    'approval_dashboard': ["Super Admin", "Admin", "Production Lead", "QC Lead"]
+    'approval_dashboard': ["Super Admin", "Admin", "Production Lead", "QC Lead"],
+    'dashboard': ["Super Admin", "Admin", "Staff Lead"],
+    'supplier_onboarding': ["Super Admin", "Admin", "Staff Lead"],
+    'security_surveillance': ["Super Admin", "Admin", "Staff Lead"],
+    'staff_management': ["Super Admin", "Admin", "Staff Lead"],
   };
   
   return hasPermission(userRole, permissions[module] || []);
