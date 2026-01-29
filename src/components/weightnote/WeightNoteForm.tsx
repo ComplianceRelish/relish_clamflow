@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { weightNotesAPI } from '@/lib/clamflow-api';
+import clamflowAPI from '@/lib/clamflow-api';
 
 export interface WeightNoteFormProps {
   onSuccess: () => void;
@@ -24,7 +24,7 @@ const WeightNoteForm: React.FC<WeightNoteFormProps> = ({ onSuccess }) => {
     setError(null);
 
     try {
-      await weightNotesAPI.create({
+      await clamflowAPI.createWeightNote({
         ...formData,
         total_weight: parseFloat(formData.total_weight)
       });

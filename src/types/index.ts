@@ -1,10 +1,36 @@
 // Central type exports for ClamFlow Frontend
 export * from './auth';
 export * from './api';
-export * from './forms';
+// Export forms but exclude types that are duplicated in qc-workflow
+export { 
+  type WeightNoteFormData,
+  type WeightNote,
+  type PPCFormData,
+  type PPCForm,
+  type FPFormData,
+  type FPForm,
+  type DepurationFormData,
+  type DepurationForm,
+  type DepurationStatus,
+  type QCFormSubmissionStatus,
+  type FormSubmissionResult,
+  type BaseFormResponse
+} from './forms';
 export * from './inventory';
-export * from './rfid';
-export * from './qc-workflow';
+// Note: qc-workflow has some overlapping types - explicitly select what we need
+export { 
+  type WorkflowStep, 
+  type QCViewMode, 
+  type WorkflowState, 
+  type FormAction,
+  type WeightNoteData,
+  type RFIDTagData,
+  type QRLabelData,
+  WORKFLOW_STEPS,
+  QC_STAFF_OPTIONS
+} from './qc-workflow';
+// Note: rfid has RFIDScanResult which may conflict - explicitly select
+export { type RFIDReaderStatus, type RFIDTag } from './rfid';
 
 // Base entity interface used across all modules
 export interface BaseEntity {

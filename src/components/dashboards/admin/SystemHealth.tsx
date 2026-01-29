@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { clamflowAPI, SystemHealthData } from '../../../lib/clamflow-api';
+import { clamflowAPI } from '../../../lib/clamflow-api';
+import { SystemHealthData } from '../../../types/dashboard';
 import { Card } from '../../ui/Card';
 import { Badge } from '../../ui/Badge';
 import { Button } from '../../ui/Button';
@@ -170,7 +171,7 @@ const SystemHealth: React.FC = () => {
                       {service.replace('_', ' ')}
                     </p>
                   </div>
-                  <Badge variant={getStatusColor(status)}>
+                  <Badge variant={getStatusColor(status as string | boolean)}>
                     {typeof status === 'boolean' ? (status ? 'Online' : 'Offline') : String(status)}
                   </Badge>
                 </div>

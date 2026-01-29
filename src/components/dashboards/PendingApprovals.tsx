@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Card } from '@/components/ui/Card';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { Clock } from 'lucide-react';
+import { Clock, AlertCircle, CheckCircle2, XCircle, Calendar, User as UserIcon } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { User } from '@/types/auth';
 
 // Simple loading spinner component
 const LoadingSpinner: React.FC = () => (
@@ -264,7 +265,7 @@ const PendingApprovals: React.FC = () => {
                     
                     <div className="space-y-1">
                       <div className="flex items-center text-sm text-gray-600">
-                        <User className="h-4 w-4 mr-1" />
+                        <UserIcon className="h-4 w-4 mr-1" />
                         Submitted by: {approval.submitted_by}
                       </div>
                       
@@ -283,7 +284,7 @@ const PendingApprovals: React.FC = () => {
                         <div className="text-xs text-gray-500 mt-2">
                           {Object.entries(approval.metadata).map(([key, value]) => (
                             <span key={key} className="inline-block mr-3">
-                              <strong>{key.replace('_', ' ')}:</strong> {value}
+                              <strong>{key.replace('_', ' ')}:</strong> {String(value)}
                             </span>
                           ))}
                         </div>

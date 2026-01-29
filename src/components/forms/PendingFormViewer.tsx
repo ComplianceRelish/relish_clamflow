@@ -109,45 +109,50 @@ const forms: FormDetails[] = await Promise.all(
     try {
       switch (item.form_type) {
         case 'weight_note':
-          const weightNoteRes = await clamflowAPI.getWeightNoteById(item.form_id)
+          const weightNoteRes = await clamflowAPI.getWeightNotes()
           if (weightNoteRes.success && weightNoteRes.data) {
-            formData = weightNoteRes.data
+            const found = weightNoteRes.data.find((wn: any) => wn.id === item.form_id)
+            formData = found || {}
             title = `Weight Note - Box ${formData.box_number || 'N/A'}`
           } else {
             title = `Weight Note - ${item.form_id}`
           }
           break
         case 'ppc_form':
-          const ppcRes = await clamflowAPI.getPPCFormById(item.form_id)
+          const ppcRes = await clamflowAPI.getPPCForms()
           if (ppcRes.success && ppcRes.data) {
-            formData = ppcRes.data
+            const found = ppcRes.data.find((f: any) => f.id === item.form_id)
+            formData = found || {}
             title = `PPC Form - Box ${formData.box_number || 'N/A'}`
           } else {
             title = `PPC Form - ${item.form_id}`
           }
           break
         case 'fp_form':
-          const fpRes = await clamflowAPI.getFPFormById(item.form_id)
+          const fpRes = await clamflowAPI.getFPForms()
           if (fpRes.success && fpRes.data) {
-            formData = fpRes.data
+            const found = fpRes.data.find((f: any) => f.id === item.form_id)
+            formData = found || {}
             title = `Final Product - Box ${formData.box_number || 'N/A'}`
           } else {
             title = `Final Product - ${item.form_id}`
           }
           break
         case 'qc_form':
-          const qcRes = await clamflowAPI.getQCFormById(item.form_id)
+          const qcRes = await clamflowAPI.getQCForms()
           if (qcRes.success && qcRes.data) {
-            formData = qcRes.data
+            const found = qcRes.data.find((f: any) => f.id === item.form_id)
+            formData = found || {}
             title = `QC Form - ${formData.test_type || formData.form_type || 'N/A'}`
           } else {
             title = `QC Form - ${item.form_id}`
           }
           break
         case 'depuration_form':
-          const depRes = await clamflowAPI.getDepurationSample(item.form_id)
+          const depRes = await clamflowAPI.getDepurationForms()
           if (depRes.success && depRes.data) {
-            formData = depRes.data
+            const found = depRes.data.find((f: any) => f.id === item.form_id)
+            formData = found || {}
             title = `Depuration Form - Sample ${formData.sample_id || formData.id || 'N/A'}`
           } else {
             title = `Depuration Form - ${item.form_id}`
@@ -267,7 +272,7 @@ const forms: FormDetails[] = await Promise.all(
   }
 
   const formatFormType = (type: string): string => {
-    const typeMap = {
+    const typeMap: Record<string, string> = {
       'weight_note': 'Weight Note',
       'ppc_form': 'PPC Form',
       'fp_form': 'Final Product',
@@ -278,7 +283,7 @@ const forms: FormDetails[] = await Promise.all(
   }
 
   const getPriorityColor = (priority: string): string => {
-    const colors = {
+    const colors: Record<string, string> = {
       'high': 'bg-red-100 text-red-800 border-red-200',
       'medium': 'bg-yellow-100 text-yellow-800 border-yellow-200',
       'low': 'bg-green-100 text-green-800 border-green-200'
@@ -294,7 +299,7 @@ const forms: FormDetails[] = await Promise.all(
     if (!currentUser) return false
     
     const role = currentUser.role
-    const approvalMatrix = {
+    const approvalMatrix: Record<string, string[]> = {
       'weight_note': ['Super Admin', 'Admin', 'Production Lead'],
       'ppc_form': ['Super Admin', 'Admin', 'Production Lead'],
       'fp_form': ['Super Admin', 'Admin', 'Production Lead'],

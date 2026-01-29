@@ -3,8 +3,9 @@
 // src/components/dashboards/QCFlowDashboard.tsx
 // COMPLETE REPLACEMENT - Based on Figma Framework
 // Main entry point for QC Workflow with all components integrated
+// NOW CONNECTED TO REAL BACKEND STATION ASSIGNMENTS API
 
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import { User } from '../../types/auth'
 import { 
   QCViewMode, 
@@ -17,6 +18,7 @@ import {
   PPCFormData,
   FPFormData
 } from '../../types/qc-workflow'
+import { preloadStaffStationAssignments, clearStationAssignmentCache } from '../../lib/clamflow-api'
 
 // Import QC Components
 import QCFlowForm from '../qc/QCFlowForm'
@@ -52,6 +54,14 @@ const QCFlowDashboard: React.FC<QCFlowDashboardProps> = ({ currentUser }) => {
   // Current QC Staff ID (from authenticated user)
   const [currentQCStaffId, setCurrentQCStaffId] = useState(currentUser?.id || "qc_staff_001")
   const currentStationId = "rm_station" // Would come from user's station assignment
+
+  // Preload station assignments when user changes
+  useEffect(() => {
+    if (currentQCStaffId) {
+      console.log(`🔄 Preloading station assignments for ${currentQCStaffId}...`)
+      preloadStaffStationAssignments(currentQCStaffId)
+    }
+  }, [currentQCStaffId])
 
   // Helper function to create placeholder data based on form type
   const createPlaceholderData = useCallback((type: 'weight-note' | 'ppc' | 'fp'): Record<string, unknown> => {
@@ -404,8 +414,10 @@ const QCFlowDashboard: React.FC<QCFlowDashboardProps> = ({ currentUser }) => {
                   <button
                     key={staff.id}
                     onClick={() => {
+                      // Clear cache when switching users to force reload from API
+                      clearStationAssignmentCache()
                       setCurrentQCStaffId(staff.id)
-                      alert(`Switched to ${staff.name}. Access control will now reflect their station assignments.`)
+                      alert(`Switched to ${staff.name}. Loading station assignments from backend...`)
                     }}
                     className={`block w-full text-left px-3 py-2 text-sm rounded ${
                       currentQCStaffId === staff.id 
@@ -414,7 +426,7 @@ const QCFlowDashboard: React.FC<QCFlowDashboardProps> = ({ currentUser }) => {
                     }`}
                   >
                     <div className="font-medium">{staff.name}</div>
-                    <div className="text-xs text-gray-600">{staff.stations.join(", ")}</div>
+                    <div className="text-xs text-gray-600">{staff.stations.join(", ")} (demo)</div>
                   </button>
                 ))}
               </div>

@@ -1248,22 +1248,117 @@ export function canApproveForm(userRole: string, formType: string): boolean {
   return hasPermission(userRole, approvalPermissions[formType] || []);
 }
 
-// QC Staff Station Assignments - Based on Figma workflow
-export const QC_STAFF_STATION_ASSIGNMENTS: Record<string, string[]> = {
+// ============================================
+// QC STAFF STATION AUTHORIZATION - LIVE API
+// ============================================
+
+// Cache for staff station assignments (to avoid excessive API calls)
+let staffStationCache: Map<string, { stations: string[]; expiry: number }> = new Map();
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes cache
+
+// Fallback data for demo/offline mode
+export const QC_STAFF_STATION_ASSIGNMENTS_FALLBACK: Record<string, string[]> = {
   "qc_staff_001": ["RM Station", "Depuration Station"],
   "qc_staff_002": ["PPC Station", "Separation Station"],
   "qc_staff_003": ["FP Station"]
 };
 
-export function getQCStaffAssignedStations(staffId: string): string[] {
-  return QC_STAFF_STATION_ASSIGNMENTS[staffId] || [];
+/**
+ * Fetch staff's assigned stations from the backend API.
+ * Returns array of station names the staff is assigned to for today.
+ * Falls back to cached data or demo data if API fails.
+ */
+export async function fetchStaffAssignedStations(staffId: string): Promise<string[]> {
+  // Check cache first
+  const cached = staffStationCache.get(staffId);
+  if (cached && cached.expiry > Date.now()) {
+    return cached.stations;
+  }
+
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const response = await clamflowAPI.getStationsWithAssignments(today);
+    
+    if (response.success && response.data) {
+      // Find stations where this staff is assigned
+      const assignedStations: string[] = [];
+      
+      for (const station of response.data) {
+        const isAssigned = station.assignments?.some(
+          (assignment: any) => 
+            assignment.staff_id === staffId && 
+            assignment.status === 'active'
+        );
+        
+        if (isAssigned) {
+          assignedStations.push(station.name);
+        }
+      }
+      
+      // Update cache
+      staffStationCache.set(staffId, {
+        stations: assignedStations,
+        expiry: Date.now() + CACHE_TTL_MS
+      });
+      
+      return assignedStations;
+    }
+  } catch (error) {
+    console.error('Failed to fetch staff station assignments:', error);
+  }
+  
+  // Fallback to demo data
+  return QC_STAFF_STATION_ASSIGNMENTS_FALLBACK[staffId] || [];
 }
 
+/**
+ * Synchronous version using cache - for backward compatibility.
+ * Use fetchStaffAssignedStations for real-time data.
+ */
+export function getQCStaffAssignedStations(staffId: string): string[] {
+  const cached = staffStationCache.get(staffId);
+  if (cached) {
+    return cached.stations;
+  }
+  // Return fallback data if cache miss
+  return QC_STAFF_STATION_ASSIGNMENTS_FALLBACK[staffId] || [];
+}
+
+/**
+ * Check if a staff member can approve forms from a specific station.
+ * Uses cached data for synchronous check.
+ */
 export function canQCStaffApproveStation(staffId: string, stationName: string): boolean {
   const assignedStations = getQCStaffAssignedStations(staffId);
   return assignedStations.some(station => 
     stationName.toLowerCase().includes(station.toLowerCase().replace(' Station', ''))
   );
+}
+
+/**
+ * Check if a staff member can approve forms from a specific station.
+ * Async version that fetches fresh data from API.
+ */
+export async function canQCStaffApproveStationAsync(staffId: string, stationName: string): Promise<boolean> {
+  const assignedStations = await fetchStaffAssignedStations(staffId);
+  return assignedStations.some(station => 
+    stationName.toLowerCase().includes(station.toLowerCase().replace(' Station', ''))
+  );
+}
+
+/**
+ * Clear the station assignment cache (call when assignments change)
+ */
+export function clearStationAssignmentCache(): void {
+  staffStationCache.clear();
+}
+
+/**
+ * Preload station assignments for a staff member.
+ * Call this when a user logs in to warm the cache.
+ */
+export async function preloadStaffStationAssignments(staffId: string): Promise<void> {
+  await fetchStaffAssignedStations(staffId);
 }
 
 export const clamflowAPI = new ClamFlowAPI();

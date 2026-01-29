@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
-import { onboardingAPI } from '@/lib/api-client';
+import clamflowAPI from '@/lib/clamflow-api';
 import Image from 'next/image';
 
 interface StaffOnboardingData {
@@ -88,7 +88,7 @@ export default function StaffOnboardingPage() {
         status: 'pending'
       };
       
-      await onboardingAPI.submitStaff(submissionData);
+      await clamflowAPI.post('/api/onboarding/staff', submissionData);
       
       setSuccess(true);
       

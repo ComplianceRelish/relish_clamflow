@@ -7,28 +7,26 @@ const testUser: User = {
   id: '1',
   username: 'test_user',
   full_name: 'Test User',
-  role: 'production_staff',
+  role: 'Production Staff',
   station: 'Station 1',
   is_active: true,
   last_login: '2023-01-01T00:00:00Z',
   created_at: '2023-01-01T00:00:00Z',
-  password_reset_required: false,
-  login_attempts: 0,
 };
 
 // ✅ Remove unused variable or use it
-const testRole: UserRole = 'qc_staff';
+const testRole: UserRole = 'QC Staff';
 
-// ✅ FIXED: Schema-compliant role test
+// ✅ FIXED: Schema-compliant role test (Title Case with spaces)
 const validRoles: UserRole[] = [
-  'super_admin',
-  'admin',
-  'staff_lead',
-  'production_lead',
-  'production_staff',
-  'qc_staff',
-  'qc_lead',
-  'security_guard'
+  'Super Admin',
+  'Admin',
+  'Staff Lead',
+  'Production Lead',
+  'Production Staff',
+  'QC Staff',
+  'QC Lead',
+  'Security Guard'
 ];
 
 // Test role validation function
@@ -37,7 +35,7 @@ function isValidRole(role: string): role is UserRole {
 }
 
 // Example usage
-const sampleRole = 'qc_staff';
+const sampleRole = 'QC Staff';
 if (isValidRole(sampleRole)) {
   console.log(`${sampleRole} is a valid role`);
 }

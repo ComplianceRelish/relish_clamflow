@@ -20,7 +20,7 @@ interface WeightNoteData {
   qc_staff_id?: string
   supplier_id?: string
   lot_id?: string
-  status: string
+  status?: string
 }
 
 const WeightNotePrintPreview: React.FC<WeightNotePrintPreviewProps> = ({

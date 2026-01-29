@@ -3,9 +3,15 @@
 // src/components/qc/QCFlowForm.tsx
 // Main QC Workflow Dashboard - Based on Figma Framework
 // Shows the 14-step production workflow with QC approval capabilities
+// NOW CONNECTED TO REAL BACKEND STATION ASSIGNMENTS API
 
 import React, { useState, useEffect, useCallback } from 'react'
-import clamflowAPI, { getQCStaffAssignedStations, canQCStaffApproveStation } from '../../lib/clamflow-api'
+import clamflowAPI, { 
+  getQCStaffAssignedStations, 
+  canQCStaffApproveStation,
+  fetchStaffAssignedStations,
+  canQCStaffApproveStationAsync
+} from '../../lib/clamflow-api'
 import { 
   WorkflowStep, 
   WORKFLOW_STEPS, 
@@ -38,9 +44,32 @@ const QCFlowForm: React.FC<QCFlowFormProps> = ({
   const [pendingForms, setPendingForms] = useState<any[]>([])
   const [qcMetrics, setQCMetrics] = useState<any>(null)
   
-  // Get assigned stations for current QC staff
-  const assignedStations = getQCStaffAssignedStations(currentQCStaffId)
+  // State for assigned stations (loaded from backend API)
+  const [assignedStations, setAssignedStations] = useState<string[]>([])
+  const [stationsLoaded, setStationsLoaded] = useState(false)
+  
+  // Get staff info for display (fallback to QC_STAFF_OPTIONS for demo)
   const currentStaffInfo = QC_STAFF_OPTIONS.find(s => s.id === currentQCStaffId)
+
+  // Load assigned stations from backend API
+  const loadAssignedStations = useCallback(async () => {
+    try {
+      const stations = await fetchStaffAssignedStations(currentQCStaffId)
+      setAssignedStations(stations)
+      setStationsLoaded(true)
+      console.log(`✅ Loaded ${stations.length} assigned stations for ${currentQCStaffId}:`, stations)
+    } catch (err) {
+      console.error('Failed to load assigned stations:', err)
+      // Fall back to cached/demo data
+      setAssignedStations(getQCStaffAssignedStations(currentQCStaffId))
+      setStationsLoaded(true)
+    }
+  }, [currentQCStaffId])
+
+  // Load stations when staff ID changes
+  useEffect(() => {
+    loadAssignedStations()
+  }, [loadAssignedStations])
 
   // Load pending forms and update workflow status
   const loadWorkflowData = useCallback(async () => {
@@ -76,8 +105,15 @@ const QCFlowForm: React.FC<QCFlowFormProps> = ({
     return () => clearInterval(interval)
   }, [loadWorkflowData])
 
-  // Update workflow steps based on lot progress
+  // Update workflow steps based on lot progress and assigned stations
   const updateWorkflowSteps = useCallback(() => {
+    // Helper function to check if staff can approve at a station (using loaded state)
+    const canApproveAtStation = (stationName: string): boolean => {
+      return assignedStations.some(station => 
+        stationName.toLowerCase().includes(station.toLowerCase().replace(' Station', ''))
+      )
+    }
+    
     setWorkflowSteps(prevSteps => {
       return prevSteps.map(step => {
         let newStatus = step.status
@@ -95,8 +131,8 @@ const QCFlowForm: React.FC<QCFlowFormProps> = ({
           if (!supervisorHasCreatedLot || !currentLotId) {
             newStatus = 'locked'
           } else {
-            // Check if this step's station is assigned to current QC staff
-            const canAccess = canQCStaffApproveStation(currentQCStaffId, step.station)
+            // Check if this step's station is assigned to current QC staff (using loaded stations)
+            const canAccess = canApproveAtStation(step.station)
             if (canAccess || !step.requiresApproval) {
               newStatus = 'available'
             } else {
@@ -108,11 +144,14 @@ const QCFlowForm: React.FC<QCFlowFormProps> = ({
         return { ...step, status: newStatus }
       })
     })
-  }, [currentLotId, supervisorHasCreatedLot, currentQCStaffId])
+  }, [currentLotId, supervisorHasCreatedLot, assignedStations]) // Now depends on assignedStations state
 
   useEffect(() => {
-    updateWorkflowSteps()
-  }, [updateWorkflowSteps])
+    // Only update workflow steps after stations are loaded
+    if (stationsLoaded) {
+      updateWorkflowSteps()
+    }
+  }, [updateWorkflowSteps, stationsLoaded])
 
   // Get step status styling
   const getStepStatusStyle = (step: WorkflowStep): string => {
@@ -145,11 +184,14 @@ const QCFlowForm: React.FC<QCFlowFormProps> = ({
     )
   }
 
-  // Check if step is actionable by current QC staff
+  // Check if step is actionable by current QC staff (using loaded stations)
   const isStepActionable = (step: WorkflowStep): boolean => {
     if (step.status === 'locked') return false
     if (!step.requiresApproval) return step.status === 'available'
-    return canQCStaffApproveStation(currentQCStaffId, step.station)
+    // Check against loaded assigned stations
+    return assignedStations.some(station => 
+      step.station.toLowerCase().includes(station.toLowerCase().replace(' Station', ''))
+    )
   }
 
   // Handle step click

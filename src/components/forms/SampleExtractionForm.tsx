@@ -38,8 +38,9 @@ interface SampleExtractionFormProps {
 }
 
 const SampleExtractionForm: React.FC<SampleExtractionFormProps> = ({ onSubmit, currentUser }) => {
-  const [lots, setLots] = useState<Array<{id: string, lot_number: string, status: string}>>([])
-  const [qcStaff, setQcStaff] = useState<Array<{id: string, full_name: string, role: string}>>([])
+  // Use API response types - LotResponse uses 'lotNumber', StaffMember uses 'fullName'
+  const [lots, setLots] = useState<Array<{id: string, lotNumber: string, status: string}>>([])
+  const [qcStaff, setQcStaff] = useState<Array<{id: string, fullName: string, role: string}>>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string>('')
   const [generatedSampleId, setGeneratedSampleId] = useState<string>('')
@@ -252,7 +253,7 @@ const SampleExtractionForm: React.FC<SampleExtractionFormProps> = ({ onSubmit, c
               <option value="">Select Lot</option>
               {lots.map(lot => (
                 <option key={lot.id} value={lot.id}>
-                  {lot.lot_number} ({lot.status})
+                  {lot.lotNumber} ({lot.status})
                 </option>
               ))}
             </select>
@@ -475,7 +476,7 @@ const SampleExtractionForm: React.FC<SampleExtractionFormProps> = ({ onSubmit, c
               <option value="">Select QC Staff</option>
               {qcStaff.map(staff => (
                 <option key={staff.id} value={staff.id}>
-                  {staff.full_name} ({staff.role})
+                  {staff.fullName} ({staff.role})
                 </option>
               ))}
             </select>

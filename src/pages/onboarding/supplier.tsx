@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
-import { onboardingAPI } from '@/lib/api-client';
+import clamflowAPI from '@/lib/clamflow-api';
 import Image from 'next/image';
 
 interface SupplierOnboardingData {
@@ -115,7 +115,7 @@ export default function SupplierOnboardingPage() {
         status: 'pending'
       };
       
-      await onboardingAPI.submitSupplier(submissionData);
+      await clamflowAPI.post('/api/onboarding/supplier', submissionData);
       
       setSuccess(true);
       

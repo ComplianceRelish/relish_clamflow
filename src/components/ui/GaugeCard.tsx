@@ -1,5 +1,4 @@
 import { CircularGauge } from "./CircularGauge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./Select";
 import { ChevronDown } from "lucide-react";
 
 interface ThresholdConfig {
@@ -47,19 +46,20 @@ export function GaugeCard({
         </h3>
         
         {hasDropdown && (
-          <Select value={selectedLot} onValueChange={onLotChange}>
-            <SelectTrigger className="w-full h-7 text-xs border-gray-300 bg-gray-50 hover:bg-gray-100 focus:ring-blue-500">
-              <SelectValue className="text-gray-700" />
-              <ChevronDown className="h-3 w-3 text-gray-600" />
-            </SelectTrigger>
-            <SelectContent className="border-gray-200">
+          <div className="relative">
+            <select
+              value={selectedLot}
+              onChange={(e) => onLotChange?.(e.target.value)}
+              className="w-full h-7 text-xs border border-gray-300 bg-gray-50 hover:bg-gray-100 focus:ring-blue-500 rounded-md px-2 pr-6 appearance-none cursor-pointer"
+            >
               {lotOptions.map((option) => (
-                <SelectItem key={option} value={option} className="text-xs text-gray-700 hover:bg-gray-50">
+                <option key={option} value={option}>
                   {option}
-                </SelectItem>
+                </option>
               ))}
-            </SelectContent>
-          </Select>
+            </select>
+            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-gray-600 pointer-events-none" />
+          </div>
         )}
       </div>
       

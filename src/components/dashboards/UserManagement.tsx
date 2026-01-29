@@ -1,8 +1,8 @@
 // src/components/dashboards/UserManagement.tsx - NEW
 'use client';
 
-import React, { useState } from 'react';
-import { userAPI } from '../../lib/api-client';
+import React, { useState, useEffect } from 'react';
+import clamflowAPI from '../../lib/clamflow-api';
 
 const UserManagement: React.FC = () => {
   const [userStats, setUserStats] = useState({
@@ -16,8 +16,14 @@ const UserManagement: React.FC = () => {
   useEffect(() => {
     const fetchUserStats = async () => {
       try {
-        const response = await userAPI.getStatistics();
-        if (response.success) {
+        // Use clamflowAPI.get for user statistics
+        const response = await clamflowAPI.get<{
+          total_users?: number;
+          active_users?: number;
+          inactive_users?: number;
+          recent_registrations_30d?: number;
+        }>('/api/admin/user-statistics');
+        if (response.success && response.data) {
           setUserStats({
             totalUsers: response.data.total_users || 0,
             activeUsers: response.data.active_users || 0,

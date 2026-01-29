@@ -1,23 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { clamflowAPI } from '../../../lib/clamflow-api';
+import { clamflowAPI, AuditLog } from '../../../lib/clamflow-api';
 import { Card } from '../../ui/Card';
 import { Button } from '../../ui/Button';
 import { Input } from '../../ui/Input';
 import { Badge } from '../../ui/Badge';
 import { LoadingSpinner } from '../../ui/LoadingSpinner';
-
-interface AuditLog {
-  id: string;
-  user_id: string;
-  user_name: string;
-  action: string;
-  resource: string;
-  timestamp: string;
-  ip_address: string;
-  details: any;
-}
 
 const AuditTrail: React.FC = () => {
   const [logs, setLogs] = useState<AuditLog[]>([]);
@@ -61,9 +50,9 @@ const AuditTrail: React.FC = () => {
   };
 
   const filteredLogs = logs.filter(log => {
-    const matchesSearch = log.user_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = log.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         log.resource.toLowerCase().includes(searchTerm.toLowerCase());
+                         log.role.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesAction = !filterAction || log.action === filterAction;
     return matchesSearch && matchesAction;
   });
@@ -130,7 +119,7 @@ const AuditTrail: React.FC = () => {
                   Action
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Resource
+                  Role
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Timestamp
@@ -144,7 +133,7 @@ const AuditTrail: React.FC = () => {
               {filteredLogs.map((log) => (
                 <tr key={log.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {log.user_name}
+                    {log.full_name}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <Badge className={getActionBadgeColor(log.action)}>
@@ -152,7 +141,7 @@ const AuditTrail: React.FC = () => {
                     </Badge>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {log.resource}
+                    {log.role}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {new Date(log.timestamp).toLocaleString()}

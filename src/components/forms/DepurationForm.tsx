@@ -38,8 +38,9 @@ interface DepurationFormProps {
 }
 
 const DepurationForm: React.FC<DepurationFormProps> = ({ onSubmit, currentUser }) => {
-  const [lots, setLots] = useState<Array<{id: string, lot_number: string, status: string}>>([])
-  const [qcStaff, setQcStaff] = useState<Array<{id: string, full_name: string, role: string}>>([])
+  // Use API response types - LotResponse uses 'lotNumber', StaffMember uses 'fullName'
+  const [lots, setLots] = useState<Array<{id: string, lotNumber: string, status: string}>>([])
+  const [qcStaff, setQcStaff] = useState<Array<{id: string, fullName: string, role: string}>>([])
   const [tanks, setTanks] = useState<Array<{id: string, tank_number: string, capacity: number, status: string}>>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string>('')
@@ -111,7 +112,8 @@ const DepurationForm: React.FC<DepurationFormProps> = ({ onSubmit, currentUser }
       ])
 
       if (lotsResponse.success && lotsResponse.data) {
-        setLots(lotsResponse.data.filter(lot => lot.status === 'in_progress' || lot.status === 'ready_for_depuration'))
+        // Filter for lots that are in depuration stage
+        setLots(lotsResponse.data.filter(lot => lot.status === 'depuration' || lot.status === 'washing'))
       }
 
       if (staffResponse.success && staffResponse.data) {
@@ -238,7 +240,7 @@ const DepurationForm: React.FC<DepurationFormProps> = ({ onSubmit, currentUser }
               <option value="">Select Lot</option>
               {lots.map(lot => (
                 <option key={lot.id} value={lot.id}>
-                  {lot.lot_number} ({lot.status})
+                  {lot.lotNumber} ({lot.status})
                 </option>
               ))}
             </select>
@@ -485,7 +487,7 @@ const DepurationForm: React.FC<DepurationFormProps> = ({ onSubmit, currentUser }
               <option value="">Select QC Staff</option>
               {qcStaff.map(staff => (
                 <option key={staff.id} value={staff.id}>
-                  {staff.full_name} ({staff.role})
+                  {staff.fullName} ({staff.role})
                 </option>
               ))}
             </select>
