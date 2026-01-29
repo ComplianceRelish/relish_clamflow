@@ -1,11 +1,12 @@
 // src/components/dashboard/Dashboard.tsx - CORRECTED Main Dashboard
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { RoleBasedAccess } from '../auth/RoleBasedAccess';
-import { clamflowAPI } from '../../lib/clamflow-api';
+import { RoleBasedAccess, AdminOnly, ProductionAccess, QCStaffAccess, RoleDisplay } from '../auth/RoleBasedAccess';
+import clamflowAPI from '../../lib/clamflow-api';
 import { UserRole } from '../../types/auth';
+import { SystemHealthData } from '../../types/dashboard';
 
 // Dashboard Widgets
 import DashboardMetrics from './DashboardMetrics';
@@ -46,10 +47,10 @@ const Dashboard: React.FC = () => {
 
         // ✅ FIXED: Use clamflowAPI for consistent API calls
         const [usersResponse, systemHealthResponse, pendingApprovalsResponse, recentActivityResponse] = await Promise.allSettled([
-          clamflowAPI.users.getAllUsers(),
-          clamflowAPI.dashboard.getSystemHealth(),
-          clamflowAPI.dashboard.getPendingApprovals(user.role),
-          clamflowAPI.dashboard.getRecentActivity(10)
+          clamflowAPI.getAllUsers(),
+          clamflowAPI.getSystemHealth(),
+          clamflowAPI.getPendingApprovals(),
+          clamflowAPI.getDashboardMetrics()
         ]);
 
         // Handle users data for metrics
@@ -61,41 +62,45 @@ const Dashboard: React.FC = () => {
           systemHealth: 'healthy' as const
         };
 
-        if (usersResponse.status === 'fulfilled' && Array.isArray(usersResponse.value)) {
-          const users = usersResponse.value;
+        if (usersResponse.status === 'fulfilled' && usersResponse.value?.success && Array.isArray(usersResponse.value.data)) {
+          const users = usersResponse.value.data;
           metrics.totalUsers = users.length;
           metrics.activeUsers = users.filter(u => u.is_active).length;
         }
 
         // ✅ FIXED: Handle system health with EXACT SystemHealthData properties
-        let systemStatus: SystemHealthData;
-        if (systemHealthResponse.status === 'fulfilled') {
-          systemStatus = systemHealthResponse.value;
-        } else {
-          // ✅ FIXED: Use EXACT SystemHealthData properties
-          systemStatus = {
-            overall_status: 'healthy',
-            database_status: 'connected',
-            api_response_time: 45,
-            active_users: 0,
-            memory_usage: 0,
-            cpu_usage: 0,
-            last_backup: new Date().toISOString(),
-            uptime: "0h 0m"
-          };
+        const defaultSystemStatus: SystemHealthData = {
+          status: 'healthy',
+          uptime: '0h 0m',
+          database: {
+            status: 'connected',
+            response_time: 45
+          },
+          services: {
+            authentication: true,
+            api: true,
+            database: true,
+            hardware: true
+          }
+        };
+        
+        let systemStatus: SystemHealthData = defaultSystemStatus;
+        if (systemHealthResponse.status === 'fulfilled' && systemHealthResponse.value?.success && systemHealthResponse.value.data) {
+          systemStatus = systemHealthResponse.value.data;
         }
 
         // Handle pending approvals
         let pendingApprovals: any[] = [];
-        if (pendingApprovalsResponse.status === 'fulfilled') {
-          pendingApprovals = pendingApprovalsResponse.value || [];
+        if (pendingApprovalsResponse.status === 'fulfilled' && pendingApprovalsResponse.value?.success) {
+          pendingApprovals = pendingApprovalsResponse.value.data || [];
           metrics.pendingApprovals = pendingApprovals.length;
         }
 
-        // Handle recent activity
+        // Handle recent activity (from dashboard metrics)
         let recentActivity: any[] = [];
-        if (recentActivityResponse.status === 'fulfilled') {
-          recentActivity = recentActivityResponse.value || [];
+        if (recentActivityResponse.status === 'fulfilled' && recentActivityResponse.value?.success) {
+          // DashboardMetrics doesn't have recentActivity, leave empty for now
+          recentActivity = [];
         }
 
         setDashboardData({
@@ -126,10 +131,10 @@ const Dashboard: React.FC = () => {
     try {
       // Re-fetch all dashboard data
       const [usersResponse, systemHealthResponse, pendingApprovalsResponse, recentActivityResponse] = await Promise.allSettled([
-        clamflowAPI.users.getAllUsers(),
-        clamflowAPI.dashboard.getSystemHealth(),
-        clamflowAPI.dashboard.getPendingApprovals(user.role),
-        clamflowAPI.dashboard.getRecentActivity(10)
+        clamflowAPI.getAllUsers(),
+        clamflowAPI.getSystemHealth(),
+        clamflowAPI.getPendingApprovals(),
+        clamflowAPI.getDashboardMetrics()
       ]);
 
       // Process responses same as above
@@ -141,28 +146,36 @@ const Dashboard: React.FC = () => {
         systemHealth: 'healthy' as const
       };
 
-      if (usersResponse.status === 'fulfilled' && Array.isArray(usersResponse.value)) {
-        const users = usersResponse.value;
+      if (usersResponse.status === 'fulfilled' && usersResponse.value?.success && Array.isArray(usersResponse.value.data)) {
+        const users = usersResponse.value.data;
         metrics.totalUsers = users.length;
         metrics.activeUsers = users.filter(u => u.is_active).length;
       }
 
       // ✅ FIXED: Proper type handling for SystemHealthData
-      const systemStatus: SystemHealthData = systemHealthResponse.status === 'fulfilled' ? 
-        systemHealthResponse.value : 
-        { 
-          overall_status: 'healthy',
-          database_status: 'connected',
-          api_response_time: 45,
-          active_users: 0,
-          memory_usage: 0,
-          cpu_usage: 0,
-          last_backup: new Date().toISOString(),
-          uptime: "0h 0m"
-        };
+      const defaultSystemStatus: SystemHealthData = {
+        status: 'healthy',
+        uptime: '0h 0m',
+        database: {
+          status: 'connected',
+          response_time: 45
+        },
+        services: {
+          authentication: true,
+          api: true,
+          database: true,
+          hardware: true
+        }
+      };
+      
+      let systemStatus: SystemHealthData = defaultSystemStatus;
+      if (systemHealthResponse.status === 'fulfilled' && systemHealthResponse.value?.success && systemHealthResponse.value.data) {
+        systemStatus = systemHealthResponse.value.data;
+      }
 
-      const pendingApprovals = pendingApprovalsResponse.status === 'fulfilled' ? (pendingApprovalsResponse.value || []) : [];
-      const recentActivity = recentActivityResponse.status === 'fulfilled' ? (recentActivityResponse.value || []) : [];
+      const pendingApprovals = (pendingApprovalsResponse.status === 'fulfilled' && pendingApprovalsResponse.value?.success) 
+        ? (pendingApprovalsResponse.value.data || []) : [];
+      const recentActivity: any[] = [];
 
       metrics.pendingApprovals = pendingApprovals.length;
 
@@ -184,14 +197,14 @@ const Dashboard: React.FC = () => {
   // Role display helper
   const getDisplayRole = (role: UserRole): string => {
     const roleMap: Record<UserRole, string> = {
-      'super_admin': 'Super Administrator',
-      'admin': 'Administrator',
-      'staff_lead': 'Staff Lead',
-      'production_lead': 'Production Lead',
-      'qc_lead': 'QC Lead',
-      'production_staff': 'Production Staff',
-      'qc_staff': 'QC Staff',
-      'security_guard': 'Security Guard'
+      'Super Admin': 'Super Administrator',
+      'Admin': 'Administrator',
+      'Staff Lead': 'Staff Lead',
+      'Production Lead': 'Production Lead',
+      'QC Lead': 'QC Lead',
+      'Production Staff': 'Production Staff',
+      'QC Staff': 'QC Staff',
+      'Security Guard': 'Security Guard'
     };
     return roleMap[role] || role;
   };
@@ -338,7 +351,7 @@ const Dashboard: React.FC = () => {
           </QCStaffAccess>
 
           {/* Pending Approvals (Available to relevant roles) */}
-          <RoleBasedAccess allowedRoles={['super_admin', 'admin', 'production_lead', 'qc_lead', 'qc_staff']}>
+          <RoleBasedAccess allowedRoles={['Super Admin', 'Admin', 'Production Lead', 'QC Lead', 'QC Staff']}>
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Pending Approvals</h3>
               {dashboardData && <PendingApprovals />}
@@ -403,7 +416,7 @@ const Dashboard: React.FC = () => {
             </AdminOnly>
 
             {/* Lot Management */}
-            <RoleBasedAccess allowedRoles={['super_admin', 'admin', 'production_lead', 'production_staff']}>
+            <RoleBasedAccess allowedRoles={['Super Admin', 'Admin', 'Production Lead', 'Production Staff']}>
               <button 
                 onClick={() => window.location.href = '/lots'}
                 className="bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-lg text-center transition-colors"
@@ -444,11 +457,11 @@ const Dashboard: React.FC = () => {
             </div>
             <div className="bg-white rounded-lg shadow p-4 text-center">
               <div className={`text-3xl font-bold ${
-                dashboardData.systemStatus.overall_status === 'healthy' ? 'text-green-600' : 
-                dashboardData.systemStatus.overall_status === 'warning' ? 'text-yellow-600' : 'text-red-600'
+                dashboardData.systemStatus.status === 'healthy' ? 'text-green-600' : 
+                dashboardData.systemStatus.status === 'warning' ? 'text-yellow-600' : 'text-red-600'
               }`}>
-                {dashboardData.systemStatus.overall_status === 'healthy' ? '✅' : 
-                 dashboardData.systemStatus.overall_status === 'warning' ? '⚠️' : '❌'}
+                {dashboardData.systemStatus.status === 'healthy' ? '✅' : 
+                 dashboardData.systemStatus.status === 'warning' ? '⚠️' : '❌'}
               </div>
               <div className="text-sm text-gray-500">System Status</div>
               <div className="text-xs text-gray-400">Uptime: {dashboardData.systemStatus.uptime}</div>
