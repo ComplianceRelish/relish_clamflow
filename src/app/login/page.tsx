@@ -8,16 +8,18 @@ import { Button } from '../../components/ui/Button';
 import { FormField } from '../../components/ui/FormField';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import PasswordChangeForm from '../../components/auth/PasswordChangeForm';
+import FaceRecognitionLogin from '../../components/auth/FaceRecognitionLogin';
 
 interface LoginState {
   username: string;
   password: string;
   loading: boolean;
   error: string | null;
+  showFaceRecognition: boolean;
 }
 
 const LoginPage: React.FC = () => {
-  const { login, user, requiresPasswordChange, isAuthenticated, isLoading } = useAuth();
+  const { login, faceLogin, user, requiresPasswordChange, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   
   const [state, setState] = useState<LoginState>({
@@ -25,6 +27,7 @@ const LoginPage: React.FC = () => {
     password: '',
     loading: false,
     error: null,
+    showFaceRecognition: false,
   });
 
   useEffect(() => {
@@ -161,13 +164,36 @@ const LoginPage: React.FC = () => {
                 className="text-sm text-blue-600 hover:text-blue-500 disabled:opacity-50"
                 disabled={state.loading}
                 onClick={() => {
-                  alert('Face Recognition will be available soon!');
+                  setState(prev => ({ ...prev, showFaceRecognition: true }));
                 }}
               >
                 🔐 Use Face Recognition Instead
               </button>
             </div>
           </form>
+
+          {/* Face Recognition Modal */}
+          <FaceRecognitionLogin
+            isOpen={state.showFaceRecognition}
+            onClose={() => setState(prev => ({ ...prev, showFaceRecognition: false }))}
+            onSuccess={async (result) => {
+              setState(prev => ({ ...prev, loading: true, error: null }));
+              const loginResult = await faceLogin(result);
+              if (!loginResult.success) {
+                setState(prev => ({ 
+                  ...prev, 
+                  loading: false, 
+                  error: loginResult.error || 'Face login failed',
+                  showFaceRecognition: false 
+                }));
+              } else {
+                setState(prev => ({ ...prev, loading: false, showFaceRecognition: false }));
+              }
+            }}
+            onError={(error) => {
+              console.error('Face recognition error:', error);
+            }}
+          />
 
           <div className="mt-6 p-4 bg-blue-50 rounded-lg">
             <h4 className="font-medium text-blue-900 mb-2">ClamFlow Enterprise</h4>

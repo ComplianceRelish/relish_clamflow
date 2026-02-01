@@ -17,6 +17,23 @@ interface User {
   first_login?: boolean;
 }
 
+// Face login result interface
+interface FaceLoginResult {
+  success: boolean;
+  access_token: string;
+  user: {
+    id: string;
+    username: string;
+    full_name: string;
+    role: string;
+    station?: string;
+    is_active: boolean;
+    requires_password_change?: boolean;
+    first_login?: boolean;
+  };
+  message?: string;
+}
+
 // Define AuthContextType with hasPermission
 interface AuthContextType {
   user: User | null;
@@ -25,6 +42,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   requiresPasswordChange: boolean;
   login: (username: string, password: string) => Promise<{ success: boolean; error?: string; requiresPasswordChange?: boolean }>;
+  faceLogin: (faceAuthResult: FaceLoginResult) => Promise<{ success: boolean; error?: string; requiresPasswordChange?: boolean }>;
   logout: () => void;
   changePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
   refreshToken: () => Promise<boolean>;
@@ -164,6 +182,62 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  // Face Login function - handles result from FaceRecognitionLogin component
+  const faceLogin = async (faceAuthResult: FaceLoginResult): Promise<{ success: boolean; error?: string; requiresPasswordChange?: boolean }> => {
+    try {
+      setIsLoading(true);
+      
+      console.log('🔐 Processing face login result');
+      
+      if (!faceAuthResult.success) {
+        return { success: false, error: faceAuthResult.message || 'Face authentication failed' };
+      }
+
+      const authToken = faceAuthResult.access_token;
+      const userData: User = {
+        id: faceAuthResult.user.id,
+        username: faceAuthResult.user.username,
+        full_name: faceAuthResult.user.full_name,
+        role: faceAuthResult.user.role as User['role'],
+        station: faceAuthResult.user.station,
+        is_active: faceAuthResult.user.is_active,
+        last_login: new Date().toISOString(),
+        requires_password_change: faceAuthResult.user.requires_password_change || false,
+        first_login: faceAuthResult.user.first_login || false
+      };
+
+      console.log('📝 Face login - Setting user:', userData.username);
+
+      // Save to localStorage
+      try {
+        localStorage.setItem('clamflow_token', authToken);
+        localStorage.setItem('clamflow_user', JSON.stringify(userData));
+        console.log('✅ AuthContext: Successfully saved face login data to localStorage');
+      } catch (err) {
+        console.error('❌ AuthContext: Failed to save to localStorage:', err);
+        return { success: false, error: 'Failed to save authentication data.' };
+      }
+
+      // Set React state
+      setToken(authToken);
+      setUser(userData);
+      setRequiresPasswordChange(userData.requires_password_change || false);
+
+      if (userData.requires_password_change) {
+        return { success: true, requiresPasswordChange: true };
+      } else {
+        await new Promise(resolve => setTimeout(resolve, 200));
+        router.push('/dashboard');
+        return { success: true };
+      }
+    } catch (err) {
+      console.error('Face login error:', err);
+      return { success: false, error: 'Face login failed. Please try again.' };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Password change function
   const changePassword = async (currentPassword: string, newPassword: string): Promise<{ success: boolean; error?: string }> => {
     try {
@@ -280,6 +354,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     isAuthenticated: !!user && !!token,
     requiresPasswordChange,
     login,
+    faceLogin,
     logout,
     changePassword,
     refreshToken,
