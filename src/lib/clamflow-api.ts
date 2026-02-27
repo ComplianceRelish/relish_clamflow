@@ -1,5 +1,6 @@
 // src/lib/clamflow-api.ts
 import { User } from '../types/auth';
+import { transformKeysToCamel } from './transform';
 import {
   StationStatus,
   ActiveLot,
@@ -321,17 +322,22 @@ class ClamFlowAPI {
         throw new Error(errorMessage);
       }
 
-      const data = await response.json();
+      const rawData = await response.json();
+      
+      // 🔄 TRANSFORM: Convert snake_case keys from backend to camelCase for frontend types
+      const data = transformKeysToCamel<T>(rawData);
       
       // 🛡️ DEFENSIVE: Handle paginated responses - unwrap various formats
-      let finalData = data;
+      // Check both camelCase (post-transform) and snake_case (in case of edge cases) wrapper keys
+      let finalData: T = data;
       if (data && typeof data === 'object' && !Array.isArray(data)) {
-        // Check for common pagination wrapper keys
-        const wrapperKeys = ['items', 'finished_products', 'test_results', 'data'];
+        const dataObj = data as Record<string, unknown>;
+        // Check for common pagination wrapper keys (camelCase after transform)
+        const wrapperKeys = ['items', 'finishedProducts', 'testResults', 'data'];
         for (const key of wrapperKeys) {
-          if (key in data && Array.isArray(data[key])) {
+          if (key in dataObj && Array.isArray(dataObj[key])) {
             console.log(`📦 Unwrapping paginated response from ${endpoint} (key: ${key})`);
-            finalData = data[key];
+            finalData = dataObj[key] as T;
             break;
           }
         }
@@ -343,7 +349,7 @@ class ClamFlowAPI {
         return { success: true, data: [] as T };
       }
       
-      return { success: true, data: finalData };
+      return { success: true, data: finalData as T };
     } catch (error) {
       console.error(`💥 Request failed for ${endpoint}:`, error);
       return {

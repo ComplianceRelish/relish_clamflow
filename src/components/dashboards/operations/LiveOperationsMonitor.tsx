@@ -205,13 +205,22 @@ const LiveOperationsMonitor: React.FC = () => {
       <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Processing Flow</h3>
         <div className="flex items-center justify-between space-x-4 overflow-x-auto pb-2">
-          {['Weight Station', 'PPC Station', 'FP Station', 'QC Station', 'Inventory'].map((stage, index) => {
-            const lotsInStage = activeLots.filter(lot => lot.currentStation?.includes(stage.split(' ')[0])).length;
+          {[
+            { label: 'Weight Station', keywords: ['weight', 'weighing', 'receiving'] },
+            { label: 'PPC Station', keywords: ['ppc', 'washing', 'depuration', 'pre-processing'] },
+            { label: 'FP Station', keywords: ['fp', 'final', 'packing', 'freezer'] },
+            { label: 'QC Station', keywords: ['qc', 'quality', 'grading', 'testing'] },
+            { label: 'Inventory', keywords: ['inventory', 'storage', 'cold', 'shipment'] }
+          ].map((stage, index) => {
+            const lotsInStage = activeLots.filter(lot => {
+              const station = (lot.currentStation || '').toLowerCase();
+              return stage.keywords.some(kw => station.includes(kw));
+            }).length;
             return (
-              <React.Fragment key={stage}>
+              <React.Fragment key={stage.label}>
                 <div className="flex-1 min-w-[120px]">
-                  <div className={`p-4 rounded-lg text-center ${getStageColor(stage)}`}>
-                    <p className="font-bold text-lg">{stage}</p>
+                  <div className={`p-4 rounded-lg text-center ${getStageColor(stage.label)}`}>
+                    <p className="font-bold text-lg">{stage.label}</p>
                     <p className="text-2xl font-bold mt-2">{lotsInStage}</p>
                     <p className="text-xs mt-1">Active Lots</p>
                   </div>

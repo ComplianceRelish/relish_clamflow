@@ -25,12 +25,13 @@ const ProductionOverview: React.FC = () => {
       try {
         const response = await clamflowAPI.getDashboardMetrics();
         if (response.success && response.data) {
-          // Map available data to production stats
+          const d = response.data as Record<string, unknown>;
+          // Map available data to production stats from backend response
           setProductionStats({
-            todayProduction: 0,
-            weeklyProduction: 0,
-            activeStations: 0,
-            totalStations: 0
+            todayProduction: (d.todayProduction as number) || (d.today_production as number) || 0,
+            weeklyProduction: (d.weeklyProduction as number) || (d.weekly_production as number) || 0,
+            activeStations: (d.activeStations as number) || (d.active_stations as number) || 0,
+            totalStations: (d.totalStations as number) || (d.total_stations as number) || 0
           });
         }
       } catch (error) {

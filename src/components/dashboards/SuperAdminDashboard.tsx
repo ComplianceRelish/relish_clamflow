@@ -60,9 +60,9 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ currentUser }
         setDashboardData({
           totalUsers: backendData.totalUsers || backendData.total_users || 0,
           activeUsers: backendData.activeUsers || backendData.active_users || 0,
-          totalLots: backendData.totalLots || 0,
-          pendingApprovals: backendData.pendingApprovals || 0,
-          systemHealth: backendData.systemHealth || 'healthy',
+          totalLots: backendData.totalLots || backendData.total_lots || 0,
+          pendingApprovals: backendData.pendingApprovals || backendData.pending_approvals || 0,
+          systemHealth: backendData.systemHealth || backendData.system_health || 'healthy',
           lastUpdated: backendData.lastUpdated || backendData.last_updated || new Date().toISOString()
         })
       } else if (results[0].status === 'rejected') {
@@ -236,12 +236,12 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ currentUser }
                     <p className="text-2xl md:text-3xl font-bold text-green-600">{dashboardData.activeUsers || 0}</p>
                   </div>
                   <div className="bg-white p-4 md:p-6 rounded-xl shadow-lg border-l-4 border-blue-500 hover:shadow-xl transition-shadow">
-                    <h3 className="text-xs md:text-sm font-medium text-gray-500 mb-1">System Operations</h3>
-                    <p className="text-2xl md:text-3xl font-bold text-blue-600">0</p>
+                    <h3 className="text-xs md:text-sm font-medium text-gray-500 mb-1">Total Lots</h3>
+                    <p className="text-2xl md:text-3xl font-bold text-blue-600">{dashboardData.totalLots || 0}</p>
                   </div>
                   <div className="bg-white p-4 md:p-6 rounded-xl shadow-lg border-l-4 border-yellow-500 hover:shadow-xl transition-shadow">
-                    <h3 className="text-xs md:text-sm font-medium text-gray-500 mb-1">Security Events</h3>
-                    <p className="text-2xl md:text-3xl font-bold text-yellow-600">0</p>
+                    <h3 className="text-xs md:text-sm font-medium text-gray-500 mb-1">Pending Approvals</h3>
+                    <p className="text-2xl md:text-3xl font-bold text-yellow-600">{dashboardData.pendingApprovals || 0}</p>
                   </div>
                 </div>
               ) : (

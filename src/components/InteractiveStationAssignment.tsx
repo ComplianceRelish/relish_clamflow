@@ -140,8 +140,11 @@ const DEFAULT_FP_STATIONS: ProductionStation[] = [
 ];
 
 // Helper function to map backend role to component role type
+// Backend returns Title Case roles (e.g., "Production Staff", "QC Lead")
+// We normalize by lowercasing and matching both formats (with space and underscore)
 const mapRoleToType = (role: string): 'Production' | 'QC' | 'Supervisor' | 'Maintenance' => {
   const roleMap: Record<string, 'Production' | 'QC' | 'Supervisor' | 'Maintenance'> = {
+    // snake_case format
     'production_staff': 'Production',
     'production_lead': 'Supervisor',
     'qc_staff': 'QC',
@@ -151,7 +154,16 @@ const mapRoleToType = (role: string): 'Production' | 'QC' | 'Supervisor' | 'Main
     'admin': 'Supervisor',
     'super_admin': 'Supervisor',
     'security_guard': 'Maintenance',
-    'staff_lead': 'Supervisor'
+    'staff_lead': 'Supervisor',
+    // Title Case format (space-separated, lowercased for lookup)
+    'production staff': 'Production',
+    'production lead': 'Supervisor',
+    'qc staff': 'QC',
+    'qc lead': 'Supervisor',
+    'maintenance staff': 'Maintenance',
+    'super admin': 'Supervisor',
+    'security guard': 'Maintenance',
+    'staff lead': 'Supervisor'
   };
   return roleMap[role?.toLowerCase()] || 'Production';
 };

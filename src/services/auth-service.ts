@@ -31,7 +31,8 @@ export interface AuthResponse {
 }
 
 export class AuthService {
-  private baseUrl = '/api/auth';
+  // Backend login is at /auth/login (no /api prefix) per main.py
+  private baseUrl = '/auth';
 
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {

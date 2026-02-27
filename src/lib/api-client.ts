@@ -127,8 +127,8 @@ class APIClient {
           if (typeof window !== 'undefined') {
             localStorage.removeItem('clamflow_token');
             localStorage.removeItem('clamflow_user');
+            window.location.href = '/login';
           }
-          window.location.href = '/login';
         }
         return Promise.reject(error);
       }
@@ -144,45 +144,45 @@ class APIClient {
   // CLAMFLOW QA ENDPOINTS
   // ========================================
 
-  // Weight Note Management - Backend: /weight-notes/
+  // Weight Note Management - Backend: /api/weight-notes/
   async createWeightNote(data: CreateWeightNoteRequest) {
-    return this.client.post('/weight-notes/', data);
+    return this.client.post('/api/weight-notes/', data);
   }
 
   async approveWeightNote(id: string) {
-    return this.client.put(`/weight-notes/${id}`);
+    return this.client.put(`/api/weight-notes/${id}`);
   }
 
   async getWeightNotes() {
-    return this.client.get('/weight-notes/');
+    return this.client.get('/api/weight-notes/');
   }
 
-  // PPC Form Management - Backend: /ppc-forms/
+  // PPC Form Management - Backend: /api/ppc-forms/
   async createPPCForm(data: CreatePPCFormRequest) {
-    return this.client.post('/ppc-forms/', data);
+    return this.client.post('/api/ppc-forms/', data);
   }
 
   async approvePPCForm(id: string) {
-    return this.client.put(`/ppc-forms/${id}`);
+    return this.client.put(`/api/ppc-forms/${id}`);
   }
 
-  // FP Form Management - Backend: /fp-forms/
+  // FP Form Management - Backend: /api/fp-forms/
   async createFPForm(data: CreateFPFormRequest) {
-    return this.client.post('/fp-forms/', data);
+    return this.client.post('/api/fp-forms/', data);
   }
 
   async approveFPForm(id: string) {
-    return this.client.put(`/fp-forms/${id}`);
+    return this.client.put(`/api/fp-forms/${id}`);
   }
 
-  // Sample Extraction - Note: Uses depuration endpoint per backend docs
+  // Sample Extraction - Backend: /api/v1/depuration/
   async createSampleExtraction(data: {
     lot_id: string;
     tank_location: string;
     sample_type: string;
     extracted_by: string;
   }) {
-    return this.client.post('/depuration/', data);
+    return this.client.post('/api/v1/depuration/', data);
   }
 
   // ========================================
@@ -191,8 +191,8 @@ class APIClient {
 
   // Gate Control - Backend: /api/gate/
   async recordGateExit(data: GateControlRequest) {
-    // Note: Backend expects log_id in URL for exit
-    return this.client.post('/api/gate/vehicle-entry', data);
+    // Backend expects log_id in URL for exit
+    return this.client.post('/api/gate/vehicle-exit', data);
   }
 
   async recordGateEntry(data: GateControlRequest) {
@@ -203,9 +203,9 @@ class APIClient {
     return this.client.get('/api/gate/inside-vehicles');
   }
 
-  // Attendance Tracking - Backend: /attendance/
+  // Attendance Tracking - Backend: /api/attendance/
   async recordAttendance(data: AttendanceRecordRequest) {
-    return this.client.post('/attendance/', data);
+    return this.client.post('/api/attendance/', data);
   }
 
   // ========================================
@@ -228,25 +228,25 @@ class APIClient {
 
   // Inventory Management
   async getInventory() {
-    return this.client.get('/inventory');
+    return this.client.get('/api/inventory/items');
   }
 
   // Lot Management
   async getLotDetails(id: string) {
-    return this.client.get(`/lots/${id}`);
+    return this.client.get(`/api/v1/lots/${id}`);
   }
 
   // Data Access
   async getSuppliers() {
-    return this.client.get('/data/suppliers');
+    return this.client.get('/api/gate/suppliers');
   }
 
   async getStaff() {
-    return this.client.get('/data/staff');
+    return this.client.get('/api/staff/');
   }
 
   async getVendors() {
-    return this.client.get('/data/vendors');
+    return this.client.get('/api/gate/vendors');
   }
 
   // ========================================
@@ -255,24 +255,24 @@ class APIClient {
 
   // Entity Submission
   async submitStaffOnboarding(data: StaffOnboardingRequest) {
-    return this.client.post('/onboarding/staff', data);
+    return this.client.post('/api/onboarding/staff', data);
   }
 
   async submitSupplierOnboarding(data: SupplierOnboardingRequest) {
-    return this.client.post('/onboarding/supplier', data);
+    return this.client.post('/api/onboarding/supplier', data);
   }
 
   async submitVendorOnboarding(data: VendorOnboardingRequest) {
-    return this.client.post('/onboarding/vendor', data);
+    return this.client.post('/api/onboarding/vendor', data);
   }
 
   // Approval Management
   async approveOnboarding(id: string) {
-    return this.client.put(`/onboarding/${id}/approve`);
+    return this.client.put(`/api/onboarding/${id}/approve`);
   }
 
   async rejectOnboarding(id: string) {
-    return this.client.put(`/onboarding/${id}/reject`);
+    return this.client.put(`/api/onboarding/${id}/reject`);
   }
 
   // ========================================
