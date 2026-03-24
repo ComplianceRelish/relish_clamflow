@@ -8,29 +8,41 @@
 
 export interface StationStatus {
   stationId: string;
+  stationCode: string;
   stationName: string;
+  plantType: 'PPC' | 'FP';
+  stationType: string;
   currentOperator: string | null;
+  assignedStaff: number;
+  capacity: number;
   currentLot: string | null;
-  status: 'active' | 'idle' | 'maintenance';
+  status: 'active' | 'idle' | 'maintenance' | 'offline';
   efficiency: number;
+  location: string;
 }
 
 export interface ActiveLot {
   lotId: string;
-  lotNumber: string;
-  currentStation: string;
-  status: string;
-  entryTime: string;
+  currentStage: string;
+  location: string;
+  startTime: string;
   estimatedCompletion: string;
-  progress: number;
+  supplier: string;
+  species: string;
+  weightKg: number;
 }
 
 export interface Bottleneck {
+  stationId: string;
+  stationCode: string;
   stationName: string;
-  queuedLots: number;
-  avgWaitTime: number;
-  severity: 'low' | 'medium' | 'high';
-  recommendation: string;
+  plantType: 'PPC' | 'FP';
+  severity: 'high' | 'medium';
+  currentStaff: number;
+  requiredStaff: number;
+  waitingLots: number;
+  averageWaitTime: number;
+  reason: string;
 }
 
 // ============================================

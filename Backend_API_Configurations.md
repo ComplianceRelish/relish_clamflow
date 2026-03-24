@@ -1,8 +1,8 @@
 # ClamFlow Frontend - Backend API Integration Guide
 
 **Document Version**: 3.0  
-**Last Updated**: January 24, 2026  
-**Backend URL**: https://clamflow-backend-production.up.railway.app  
+**Last Updated**: March 24, 2026  
+**Backend URL**: https://clamflowbackend-production.up.railway.app  
 **Full Backend Docs**: See `clamflow_backend/docs/CLAMFLOW_BACKEND_DOCUMENTATION.md`
 
 ---
@@ -11,7 +11,7 @@
 
 | Setting | Value |
 |---------|-------|
-| **Production API** | `https://clamflow-backend-production.up.railway.app` |
+| **Production API** | `https://clamflowbackend-production.up.railway.app` |
 | **Auth Type** | JWT Bearer Token |
 | **Token Expiry** | 24 hours (1440 minutes) |
 | **Content-Type** | `application/json` |
@@ -274,7 +274,7 @@ GET    /analytics/quality              // Quality metrics
 ### API Service Setup
 ```typescript
 // src/services/api.ts
-const API_BASE = import.meta.env.VITE_API_URL || 'https://clamflow-backend-production.up.railway.app';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://clamflowbackend-production.up.railway.app';
 
 export async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
   const token = localStorage.getItem('access_token');
@@ -341,7 +341,7 @@ export function useRole() {
 
 ### Frontend (.env)
 ```bash
-VITE_API_URL=https://clamflow-backend-production.up.railway.app
+VITE_API_URL=https://clamflowbackend-production.up.railway.app
 VITE_APP_TITLE=ClamFlow
 VITE_ENVIRONMENT=production
 ```
