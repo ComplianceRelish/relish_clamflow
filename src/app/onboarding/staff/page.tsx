@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import clamflowAPI from '@/lib/clamflow-api';
@@ -47,6 +47,72 @@ export default function StaffOnboardingPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
+
+  // Face capture state
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [cameraActive, setCameraActive] = useState(false);
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+
+  const startCamera = useCallback(async () => {
+    setCameraError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }
+      });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play();
+        setCameraActive(true);
+      }
+    } catch {
+      setCameraError('Camera access denied or unavailable. Please allow camera permissions.');
+    }
+  }, []);
+
+  const stopCamera = useCallback(() => {
+    if (videoRef.current?.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+    }
+    setCameraActive(false);
+  }, []);
+
+  const capturePhoto = useCallback(() => {
+    if (!videoRef.current || !canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const video = videoRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const imageData = canvas.toDataURL('image/jpeg', 0.85);
+
+    setCapturedImage(imageData);
+    setFormData(prev => ({ ...prev, face_image: imageData }));
+    stopCamera();
+  }, [stopCamera]);
+
+  const retakePhoto = useCallback(() => {
+    setCapturedImage(null);
+    setFormData(prev => ({ ...prev, face_image: '' }));
+    startCamera();
+  }, [startCamera]);
+
+  // Cleanup camera on unmount
+  useEffect(() => {
+    const videoEl = videoRef.current;
+    return () => {
+      if (videoEl?.srcObject) {
+        const stream = videoEl.srcObject as MediaStream;
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
 
   const designationOptions = [
     { value: 'Super Admin', label: 'Super Admin' },
@@ -310,25 +376,103 @@ export default function StaffOnboardingPage() {
               </div>
             </div>
 
-            {/* Face Image Upload */}
+            {/* Face Recognition Capture */}
             <div className="border-b border-gray-200 pb-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Face Image (Optional)</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-1">Face Registration</h3>
+              <p className="text-sm text-gray-500 mb-4">Capture staff member&apos;s face for attendance recognition</p>
 
-              <div>
-                <label htmlFor="face_image" className="block text-sm font-medium text-gray-700 mb-2">
-                  Face Image URL
-                </label>
-                <input
-                  type="url"
-                  id="face_image"
-                  name="face_image"
-                  value={formData.face_image}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-purple-600"
-                  placeholder="https://example.com/face-image.jpg"
-                />
-                <p className="text-xs text-gray-500 mt-1">Optional: URL to face image for RFID badge</p>
-              </div>
+              {cameraError && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
+                  {cameraError}
+                </div>
+              )}
+
+              {/* Captured preview */}
+              {capturedImage && !cameraActive && (
+                <div className="space-y-3">
+                  <div className="relative w-full max-w-sm mx-auto">
+                    <img
+                      src={capturedImage}
+                      alt="Captured face"
+                      className="w-full rounded-lg border-2 border-green-400 shadow-md"
+                    />
+                    <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                      ✓ Captured
+                    </div>
+                  </div>
+                  <div className="flex justify-center">
+                    <button
+                      type="button"
+                      onClick={retakePhoto}
+                      className="px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      🔄 Retake Photo
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Camera feed */}
+              {cameraActive && !capturedImage && (
+                <div className="space-y-3">
+                  <div className="relative w-full max-w-sm mx-auto">
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      muted
+                      playsInline
+                      className="w-full rounded-lg border-2 border-blue-400 shadow-md bg-black"
+                    />
+                    <div className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-medium animate-pulse">
+                      ● LIVE
+                    </div>
+                  </div>
+                  <canvas ref={canvasRef} className="hidden" />
+                  <div className="flex justify-center gap-3">
+                    <button
+                      type="button"
+                      onClick={capturePhoto}
+                      className="px-5 py-2.5 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm"
+                    >
+                      📸 Capture Face
+                    </button>
+                    <button
+                      type="button"
+                      onClick={stopCamera}
+                      className="px-4 py-2.5 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      ⏹ Cancel
+                    </button>
+                  </div>
+                  <div className="bg-blue-50 border border-blue-100 rounded-md p-3 max-w-sm mx-auto">
+                    <p className="text-xs text-blue-700 font-medium mb-1">Tips for a good capture:</p>
+                    <ul className="text-xs text-blue-600 space-y-0.5">
+                      <li>• Position face in center of frame</li>
+                      <li>• Ensure good, even lighting</li>
+                      <li>• Look directly at the camera</li>
+                      <li>• Remove glasses if possible</li>
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              {/* Start camera button (initial state) */}
+              {!cameraActive && !capturedImage && (
+                <div className="text-center">
+                  <div className="w-full max-w-sm mx-auto border-2 border-dashed border-gray-300 rounded-lg p-8 bg-gray-50">
+                    <div className="text-4xl mb-3">📷</div>
+                    <p className="text-sm text-gray-600 mb-4">No face photo captured yet</p>
+                    <button
+                      type="button"
+                      onClick={startCamera}
+                      className="px-5 py-2.5 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700 transition-colors shadow-sm"
+                    >
+                      📹 Open Camera
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-2">Required for face recognition attendance</p>
+                </div>
+              )}
             </div>
 
             {/* Error Message */}
@@ -394,7 +538,7 @@ export default function StaffOnboardingPage() {
                 <ul className="list-disc list-inside space-y-1">
                   <li>Your submission will be reviewed by an administrator</li>
                   <li>Once approved, the staff member will be added to the system</li>
-                  <li>An RFID badge will be created for attendance tracking</li>
+                  <li>Face data will be registered for attendance recognition</li>
                   <li>Login credentials will be assigned automatically</li>
                   <li>The staff member will receive notification upon approval</li>
                 </ul>
