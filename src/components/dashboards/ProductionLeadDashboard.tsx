@@ -243,7 +243,7 @@ const ProductionLeadDashboard: React.FC = () => {
                     title="Onboard Staff"
                     icon="👤+"
                     color="purple"
-                    onClick={() => router.push('/staff/onboarding')}
+                    onClick={() => router.push('/onboarding/staff')}
                     description="Add new Production, QC or Security staff"
                   />
                 </StaffOnboardingAccess>
@@ -388,7 +388,7 @@ const ProductionLeadDashboard: React.FC = () => {
                   description="Onboard new Production, QC & Security staff (requires Admin approval)"
                   icon="👤+"
                   buttonText="Start Onboarding"
-                  onClick={() => router.push('/staff/onboarding')}
+                  onClick={() => router.push('/onboarding/staff')}
                 />
               </StaffOnboardingAccess>
               
