@@ -1,6 +1,7 @@
 // src/components/InteractiveStationAssignment.tsx
 // Production-ready: Uses real staff and station data from backend API
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { DndContext, DragOverlay, useDraggable, useDroppable, DragEndEvent } from '@dnd-kit/core';
 import { motion, AnimatePresence } from 'framer-motion';
 import clamflowAPI from '../lib/clamflow-api';
@@ -314,6 +315,7 @@ const StationDropZone: React.FC<{
 
 // Main Component
 export const InteractiveStationAssignment: React.FC = () => {
+  const router = useRouter();
   const [selectedPlant, setSelectedPlant] = useState<'PPC' | 'FP'>('PPC');
   const [stations, setStations] = useState<ProductionStation[]>([...DEFAULT_PPC_STATIONS, ...DEFAULT_FP_STATIONS]);
   const [staff, setStaff] = useState<StaffMember[]>([]);
@@ -336,26 +338,27 @@ export const InteractiveStationAssignment: React.FC = () => {
         const response = await clamflowAPI.getStationsWithAssignments(selectedDate, selectedPlant);
         if (response.success && response.data && response.data.length > 0) {
           // Map backend stations to component format
+          // Note: API client transforms keys to camelCase, so we use camelCase property names
           const mappedStations: ProductionStation[] = response.data.map((station: any) => ({
             id: station.id,
             name: station.name,
-            type: station.plant_type as 'PPC' | 'FP',
-            category: station.station_type as ProductionStation['category'],
+            type: (station.plantType || station.plant_type) as 'PPC' | 'FP',
+            category: (station.stationType || station.station_type) as ProductionStation['category'],
             capacity: station.capacity || 2,
             currentStaff: (station.assignments || []).map((a: any) => ({
               id: a.id,
               stationId: station.id,
-              staffId: a.staff_id,
-              staffName: a.staff_name || 'Unknown',
-              startTime: a.start_time || '08:00',
-              endTime: a.end_time || '16:00',
+              staffId: a.staffId || a.staff_id,
+              staffName: a.staffName || a.staff_name || 'Unknown',
+              startTime: a.startTime || a.start_time || '08:00',
+              endTime: a.endTime || a.end_time || '16:00',
               shiftType: 'Day' as const,
               skills: [],
               certifications: []
             })),
-            requiredSkills: station.required_skills?.split(',').map((s: string) => s.trim()) || [],
+            requiredSkills: (station.requiredSkills || station.required_skills)?.split?.(',')?.map((s: string) => s.trim()) || (Array.isArray(station.requiredSkills || station.required_skills) ? (station.requiredSkills || station.required_skills) : []),
             status: station.status as 'operational' | 'maintenance' | 'offline',
-            coordinates: { x: (station.station_order || 1) * 120, y: 100 + (station.station_order || 1) % 3 * 80 },
+            coordinates: { x: ((station.stationOrder || station.station_order) || 1) * 120, y: 100 + ((station.stationOrder || station.station_order) || 1) % 3 * 80 },
             formType: undefined,
             equipmentIds: []
           }));
@@ -366,10 +369,10 @@ export const InteractiveStationAssignment: React.FC = () => {
             (station.assignments || []).map((a: any) => ({
               id: a.id,
               stationId: station.id,
-              staffId: a.staff_id,
-              staffName: a.staff_name || 'Unknown',
-              startTime: a.start_time || '08:00',
-              endTime: a.end_time || '16:00',
+              staffId: a.staffId || a.staff_id,
+              staffName: a.staffName || a.staff_name || 'Unknown',
+              startTime: a.startTime || a.start_time || '08:00',
+              endTime: a.endTime || a.end_time || '16:00',
               shiftType: 'Day' as const,
               skills: [],
               certifications: []
@@ -400,13 +403,14 @@ export const InteractiveStationAssignment: React.FC = () => {
         const response = await clamflowAPI.getStaff();
         if (response.success && response.data) {
           // Map backend staff data to component format
+          // Note: API client transforms keys to camelCase, so we check both formats for robustness
           const mappedStaff: StaffMember[] = response.data.map((person: any) => ({
-            id: person.id || person.person_id || String(Math.random()),
-            name: person.full_name || `${person.first_name || ''} ${person.last_name || ''}`.trim() || 'Unknown',
+            id: person.id || person.personId || person.person_id || String(Math.random()),
+            name: person.fullName || person.full_name || `${person.firstName || person.first_name || ''} ${person.lastName || person.last_name || ''}`.trim() || 'Unknown',
             role: mapRoleToType(person.role || person.designation || ''),
             department: mapDepartment(person.department),
-            avatar: person.face_image_url || '',
-            isAvailable: person.is_active !== false && person.status !== 'inactive',
+            avatar: person.faceImageUrl || person.face_image_url || '',
+            isAvailable: (person.isActive ?? person.is_active) !== false && person.status !== 'inactive',
             skills: person.skills || person.certifications || [],
             certifications: person.certifications || [],
             currentStation: undefined,
@@ -623,10 +627,19 @@ export const InteractiveStationAssignment: React.FC = () => {
     <div className="station-assignment-container">
       {/* Header */}
       <div className="assignment-header">
-        <div className="header-left">
-          <img src="/logo-relish.png" alt="Relish ClamFlow" className="logo" />
-          <h1>Interactive Station Assignment</h1>
-          {isSaving && <span className="saving-indicator">💾 Saving...</span>}
+        <div className="header-row-top">
+          <div className="header-left">
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="back-button"
+              title="Back to Dashboard"
+            >
+              ← Back
+            </button>
+            <img src="/logo-relish.png" alt="Relish ClamFlow" className="logo" />
+            <h1>Interactive Station Assignment</h1>
+            {isSaving && <span className="saving-indicator">💾 Saving...</span>}
+          </div>
           <div className="traceability-badges">
             <span className="badge traceability">✓ Traceability</span>
             <span className="badge persistence">💾 Data Persistence</span>
@@ -927,35 +940,73 @@ export const InteractiveStationAssignment: React.FC = () => {
 
         .assignment-header {
           display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 1rem 2rem;
+          flex-direction: column;
+          gap: 0.5rem;
+          padding: 0.75rem 1.5rem;
           background: rgba(255, 255, 255, 0.1);
           backdrop-filter: blur(10px);
           border-bottom: 1px solid rgba(255, 255, 255, 0.2);
         }
 
+        .header-row-top {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 0.5rem;
+        }
+
         .header-left {
           display: flex;
           align-items: center;
-          gap: 1rem;
+          gap: 0.75rem;
+          min-width: 0;
         }
 
         .logo {
-          height: 40px;
+          height: 36px;
           width: auto;
+          flex-shrink: 0;
+        }
+
+        .back-button {
+          background: rgba(255, 255, 255, 0.2);
+          color: white;
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          padding: 0.4rem 0.75rem;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 0.85rem;
+          font-weight: 500;
+          white-space: nowrap;
+          flex-shrink: 0;
+          transition: all 0.3s ease;
+        }
+
+        .back-button:hover {
+          background: rgba(255, 255, 255, 0.3);
+          transform: translateY(-1px);
         }
 
         .header-left h1 {
           color: white;
-          font-size: 1.5rem;
+          font-size: 1.3rem;
           font-weight: 600;
           margin: 0;
+          white-space: nowrap;
+        }
+
+        .saving-indicator {
+          color: white;
+          font-size: 0.85rem;
+          white-space: nowrap;
+          flex-shrink: 0;
         }
 
         .traceability-badges {
           display: flex;
           gap: 0.5rem;
+          flex-shrink: 0;
         }
 
         .badge {
@@ -963,65 +1014,92 @@ export const InteractiveStationAssignment: React.FC = () => {
           border-radius: 12px;
           font-size: 0.75rem;
           font-weight: 500;
+          white-space: nowrap;
         }
 
         .badge.traceability {
-          background: rgba(40, 167, 69, 0.2);
-          color: #28a745;
-          border: 1px solid rgba(40, 167, 69, 0.3);
+          background: #28a745;
+          color: #ffffff;
+          border: 1px solid #28a745;
         }
 
         .badge.persistence {
-          background: rgba(0, 123, 255, 0.2);
-          color: #007bff;
-          border: 1px solid rgba(0, 123, 255, 0.3);
+          background: #007bff;
+          color: #ffffff;
+          border: 1px solid #007bff;
         }
 
         .badge.ease {
-          background: rgba(255, 193, 7, 0.2);
-          color: #ffc107;
-          border: 1px solid rgba(255, 193, 7, 0.3);
+          background: #e6a800;
+          color: #ffffff;
+          border: 1px solid #e6a800;
         }
 
         .header-controls {
           display: flex;
-          gap: 1rem;
+          gap: 0.75rem;
           align-items: center;
+          flex-wrap: wrap;
+        }
+
+        .date-selector {
+          display: flex;
+          align-items: center;
+          gap: 0.25rem;
+        }
+
+        .date-selector label {
+          color: #ffffff;
+          font-size: 0.9rem;
+          font-weight: 500;
+        }
+
+        .date-selector input {
+          padding: 0.4rem 0.5rem;
+          border-radius: 6px;
+          border: 1px solid rgba(255, 255, 255, 0.4);
+          background: rgba(255, 255, 255, 0.9);
+          color: #333;
+          font-size: 0.85rem;
         }
 
         .plant-selector {
           display: flex;
-          background: rgba(255, 255, 255, 0.1);
+          background: rgba(255, 255, 255, 0.15);
           border-radius: 8px;
           overflow: hidden;
+          border: 1px solid rgba(255, 255, 255, 0.3);
         }
 
         .plant-selector button {
           padding: 0.5rem 1rem;
           border: none;
           background: transparent;
-          color: white;
+          color: #ffffff;
           cursor: pointer;
+          font-weight: 500;
           transition: all 0.3s ease;
         }
 
         .plant-selector button.active {
-          background: rgba(255, 255, 255, 0.2);
-          font-weight: 600;
+          background: #ffffff;
+          color: #4a3d9f;
+          font-weight: 700;
         }
 
         .view-toggle, .panel-toggle {
-          background: rgba(255, 255, 255, 0.2);
-          color: white;
-          border: 1px solid rgba(255, 255, 255, 0.3);
+          background: rgba(255, 255, 255, 0.9);
+          color: #4a3d9f;
+          border: 1px solid rgba(255, 255, 255, 0.5);
           padding: 0.5rem 1rem;
           border-radius: 8px;
           cursor: pointer;
+          font-weight: 600;
           transition: all 0.3s ease;
         }
 
         .view-toggle:hover, .panel-toggle:hover {
-          background: rgba(255, 255, 255, 0.3);
+          background: #ffffff;
           transform: translateY(-2px);
         }
 
@@ -1630,13 +1708,20 @@ export const InteractiveStationAssignment: React.FC = () => {
 
         @media (max-width: 1024px) {
           .assignment-header {
+            padding: 0.5rem 1rem;
+          }
+
+          .header-row-top {
             flex-direction: column;
-            gap: 1rem;
-            padding: 1rem;
+            align-items: flex-start;
+          }
+
+          .header-left h1 {
+            font-size: 1.1rem;
           }
 
           .header-controls {
-            flex-direction: column;
+            flex-wrap: wrap;
             gap: 0.5rem;
           }
 
