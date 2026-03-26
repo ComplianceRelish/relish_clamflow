@@ -60,18 +60,18 @@ const DEFAULT_PPC_STATIONS: ProductionStation[] = [
     coordinates: { x: 0, y: 0 },
     equipmentIds: ['scale-01', 'scanner-01']
   },
-  ...Array.from({ length: 8 }, (_, i) => ({
-    id: `ppc-tank-t${i + 1}`,
-    name: `Tank T${i + 1}`,
+  {
+    id: 'ppc-depuration-tanks',
+    name: 'Depuration Tanks (T1–T8)',
     type: 'PPC' as const,
     category: 'depuration' as const,
-    capacity: 1,
+    capacity: 3,
     currentStaff: [],
     requiredSkills: ['Tank Operation', 'Water Quality'],
     status: 'operational' as const,
     coordinates: { x: 0, y: 0 },
-    equipmentIds: [`tank-${i + 1}`, `pump-${i + 1}`]
-  })),
+    equipmentIds: ['tank-1', 'tank-2', 'tank-3', 'tank-4', 'tank-5', 'tank-6', 'tank-7', 'tank-8']
+  },
   {
     id: 'ppc-processing',
     name: 'PPC Station (PPC Form)',
@@ -737,6 +737,7 @@ export const InteractiveStationAssignment: React.FC = () => {
         </div>
       </div>
 
+      <DndContext onDragEnd={handleDragEnd}>
       <div className="assignment-body">
         {/* Staff Panel */}
         <AnimatePresence>
@@ -796,7 +797,6 @@ export const InteractiveStationAssignment: React.FC = () => {
         </AnimatePresence>
 
         {/* Plant Layout */}
-        <DndContext onDragEnd={handleDragEnd}>
           <div className="plant-layout" ref={containerRef}>
             <div className="layout-header">
               <h2>
@@ -827,17 +827,14 @@ export const InteractiveStationAssignment: React.FC = () => {
                     </div>
                     <div className="layout-section depuration-section">
                       <div className="section-label">DEPURATION TANKS</div>
-                      <div className="tank-grid">
-                        {currentStations.filter(s => s.category === 'depuration').map(station => (
-                          <StationDropZone
-                            key={station.id}
-                            station={station}
-                            onStationClick={handleStationClick}
-                            isSelected={selectedStation?.id === station.id}
-                            compact
-                          />
-                        ))}
-                      </div>
+                      {currentStations.filter(s => s.category === 'depuration').map(station => (
+                        <StationDropZone
+                          key={station.id}
+                          station={station}
+                          onStationClick={handleStationClick}
+                          isSelected={selectedStation?.id === station.id}
+                        />
+                      ))}
                     </div>
                   </div>
 
@@ -940,7 +937,6 @@ export const InteractiveStationAssignment: React.FC = () => {
           <DragOverlay>
             {/* Drag overlay styling */}
           </DragOverlay>
-        </DndContext>
 
         {/* Station Details Panel */}
         <AnimatePresence>
@@ -1044,6 +1040,7 @@ export const InteractiveStationAssignment: React.FC = () => {
           )}
         </AnimatePresence>
       </div>
+      </DndContext>
 
       <style jsx>{`
         .station-assignment-container {
@@ -1457,13 +1454,7 @@ export const InteractiveStationAssignment: React.FC = () => {
         }
 
         .depuration-section {
-          flex: 2;
-        }
-
-        .tank-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 0.5rem;
+          flex: 1;
         }
 
         .layout-row-processing {
