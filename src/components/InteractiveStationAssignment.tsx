@@ -374,10 +374,13 @@ export const InteractiveStationAssignment: React.FC = () => {
       setIsLoadingStations(true);
       try {
         const response = await clamflowAPI.getStationsWithAssignments(selectedDate, selectedPlant);
+        
+        // Start from default stations for the complete plant layout
+        const defaults = selectedPlant === 'PPC' ? DEFAULT_PPC_STATIONS : DEFAULT_FP_STATIONS;
+        
         if (response.success && response.data && response.data.length > 0) {
           // Map backend stations to component format
-          // Note: API client transforms keys to camelCase, so we use camelCase property names
-          const mappedStations: ProductionStation[] = response.data.map((station: any) => ({
+          const backendStations: ProductionStation[] = response.data.map((station: any) => ({
             id: station.id,
             name: station.name,
             type: (station.plantType || station.plant_type) as 'PPC' | 'FP',
@@ -395,12 +398,22 @@ export const InteractiveStationAssignment: React.FC = () => {
               certifications: []
             })),
             requiredSkills: (station.requiredSkills || station.required_skills)?.split?.(',')?.map((s: string) => s.trim()) || (Array.isArray(station.requiredSkills || station.required_skills) ? (station.requiredSkills || station.required_skills) : []),
-            status: station.status as 'operational' | 'maintenance' | 'offline',
-            coordinates: { x: ((station.stationOrder || station.station_order) || 1) * 120, y: 100 + ((station.stationOrder || station.station_order) || 1) % 3 * 80 },
+            status: (station.status || 'operational') as 'operational' | 'maintenance' | 'offline',
+            coordinates: { x: 0, y: 0 },
             formType: undefined,
             equipmentIds: []
           }));
-          setStations(mappedStations);
+
+          // Merge: backend stations override defaults by id; defaults not in backend are kept
+          const backendIds = new Set(backendStations.map(s => s.id));
+          const merged = [
+            ...defaults.filter(d => !backendIds.has(d.id)),
+            ...backendStations
+          ];
+          
+          // Keep both plants — merge with the other plant's defaults
+          const otherDefaults = selectedPlant === 'PPC' ? DEFAULT_FP_STATIONS : DEFAULT_PPC_STATIONS;
+          setStations([...merged, ...otherDefaults]);
           
           // Also update assignments from the fetched data
           const allAssignments = response.data.flatMap((station: any) => 
