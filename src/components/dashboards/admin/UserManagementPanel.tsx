@@ -732,7 +732,7 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
                   <tr className="border-b">
                     <th className="text-left py-2">USER</th>
                     <th className="text-left py-2">ROLE</th>
-                    <th className="text-left py-2">STATION</th>
+                    <th className="text-left py-2">LOCATION</th>
                     <th className="text-left py-2">ONBOARDING</th>
                     <th className="text-left py-2">STATUS</th>
                     <th className="text-left py-2">ACTIONS</th>
@@ -892,13 +892,18 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
                 )}
 
                 <div>
-                  <Label htmlFor="station">Station (Optional)</Label>
-                  <Input
+                  <Label htmlFor="station">Location (Optional)</Label>
+                  <select
                     id="station"
                     value={formData.station}
                     onChange={(e) => setFormData(prev => ({ ...prev, station: e.target.value }))}
-                    placeholder="Enter station (optional)"
-                  />
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  >
+                    <option value="">Select location (optional)</option>
+                    <option value="System">System</option>
+                    <option value="Main Office">Main Office</option>
+                    <option value="ClamFlow Unit">ClamFlow Unit</option>
+                  </select>
                 </div>
 
                 <div>

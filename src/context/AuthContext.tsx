@@ -101,7 +101,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       setIsLoading(true);
       
-      console.log('🔐 Starting login process for:', username);
+      const trimmedUsername = username.trim();
+      console.log('🔐 Starting login process for:', trimmedUsername);
       
       // Try API authentication
       try {
@@ -110,7 +111,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ username, password }),
+          body: JSON.stringify({ username: trimmedUsername, password }),
         });
 
         if (response.ok) {
