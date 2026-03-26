@@ -23,7 +23,7 @@ interface ProductionStation {
   id: string;
   name: string;
   type: 'PPC' | 'FP';
-  category: 'receiving' | 'depuration' | 'processing' | 'rfid' | 'freezer' | 'packing' | 'storage';
+  category: 'receiving' | 'depuration' | 'processing' | 'rfid' | 'freezer' | 'packing' | 'storage' | 'sentry' | 'product-store' | 'machine-room';
   capacity: number;
   currentStaff: StationAssignment[];
   requiredSkills: string[];
@@ -36,7 +36,7 @@ interface ProductionStation {
 interface StaffMember {
   id: string;
   name: string;
-  role: 'Production' | 'QC' | 'Supervisor' | 'Maintenance';
+  role: string;
   department: 'PPC' | 'FP' | 'Both';
   avatar: string;
   isAvailable: boolean;
@@ -46,45 +46,68 @@ interface StaffMember {
   shiftPreference: string[];
 }
 
-// Default station configurations (used when API doesn't return station data)
-// These represent the physical layout of the plant and should match backend configuration
+// Default station configurations matching the actual PPC Plant Layout
 const DEFAULT_PPC_STATIONS: ProductionStation[] = [
   {
     id: 'ppc-receiving',
-    name: 'Raw Material Receiving',
+    name: 'RM Station (Weight Note)',
     type: 'PPC',
     category: 'receiving',
     capacity: 2,
     currentStaff: [],
-    requiredSkills: ['Material Handling', 'Quality Check'],
+    requiredSkills: ['Material Handling', 'Weight Note'],
     status: 'operational',
-    coordinates: { x: 50, y: 100 },
+    coordinates: { x: 0, y: 0 },
     equipmentIds: ['scale-01', 'scanner-01']
   },
   ...Array.from({ length: 8 }, (_, i) => ({
     id: `ppc-tank-t${i + 1}`,
-    name: `Depuration Tank T${i + 1}`,
+    name: `Tank T${i + 1}`,
     type: 'PPC' as const,
     category: 'depuration' as const,
     capacity: 1,
     currentStaff: [],
     requiredSkills: ['Tank Operation', 'Water Quality'],
     status: 'operational' as const,
-    coordinates: { x: 150 + (i % 4) * 120, y: 200 + Math.floor(i / 4) * 100 },
+    coordinates: { x: 0, y: 0 },
     equipmentIds: [`tank-${i + 1}`, `pump-${i + 1}`]
   })),
   {
     id: 'ppc-processing',
-    name: 'PPC Processing Station',
+    name: 'PPC Station (PPC Form)',
     type: 'PPC',
     category: 'processing',
-    capacity: 3,
+    capacity: 4,
     currentStaff: [],
-    requiredSkills: ['Processing', 'RFID Tagging', 'PPC Form'],
+    requiredSkills: ['Processing', 'PPC Form'],
     status: 'operational',
-    coordinates: { x: 600, y: 250 },
+    coordinates: { x: 0, y: 0 },
     formType: 'PPCForm',
     equipmentIds: ['rfid-tagger-01', 'conveyor-01']
+  },
+  {
+    id: 'ppc-product-store',
+    name: 'Product Store',
+    type: 'PPC',
+    category: 'product-store',
+    capacity: 1,
+    currentStaff: [],
+    requiredSkills: ['Storage Management'],
+    status: 'operational',
+    coordinates: { x: 0, y: 0 },
+    equipmentIds: []
+  },
+  {
+    id: 'ppc-main-gate',
+    name: 'Main Gate (Sentry)',
+    type: 'PPC',
+    category: 'sentry',
+    capacity: 1,
+    currentStaff: [],
+    requiredSkills: ['Security'],
+    status: 'operational',
+    coordinates: { x: 0, y: 0 },
+    equipmentIds: []
   }
 ];
 
@@ -140,34 +163,38 @@ const DEFAULT_FP_STATIONS: ProductionStation[] = [
   }
 ];
 
-// Helper function to map backend role to component role type
-// Backend returns Title Case roles (e.g., "Production Staff", "QC Lead")
-// We normalize by lowercasing and matching both formats (with space and underscore)
-const mapRoleToType = (role: string): 'Production' | 'QC' | 'Supervisor' | 'Maintenance' => {
-  const roleMap: Record<string, 'Production' | 'QC' | 'Supervisor' | 'Maintenance'> = {
-    // snake_case format
-    'production_staff': 'Production',
-    'production_lead': 'Supervisor',
-    'qc_staff': 'QC',
-    'qc_lead': 'Supervisor',
-    'maintenance_staff': 'Maintenance',
-    'supervisor': 'Supervisor',
-    'admin': 'Supervisor',
-    'super_admin': 'Supervisor',
-    'security_guard': 'Maintenance',
-    'staff_lead': 'Supervisor',
-    // Title Case format (space-separated, lowercased for lookup)
-    'production staff': 'Production',
-    'production lead': 'Supervisor',
-    'qc staff': 'QC',
-    'qc lead': 'Supervisor',
-    'maintenance staff': 'Maintenance',
-    'super admin': 'Supervisor',
-    'security guard': 'Maintenance',
-    'staff lead': 'Supervisor'
-  };
-  return roleMap[role?.toLowerCase()] || 'Production';
+// Roles that are relevant for production floor station assignment
+// Excludes: Super Admin, Admin, Staff Lead (administrative/HR roles)
+const FLOOR_ROLES = [
+  'Production Lead',
+  'QC Lead',
+  'Production Staff',
+  'QC Staff',
+  'Security Guard',
+];
+
+// Normalize role string to Title Case for consistent matching
+const normalizeRole = (role: string): string => {
+  if (!role) return '';
+  // Handle snake_case: production_lead -> Production Lead
+  const spaced = role.replace(/_/g, ' ');
+  return spaced.replace(/\b\w/g, c => c.toUpperCase());
 };
+
+// Check if a role is a floor-relevant role
+const isFloorRole = (role: string): boolean => {
+  const normalized = normalizeRole(role);
+  return FLOOR_ROLES.includes(normalized);
+};
+
+// Display order for staff panel grouping
+const STAFF_PANEL_GROUPS = [
+  { label: 'Production Lead', roles: ['Production Lead'] },
+  { label: 'QC Lead', roles: ['QC Lead'] },
+  { label: 'Production Staff', roles: ['Production Staff'] },
+  { label: 'QC Staff', roles: ['QC Staff'] },
+  { label: 'Security', roles: ['Security Guard'] },
+];
 
 // Helper to map department
 const mapDepartment = (dept: string | undefined): 'PPC' | 'FP' | 'Both' => {
@@ -231,12 +258,13 @@ const DraggableStaff: React.FC<{ staff: StaffMember; isAssigned: boolean }> = ({
   );
 };
 
-// Droppable Station Component
+// Droppable Station Component — shows assigned staff with name & photo
 const StationDropZone: React.FC<{
   station: ProductionStation;
   onStationClick: (station: ProductionStation) => void;
   isSelected: boolean;
-}> = ({ station, onStationClick, isSelected }) => {
+  compact?: boolean;
+}> = ({ station, onStationClick, isSelected, compact = false }) => {
   const { setNodeRef, isOver } = useDroppable({
     id: station.id,
     data: { station }
@@ -244,7 +272,7 @@ const StationDropZone: React.FC<{
 
   const getStationColor = () => {
     switch (station.status) {
-      case 'operational': return station.type === 'PPC' ? '#E3F2FD' : '#E8F5E8';
+      case 'operational': return '#E3F2FD';
       case 'maintenance': return '#FFF3E0';
       case 'offline': return '#FFEBEE';
       default: return '#F5F5F5';
@@ -260,23 +288,27 @@ const StationDropZone: React.FC<{
       case 'freezer': return '❄️';
       case 'packing': return '📋';
       case 'storage': return '🏪';
+      case 'sentry': return '🛡️';
+      case 'product-store': return '🏬';
+      case 'machine-room': return '🔧';
       default: return '🏭';
     }
   };
 
+  const staffInitialAvatar = (name: string) => 
+    `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="%23667eea"/><text x="16" y="21" text-anchor="middle" fill="white" font-size="14" font-weight="bold">${encodeURIComponent(name.charAt(0))}</text></svg>`;
+
   return (
     <motion.div
       ref={setNodeRef}
-      className={`station-zone ${isOver ? 'drop-hover' : ''} ${isSelected ? 'selected' : ''}`}
+      className={`station-zone ${isOver ? 'drop-hover' : ''} ${isSelected ? 'selected' : ''} ${compact ? 'compact' : ''}`}
       style={{
-        left: station.coordinates.x,
-        top: station.coordinates.y,
         backgroundColor: getStationColor(),
-        borderColor: isSelected ? '#667eea' : 'transparent'
+        borderColor: isSelected ? '#667eea' : isOver ? '#4CAF50' : 'rgba(0,0,0,0.12)'
       }}
       onClick={() => onStationClick(station)}
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
     >
       <div className="station-header">
         <div className="station-icon">{getStationIcon()}</div>
@@ -288,26 +320,32 @@ const StationDropZone: React.FC<{
       
       <div className="station-info">
         <div className="capacity-info">
-          {station.currentStaff.length}/{station.capacity}
+          👤 {station.currentStaff.length}/{station.capacity}
         </div>
         {station.formType && (
           <div className="form-indicator">{station.formType}</div>
         )}
       </div>
 
-      <div className="assigned-staff">
-        {station.currentStaff.map(assignment => (
-          <div key={assignment.id} className="staff-assignment">
-            <div className="assignment-name">{assignment.staffName}</div>
-            <div className="assignment-time">{assignment.startTime}-{assignment.endTime}</div>
-          </div>
-        ))}
-      </div>
-
-      <div className="required-skills">
-        {station.requiredSkills.slice(0, 2).map(skill => (
-          <span key={skill} className="required-skill">{skill}</span>
-        ))}
+      {/* Assigned Staff with Photos */}
+      <div className="assigned-staff-photos">
+        {station.currentStaff.length === 0 ? (
+          <div className="empty-slot">Drop staff here</div>
+        ) : (
+          station.currentStaff.map(assignment => (
+            <div key={assignment.id} className="staff-photo-card">
+              <img 
+                className="staff-photo" 
+                src={staffInitialAvatar(assignment.staffName)}
+                alt={assignment.staffName}
+              />
+              <div className="staff-photo-info">
+                <div className="staff-photo-name">{assignment.staffName}</div>
+                <div className="staff-photo-time">{assignment.startTime}-{assignment.endTime}</div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </motion.div>
   );
@@ -403,19 +441,21 @@ export const InteractiveStationAssignment: React.FC = () => {
         const response = await clamflowAPI.getStaff();
         if (response.success && response.data) {
           // Map backend staff data to component format
-          // Note: API client transforms keys to camelCase, so we check both formats for robustness
-          const mappedStaff: StaffMember[] = response.data.map((person: any) => ({
-            id: person.id || person.personId || person.person_id || String(Math.random()),
-            name: person.fullName || person.full_name || `${person.firstName || person.first_name || ''} ${person.lastName || person.last_name || ''}`.trim() || 'Unknown',
-            role: mapRoleToType(person.role || person.designation || ''),
-            department: mapDepartment(person.department),
-            avatar: person.faceImageUrl || person.face_image_url || '',
-            isAvailable: (person.isActive ?? person.is_active) !== false && person.status !== 'inactive',
-            skills: person.skills || person.certifications || [],
-            certifications: person.certifications || [],
-            currentStation: undefined,
-            shiftPreference: ['Day', 'Swing']
-          }));
+          // Filter to only floor-relevant roles (exclude Super Admin, Admin, Staff Lead)
+          const mappedStaff: StaffMember[] = response.data
+            .filter((person: any) => isFloorRole(person.role || person.designation || ''))
+            .map((person: any) => ({
+              id: person.id || person.personId || person.person_id || String(Math.random()),
+              name: person.fullName || person.full_name || `${person.firstName || person.first_name || ''} ${person.lastName || person.last_name || ''}`.trim() || 'Unknown',
+              role: normalizeRole(person.role || person.designation || ''),
+              department: mapDepartment(person.department),
+              avatar: person.faceImageUrl || person.face_image_url || '',
+              isAvailable: (person.isActive ?? person.is_active) !== false && person.status !== 'inactive',
+              skills: person.skills || person.certifications || [],
+              certifications: person.certifications || [],
+              currentStation: undefined,
+              shiftPreference: ['Day', 'Swing']
+            }));
           setStaff(mappedStaff);
         } else {
           setStaffError('Failed to load staff data');
@@ -717,13 +757,16 @@ export const InteractiveStationAssignment: React.FC = () => {
                     <p>No staff members available</p>
                   </div>
                 ) : (
-                  ['Production', 'QC', 'Supervisor', 'Maintenance'].map(role => {
-                    const roleStaff = staff.filter(s => s.role === role && (s.department === selectedPlant || s.department === 'Both'));
-                    if (roleStaff.length === 0) return null;
+                  STAFF_PANEL_GROUPS.map(group => {
+                    const groupStaff = staff.filter(s => 
+                      group.roles.includes(s.role) && 
+                      (s.department === selectedPlant || s.department === 'Both')
+                    );
+                    if (groupStaff.length === 0) return null;
                     return (
-                      <div key={role} className="staff-category">
-                        <h4>{role} Staff</h4>
-                        {roleStaff.map(s => (
+                      <div key={group.label} className="staff-category">
+                        <h4>{group.label}</h4>
+                        {groupStaff.map(s => (
                           <DraggableStaff 
                             key={s.id} 
                             staff={s} 
@@ -753,51 +796,113 @@ export const InteractiveStationAssignment: React.FC = () => {
               </div>
             </div>
 
-            <div className="plant-canvas">
-              {/* Production Flow Arrows */}
-              <svg className="flow-arrows" width="100%" height="100%">
-                <defs>
-                  <marker id="arrowhead" markerWidth="10" markerHeight="7" 
-                    refX="10" refY="3.5" orient="auto">
-                    <polygon points="0 0, 10 3.5, 0 7" fill="#667eea" />
-                  </marker>
-                </defs>
-                
-                {selectedPlant === 'PPC' && (
-                  <>
-                    {/* Raw Material → T1 */}
-                    <line x1="150" y1="150" x2="200" y2="200" 
-                      stroke="#667eea" strokeWidth="2" markerEnd="url(#arrowhead)" />
-                    {/* T8 → Processing */}
-                    <line x1="500" y1="300" x2="580" y2="250" 
-                      stroke="#667eea" strokeWidth="2" markerEnd="url(#arrowhead)" />
-                  </>
-                )}
-                
-                {selectedPlant === 'FP' && (
-                  <>
-                    {/* RFID → Freezer */}
-                    <line x1="120" y1="100" x2="180" y2="100" 
-                      stroke="#667eea" strokeWidth="2" markerEnd="url(#arrowhead)" />
-                    {/* Freezer → Packing */}
-                    <line x1="280" y1="100" x2="380" y2="100" 
-                      stroke="#667eea" strokeWidth="2" markerEnd="url(#arrowhead)" />
-                    {/* Packing → Storage */}
-                    <line x1="520" y1="100" x2="580" y2="100" 
-                      stroke="#667eea" strokeWidth="2" markerEnd="url(#arrowhead)" />
-                  </>
-                )}
-              </svg>
+            <div className="plant-canvas structured-layout">
+              {selectedPlant === 'PPC' ? (
+                <>
+                  {/* Row 1: RM Receiving + Depuration Tanks */}
+                  <div className="layout-row layout-row-top">
+                    <div className="layout-section rm-section">
+                      <div className="section-label">RAW MATERIAL RECEIVING</div>
+                      {currentStations.filter(s => s.category === 'receiving').map(station => (
+                        <StationDropZone
+                          key={station.id}
+                          station={station}
+                          onStationClick={handleStationClick}
+                          isSelected={selectedStation?.id === station.id}
+                        />
+                      ))}
+                    </div>
+                    <div className="layout-section depuration-section">
+                      <div className="section-label">DEPURATION TANKS</div>
+                      <div className="tank-grid">
+                        {currentStations.filter(s => s.category === 'depuration').map(station => (
+                          <StationDropZone
+                            key={station.id}
+                            station={station}
+                            onStationClick={handleStationClick}
+                            isSelected={selectedStation?.id === station.id}
+                            compact
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
 
-              {/* Station Drop Zones */}
-              {currentStations.map(station => (
-                <StationDropZone
-                  key={station.id}
-                  station={station}
-                  onStationClick={handleStationClick}
-                  isSelected={selectedStation?.id === station.id}
-                />
-              ))}
+                  {/* Row 2: Processing Line (visual equipment) */}
+                  <div className="layout-row layout-row-processing">
+                    <div className="processing-line">
+                      <div className="section-label">PROCESSING LINE</div>
+                      <div className="equipment-flow">
+                        <div className="equipment-item">Feeder Hopper</div>
+                        <div className="flow-arrow">→</div>
+                        <div className="equipment-item">High Power Water Jet</div>
+                        <div className="flow-arrow">→</div>
+                        <div className="equipment-item">Shell Separation</div>
+                        <div className="flow-arrow">→</div>
+                        <div className="equipment-item">Candling Table</div>
+                        <div className="flow-arrow">→</div>
+                        <div className="equipment-item">Grading Machine</div>
+                        <div className="flow-arrow">→</div>
+                        <div className="equipment-item">Steam Cooker</div>
+                        <div className="flow-arrow">→</div>
+                        <div className="equipment-item">Vibrating Sieve</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Row 3: PPC Station + Machine Room */}
+                  <div className="layout-row layout-row-ppc">
+                    {currentStations.filter(s => s.category === 'processing').map(station => (
+                      <StationDropZone
+                        key={station.id}
+                        station={station}
+                        onStationClick={handleStationClick}
+                        isSelected={selectedStation?.id === station.id}
+                      />
+                    ))}
+                    <div className="non-staffable-area machine-room">
+                      <div className="area-icon">🔧</div>
+                      <div className="area-label">Machine Room / Boiler Room</div>
+                    </div>
+                  </div>
+
+                  {/* Row 4: Product Store */}
+                  <div className="layout-row layout-row-store">
+                    {currentStations.filter(s => s.category === 'product-store').map(station => (
+                      <StationDropZone
+                        key={station.id}
+                        station={station}
+                        onStationClick={handleStationClick}
+                        isSelected={selectedStation?.id === station.id}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Row 5: Main Gate */}
+                  <div className="layout-row layout-row-gate">
+                    {currentStations.filter(s => s.category === 'sentry').map(station => (
+                      <StationDropZone
+                        key={station.id}
+                        station={station}
+                        onStationClick={handleStationClick}
+                        isSelected={selectedStation?.id === station.id}
+                      />
+                    ))}
+                  </div>
+                </>
+              ) : (
+                /* FP Plant - simple grid layout */
+                <div className="fp-layout">
+                  {currentStations.map(station => (
+                    <StationDropZone
+                      key={station.id}
+                      station={station}
+                      onStationClick={handleStationClick}
+                      isSelected={selectedStation?.id === station.id}
+                    />
+                  ))}
+                </div>
+              )}
 
               {/* Legend */}
               <div className="plant-legend">
@@ -1300,39 +1405,149 @@ export const InteractiveStationAssignment: React.FC = () => {
           position: relative;
           height: calc(100% - 80px);
           min-height: 600px;
-          padding: 2rem;
+          padding: 1.5rem;
+          overflow-y: auto;
         }
 
-        .flow-arrows {
-          position: absolute;
-          top: 0;
-          left: 0;
-          z-index: 1;
-          pointer-events: none;
+        /* ===== Structured PPC Plant Layout ===== */
+        .structured-layout {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
         }
 
-        .station-zone {
-          position: absolute;
-          width: 180px;
-          min-height: 120px;
-          border: 2px solid transparent;
+        .layout-row {
+          display: flex;
+          gap: 1rem;
+        }
+
+        .layout-section {
+          border: 1px dashed rgba(0,0,0,0.15);
+          border-radius: 10px;
+          padding: 0.75rem;
+          background: rgba(255,255,255,0.5);
+        }
+
+        .section-label {
+          font-size: 0.7rem;
+          font-weight: 700;
+          color: #555;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          margin-bottom: 0.5rem;
+          padding-bottom: 0.25rem;
+          border-bottom: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .rm-section {
+          flex: 1;
+          min-width: 200px;
+        }
+
+        .depuration-section {
+          flex: 2;
+        }
+
+        .tank-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 0.5rem;
+        }
+
+        .layout-row-processing {
+          flex-direction: column;
+        }
+
+        .processing-line {
+          border: 1px dashed rgba(0,0,0,0.15);
+          border-radius: 10px;
+          padding: 0.75rem;
+          background: rgba(245,245,250,0.6);
+        }
+
+        .equipment-flow {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 0.25rem;
+        }
+
+        .equipment-item {
+          padding: 0.35rem 0.6rem;
+          background: #fff;
+          border: 1px solid #ddd;
+          border-radius: 6px;
+          font-size: 0.72rem;
+          font-weight: 500;
+          color: #555;
+          white-space: nowrap;
+        }
+
+        .flow-arrow {
+          color: #667eea;
+          font-weight: bold;
+          font-size: 0.9rem;
+        }
+
+        .layout-row-ppc {
+          display: flex;
+          gap: 1rem;
+        }
+
+        .layout-row-ppc .station-zone {
+          flex: 1;
+        }
+
+        .non-staffable-area {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          background: #f0f0f0;
+          border: 2px dashed #ccc;
           border-radius: 12px;
           padding: 1rem;
+          color: #888;
+        }
+
+        .area-icon { font-size: 1.5rem; }
+        .area-label { font-size: 0.8rem; font-weight: 600; text-align: center; }
+
+        .layout-row-store, .layout-row-gate {
+          max-width: 50%;
+        }
+
+        .fp-layout {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+          gap: 1rem;
+        }
+
+        /* ===== Station Drop Zone (no longer absolute) ===== */
+        .station-zone {
+          border: 2px solid rgba(0,0,0,0.12);
+          border-radius: 12px;
+          padding: 0.75rem;
           cursor: pointer;
           transition: all 0.3s ease;
-          z-index: 2;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+          min-width: 0;
+        }
+
+        .station-zone.compact {
+          padding: 0.5rem;
         }
 
         .station-zone:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
         }
 
         .station-zone.drop-hover {
-          border-color: #667eea;
-          transform: scale(1.02);
-          box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+          border-color: #4CAF50 !important;
+          box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.25);
+          background: #E8F5E9 !important;
         }
 
         .station-zone.selected {
@@ -1344,27 +1559,38 @@ export const InteractiveStationAssignment: React.FC = () => {
         .station-header {
           display: flex;
           align-items: center;
-          gap: 0.5rem;
-          margin-bottom: 0.75rem;
+          gap: 0.4rem;
+          margin-bottom: 0.4rem;
         }
 
         .station-icon {
-          font-size: 1.5rem;
-          width: 32px;
-          height: 32px;
+          font-size: 1.2rem;
+          width: 28px;
+          height: 28px;
           display: flex;
           align-items: center;
           justify-content: center;
           background: rgba(255, 255, 255, 0.8);
           border-radius: 50%;
+          flex-shrink: 0;
+        }
+
+        .compact .station-icon {
+          width: 22px;
+          height: 22px;
+          font-size: 0.9rem;
         }
 
         .station-name {
           flex: 1;
           font-weight: 600;
-          font-size: 0.9rem;
+          font-size: 0.82rem;
           color: #333;
           line-height: 1.2;
+        }
+
+        .compact .station-name {
+          font-size: 0.75rem;
         }
 
         .station-status {
@@ -1394,63 +1620,98 @@ export const InteractiveStationAssignment: React.FC = () => {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 0.5rem;
+          margin-bottom: 0.4rem;
         }
 
         .capacity-info {
-          font-size: 0.8rem;
+          font-size: 0.75rem;
           font-weight: 600;
           color: #667eea;
         }
 
         .form-indicator {
-          padding: 0.2rem 0.4rem;
+          padding: 0.15rem 0.35rem;
           background: #e8f5e8;
           color: #28a745;
           border-radius: 6px;
-          font-size: 0.7rem;
+          font-size: 0.65rem;
           font-weight: 500;
         }
 
-        .assigned-staff {
-          margin-bottom: 0.5rem;
-        }
-
-        .staff-assignment {
-          background: rgba(255, 255, 255, 0.9);
-          padding: 0.4rem;
-          border-radius: 6px;
-          margin-bottom: 0.3rem;
-          font-size: 0.75rem;
-        }
-
-        .assignment-name {
-          font-weight: 600;
-          color: #333;
-        }
-
-        .assignment-time {
-          color: #666;
-        }
-
-        .required-skills {
+        /* Assigned Staff with Photos */
+        .assigned-staff-photos {
           display: flex;
-          gap: 0.25rem;
-          flex-wrap: wrap;
+          flex-direction: column;
+          gap: 0.35rem;
         }
 
-        .required-skill {
-          padding: 0.15rem 0.3rem;
-          background: rgba(255, 255, 255, 0.7);
-          color: #666;
-          border-radius: 4px;
+        .empty-slot {
+          padding: 0.5rem;
+          background: rgba(102,126,234,0.06);
+          border: 1px dashed rgba(102,126,234,0.3);
+          border-radius: 6px;
+          text-align: center;
+          font-size: 0.72rem;
+          color: #999;
+        }
+
+        .compact .empty-slot {
+          padding: 0.3rem;
           font-size: 0.65rem;
         }
 
+        .staff-photo-card {
+          display: flex;
+          align-items: center;
+          gap: 0.4rem;
+          padding: 0.3rem 0.4rem;
+          background: rgba(255,255,255,0.95);
+          border-radius: 8px;
+          border-left: 3px solid #667eea;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+
+        .staff-photo {
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          object-fit: cover;
+          flex-shrink: 0;
+          border: 1.5px solid #667eea;
+        }
+
+        .compact .staff-photo {
+          width: 22px;
+          height: 22px;
+        }
+
+        .staff-photo-info {
+          min-width: 0;
+        }
+
+        .staff-photo-name {
+          font-weight: 600;
+          font-size: 0.72rem;
+          color: #333;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .compact .staff-photo-name {
+          font-size: 0.65rem;
+        }
+
+        .staff-photo-time {
+          font-size: 0.62rem;
+          color: #888;
+        }
+
         .plant-legend {
-          position: absolute;
-          bottom: 2rem;
-          right: 2rem;
+          position: sticky;
+          bottom: 0;
+          margin-top: 1rem;
+          align-self: flex-end;
           background: rgba(255, 255, 255, 0.95);
           padding: 1rem;
           border-radius: 8px;
@@ -1740,13 +2001,27 @@ export const InteractiveStationAssignment: React.FC = () => {
           }
 
           .plant-canvas {
-            padding: 1rem;
+            padding: 0.75rem;
           }
 
-          .station-zone {
-            width: 160px;
-            min-height: 100px;
-            padding: 0.75rem;
+          .layout-row {
+            flex-direction: column;
+          }
+
+          .layout-row-top {
+            flex-direction: column;
+          }
+
+          .tank-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+
+          .equipment-flow {
+            flex-wrap: wrap;
+          }
+
+          .layout-row-store, .layout-row-gate {
+            max-width: 100%;
           }
         }
       `}</style>
