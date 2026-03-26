@@ -23,10 +23,10 @@ export default function StaffOnboardingPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const authorizedRoles = ['Super Admin', 'Admin', 'Production Lead', 'Staff Lead'];
+    const authorizedRoles = ['Super Admin', 'Admin', 'Production Lead', 'QC Lead', 'Staff Lead'];
 
     if (!user?.role || !authorizedRoles.includes(user.role)) {
-      alert('Access Denied: Only Super Admin, Admin, Production Lead, or Staff Lead can onboard staff.');
+      alert('Access Denied: You do not have permission to onboard staff.');
       router.push('/dashboard');
       return;
     }
@@ -114,16 +114,33 @@ export default function StaffOnboardingPage() {
     };
   }, []);
 
-  const designationOptions = [
-    { value: 'Super Admin', label: 'Super Admin' },
-    { value: 'Admin', label: 'Admin' },
-    { value: 'Production Lead', label: 'Production Lead' },
-    { value: 'Staff Lead', label: 'Staff Lead' },
-    { value: 'QC Lead', label: 'QC Lead' },
-    { value: 'QC Staff', label: 'QC Staff' },
-    { value: 'Production Staff', label: 'Production Staff' },
-    { value: 'Security Guard', label: 'Security Guard' },
-  ];
+  // Role-filtered designation options based on who is onboarding
+  const getDesignationOptions = () => {
+    switch (user?.role) {
+      case 'Production Lead':
+        return [{ value: 'Production Staff', label: 'Production Staff' }];
+      case 'QC Lead':
+        return [{ value: 'QC Staff', label: 'QC Staff' }];
+      case 'Staff Lead':
+        return [{ value: 'Security Guard', label: 'Security Guard' }];
+      case 'Super Admin':
+      case 'Admin':
+        // Super Admin and Admin can onboard any role
+        return [
+          { value: 'Admin', label: 'Admin' },
+          { value: 'Production Lead', label: 'Production Lead' },
+          { value: 'Staff Lead', label: 'Staff Lead' },
+          { value: 'QC Lead', label: 'QC Lead' },
+          { value: 'QC Staff', label: 'QC Staff' },
+          { value: 'Production Staff', label: 'Production Staff' },
+          { value: 'Security Guard', label: 'Security Guard' },
+        ];
+      default:
+        return [];
+    }
+  };
+
+  const designationOptions = getDesignationOptions();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
