@@ -79,85 +79,77 @@ const DeviceRFIDHandover: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      
-      // Mock data - In production, fetch from API
-      setDevices([
-        {
-          id: '1',
-          device_tag: 'DEV-001',
-          device_type: 'handheld',
-          model: 'Zebra MC3300',
-          serial_number: 'SN123456',
-          status: 'available',
-          battery_level: 85
-        },
-        {
-          id: '2',
-          device_tag: 'DEV-002',
-          device_type: 'handheld',
-          model: 'Zebra MC3300',
-          serial_number: 'SN123457',
-          status: 'assigned',
-          last_assigned_to: 'John Doe',
-          last_assigned_at: new Date().toISOString(),
-          battery_level: 62
-        },
-        {
-          id: '3',
-          device_tag: 'DEV-003',
-          device_type: 'tablet',
-          model: 'Samsung Galaxy Tab Active',
-          serial_number: 'SN789012',
-          status: 'available',
-          battery_level: 100
-        },
-      ]);
+      setError(null);
 
-      setStaff([
-        {
-          id: '1',
-          full_name: 'John Doe',
-          role: 'Production Staff',
-          station: 'RM Station 1',
-          is_active: true,
-          has_device: true,
-          current_device: 'DEV-002'
-        },
-        {
-          id: '2',
-          full_name: 'Jane Smith',
-          role: 'Production Staff',
-          station: 'Washing Station',
-          is_active: true,
-          has_device: false
-        },
-        {
-          id: '3',
-          full_name: 'Mike Johnson',
-          role: 'QC Staff',
-          station: 'QC Station 1',
-          is_active: true,
-          has_device: false
-        },
-      ]);
+      // Fetch real staff from backend
+      const staffResponse = await clamflowAPI.getStaff();
+      if (staffResponse.success && staffResponse.data) {
+        const mappedStaff: StaffMember[] = staffResponse.data.map((person: any) => ({
+          id: person.id || person.personId || person.person_id || '',
+          full_name: person.fullName || person.full_name || `${person.firstName || person.first_name || ''} ${person.lastName || person.last_name || ''}`.trim() || 'Unknown',
+          role: person.role || person.designation || '',
+          station: person.station || person.currentStation || person.current_station || 'Unassigned',
+          is_active: (person.isActive ?? person.is_active) !== false,
+          has_device: false, // Will be updated when device assignments are loaded
+          current_device: undefined
+        }));
+        setStaff(mappedStaff);
+      } else {
+        setStaff([]);
+      }
 
-      setActiveHandovers([
-        {
-          id: '1',
-          device_id: '2',
-          device_tag: 'DEV-002',
-          staff_id: '1',
-          staff_name: 'John Doe',
-          station: 'RM Station 1',
-          handed_over_by: 'Production Lead',
-          handed_over_at: new Date(Date.now() - 3600000).toISOString(),
-          status: 'active'
+      // Fetch devices from backend (if endpoint exists)
+      try {
+        const devicesResponse = await clamflowAPI.getRFIDTags();
+        if (devicesResponse.success && devicesResponse.data) {
+          const mappedDevices: RFIDDevice[] = devicesResponse.data.map((tag: any) => ({
+            id: tag.id || '',
+            device_tag: tag.tagId || tag.tag_id || tag.deviceTag || tag.device_tag || '',
+            device_type: tag.deviceType || tag.device_type || 'handheld',
+            model: tag.model || tag.description || '',
+            serial_number: tag.serialNumber || tag.serial_number || '',
+            status: tag.status === 'active' || tag.status === 'assigned' ? 'assigned' : 'available',
+            last_assigned_to: tag.assignedTo || tag.assigned_to || undefined,
+            last_assigned_at: tag.assignedAt || tag.assigned_at || undefined,
+            battery_level: tag.batteryLevel || tag.battery_level || undefined
+          }));
+          setDevices(mappedDevices);
+
+          // Update staff has_device based on active assignments
+          const assignedStaffIds = new Set(
+            mappedDevices
+              .filter(d => d.status === 'assigned' && d.last_assigned_to)
+              .map(d => d.last_assigned_to)
+          );
+          setStaff(prev => prev.map(s => ({
+            ...s,
+            has_device: assignedStaffIds.has(s.id) || assignedStaffIds.has(s.full_name)
+          })));
+        } else {
+          setDevices([]);
         }
-      ]);
+      } catch {
+        // Device endpoint may not exist yet - show empty state
+        console.info('Device endpoint not available yet');
+        setDevices([]);
+      }
 
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      setError('Failed to load data');
+      // Fetch active handovers (if endpoint exists)
+      try {
+        const handoverResponse = await clamflowAPI.get('/api/devices/handovers?status=active');
+        if (handoverResponse.success && handoverResponse.data) {
+          setActiveHandovers(Array.isArray(handoverResponse.data) ? handoverResponse.data : []);
+        } else {
+          setActiveHandovers([]);
+        }
+      } catch {
+        console.info('Handover endpoint not available yet');
+        setActiveHandovers([]);
+      }
+
+    } catch (err: any) {
+      console.error('Error fetching data:', err);
+      setError('Failed to load data from server');
     } finally {
       setLoading(false);
     }
@@ -168,26 +160,29 @@ const DeviceRFIDHandover: React.FC = () => {
       setScanning(true);
       setError(null);
       
-      // Simulate RFID scan - In production, this would interface with RFID hardware
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Call backend RFID scan endpoint
+      // The physical RFID reader should be connected and this triggers a read
+      const response = await clamflowAPI.scanRFIDTag('scan');
       
-      // Mock scanned tag
-      const mockTag = 'DEV-001';
-      setScannedTag(mockTag);
-      
-      // Find the device
-      const device = devices.find(d => d.device_tag === mockTag);
-      if (device) {
-        setSelectedDevice(device);
-        if (device.status === 'assigned') {
-          setError(`Device ${mockTag} is already assigned to ${device.last_assigned_to}`);
+      if (response.success && response.data) {
+        const tag = (response.data as any).tagId || (response.data as any).tag_id || (response.data as any).device_tag || '';
+        setScannedTag(tag);
+        
+        const device = devices.find(d => d.device_tag === tag);
+        if (device) {
+          setSelectedDevice(device);
+          if (device.status === 'assigned') {
+            setError(`Device ${tag} is already assigned to ${device.last_assigned_to}`);
+          }
+        } else {
+          setError(`Device with tag ${tag} not found in system. Register it first.`);
         }
       } else {
-        setError(`Device with tag ${mockTag} not found in system`);
+        setError('No RFID tag detected. Ensure the reader is connected and the device tag is in range.');
       }
       
     } catch (err: any) {
-      setError(err.message || 'Failed to scan device');
+      setError('RFID reader not available. Use manual tag entry instead.');
     } finally {
       setScanning(false);
     }
@@ -224,23 +219,23 @@ const DeviceRFIDHandover: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      // API call: POST /api/devices/handover
       const handoverData = {
         device_id: selectedDevice.id,
         device_tag: selectedDevice.device_tag,
         staff_id: selectedStaff.id,
         staff_name: selectedStaff.full_name,
         station: selectedStaff.station,
-        handed_over_by: user?.full_name,
+        handed_over_by: user?.full_name || user?.username || 'Unknown',
         handed_over_at: new Date().toISOString()
       };
 
-      console.log('Processing handover:', handoverData);
+      const response = await clamflowAPI.post('/api/devices/handover', handoverData);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      setSuccess(`Device ${selectedDevice.device_tag} successfully handed over to ${selectedStaff.full_name} at ${selectedStaff.station}`);
+      if (response.success) {
+        setSuccess(`Device ${selectedDevice.device_tag} successfully handed over to ${selectedStaff.full_name} at ${selectedStaff.station}`);
+      } else {
+        throw new Error(response.error || 'Handover failed');
+      }
       
       // Reset form
       setSelectedDevice(null);
@@ -260,14 +255,22 @@ const DeviceRFIDHandover: React.FC = () => {
   const handleReturn = async (handover: HandoverRecord) => {
     try {
       setLoading(true);
+      setError(null);
       
-      // API call: POST /api/devices/return
-      console.log('Processing return:', handover);
+      const response = await clamflowAPI.post('/api/devices/return', {
+        handover_id: handover.id,
+        device_id: handover.device_id,
+        device_tag: handover.device_tag,
+        returned_by: user?.full_name || user?.username || 'Unknown',
+        returned_at: new Date().toISOString()
+      });
       
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setSuccess(`Device ${handover.device_tag} returned by ${handover.staff_name}`);
-      fetchData();
+      if (response.success) {
+        setSuccess(`Device ${handover.device_tag} returned by ${handover.staff_name}`);
+        fetchData();
+      } else {
+        throw new Error(response.error || 'Return failed');
+      }
       
     } catch (err: any) {
       setError(err.message || 'Failed to process return');
@@ -437,7 +440,14 @@ const DeviceRFIDHandover: React.FC = () => {
                 <div className="mt-4">
                   <p className="text-sm font-medium text-gray-700 mb-2">Available Devices:</p>
                   <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {devices.filter(d => d.status === 'available').map(device => (
+                    {devices.filter(d => d.status === 'available').length === 0 ? (
+                      <div className="text-center py-4 text-gray-400 text-sm">
+                        {devices.length === 0 
+                          ? 'No devices registered in the system yet' 
+                          : 'All devices are currently assigned'}
+                      </div>
+                    ) : (
+                      devices.filter(d => d.status === 'available').map(device => (
                       <button
                         key={device.id}
                         onClick={() => {
@@ -456,7 +466,8 @@ const DeviceRFIDHandover: React.FC = () => {
                           <span className="text-sm text-gray-500">{device.model}</span>
                         </div>
                       </button>
-                    ))}
+                    ))
+                    )}
                   </div>
                 </div>
               </div>
@@ -583,10 +594,37 @@ const DeviceRFIDHandover: React.FC = () => {
                 <p className="text-gray-500 text-sm mt-1">Past device handovers and returns</p>
               </div>
               
-              <div className="text-center py-12 text-gray-500">
-                <span className="text-6xl">📋</span>
-                <p className="mt-4">Handover history will appear here</p>
-              </div>
+              {(() => {
+                // History loaded in fetchData; for now show from activeHandovers with returned status
+                const history = activeHandovers.filter(h => h.status === 'returned');
+                if (history.length === 0) {
+                  return (
+                    <div className="text-center py-12 text-gray-500">
+                      <span className="text-6xl">📋</span>
+                      <p className="mt-4">No handover history yet</p>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="divide-y">
+                    {history.map((h) => (
+                      <div key={h.id} className="p-4 hover:bg-gray-50">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                            <span className="text-lg">📋</span>
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-800">{h.device_tag} → {h.staff_name}</p>
+                            <p className="text-sm text-gray-500">
+                              {h.station} • Returned {h.returned_at ? new Date(h.returned_at).toLocaleString() : ''}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           )}
         </div>
