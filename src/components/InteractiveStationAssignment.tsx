@@ -849,13 +849,13 @@ export const InteractiveStationAssignment: React.FC = () => {
                         <div className="flow-arrow">→</div>
                         <div className="equipment-item">Shell Separation</div>
                         <div className="flow-arrow">→</div>
-                        <div className="equipment-item">Candling Table</div>
-                        <div className="flow-arrow">→</div>
                         <div className="equipment-item">Grading Machine</div>
                         <div className="flow-arrow">→</div>
                         <div className="equipment-item">Steam Cooker</div>
                         <div className="flow-arrow">→</div>
                         <div className="equipment-item">Vibrating Sieve</div>
+                        <div className="flow-arrow">→</div>
+                        <div className="equipment-item">Candling Table</div>
                       </div>
                     </div>
                   </div>
