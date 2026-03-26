@@ -6,10 +6,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { clamflowAPI } from '../../../lib/clamflow-api';
 
 const AUTHORIZED_ROLES = [
-  'Super Admin',
-  'Admin',
   'Production Lead',
-  'Staff Lead',
 ];
 
 interface Supplier {

@@ -565,7 +565,7 @@ class ClamFlowAPI {
   }
 
   async getStationsWithAssignments(date: string, plantType?: 'PPC' | 'FP'): Promise<ApiResponse<StationWithAssignments[]>> {
-    const params = new URLSearchParams({ date });
+    const params = new URLSearchParams({ assigned_date: date });
     if (plantType) params.append('plant_type', plantType);
     return this.get(`/api/stations/with-assignments?${params.toString()}`);
   }

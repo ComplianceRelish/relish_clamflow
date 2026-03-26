@@ -379,60 +379,127 @@ export const InteractiveStationAssignment: React.FC = () => {
         const defaults = selectedPlant === 'PPC' ? DEFAULT_PPC_STATIONS : DEFAULT_FP_STATIONS;
         
         if (response.success && response.data && response.data.length > 0) {
-          // Map backend stations to component format
-          const backendStations: ProductionStation[] = response.data.map((station: any) => ({
-            id: station.id,
-            name: station.name,
-            type: (station.plantType || station.plant_type) as 'PPC' | 'FP',
-            category: (station.stationType || station.station_type) as ProductionStation['category'],
-            capacity: station.capacity || 2,
-            currentStaff: (station.assignments || []).map((a: any) => ({
-              id: a.id,
-              stationId: station.id,
-              staffId: a.staffId || a.staff_id,
-              staffName: a.staffName || a.staff_name || 'Unknown',
-              startTime: a.startTime || a.start_time || '08:00',
-              endTime: a.endTime || a.end_time || '16:00',
-              shiftType: 'Day' as const,
-              skills: [],
-              certifications: []
-            })),
-            requiredSkills: (station.requiredSkills || station.required_skills)?.split?.(',')?.map((s: string) => s.trim()) || (Array.isArray(station.requiredSkills || station.required_skills) ? (station.requiredSkills || station.required_skills) : []),
-            status: (station.status || 'operational') as 'operational' | 'maintenance' | 'offline',
-            coordinates: { x: 0, y: 0 },
-            formType: undefined,
-            equipmentIds: []
-          }));
+          // Build a lookup of backend stations by code
+          const backendByCode: Record<string, any> = {};
+          for (const station of response.data) {
+            const code = station.code || '';
+            if (code) backendByCode[code] = station;
+          }
 
-          // Merge: backend stations override defaults by id; defaults not in backend are kept
-          const backendIds = new Set(backendStations.map(s => s.id));
-          const merged = [
-            ...defaults.filter(d => !backendIds.has(d.id)),
-            ...backendStations
-          ];
+          // Merge: for each default, if backend has a matching code use the backend UUID id
+          // For non-matching defaults, auto-create in backend so we get a real UUID
+          const mergedStations: ProductionStation[] = [];
+          for (const def of defaults) {
+            const backendMatch = backendByCode[def.id]; // def.id IS the code (e.g. 'ppc-receiving')
+            if (backendMatch) {
+              // Use backend UUID, keep frontend display properties
+              mergedStations.push({
+                ...def,
+                id: backendMatch.id, // UUID from backend
+                capacity: backendMatch.capacity || def.capacity,
+                currentStaff: (backendMatch.assignments || []).map((a: any) => ({
+                  id: a.id,
+                  stationId: backendMatch.id,
+                  staffId: a.staffId || a.staff_id,
+                  staffName: a.staff?.full_name || a.staffName || a.staff_name || 'Unknown',
+                  startTime: a.startTime || a.start_time || '08:00',
+                  endTime: a.endTime || a.end_time || '16:00',
+                  shiftType: 'Day' as const,
+                  skills: [],
+                  certifications: []
+                })),
+                status: (backendMatch.status || def.status) as 'operational' | 'maintenance' | 'offline',
+              });
+              delete backendByCode[def.id]; // mark as used
+            } else {
+              // Default station not in backend — auto-create it
+              try {
+                const createResp = await clamflowAPI.createStation({
+                  name: def.name,
+                  code: def.id, // def.id is the code string
+                  plant_type: def.type,
+                  station_type: def.category,
+                  capacity: def.capacity,
+                  status: def.status || 'operational',
+                  station_order: defaults.indexOf(def),
+                  required_skills: def.requiredSkills.join(', '),
+                  description: def.name,
+                });
+                if (createResp.success && createResp.data) {
+                  mergedStations.push({ ...def, id: createResp.data.id });
+                } else {
+                  // Fallback: keep string id (assignment will fail gracefully)
+                  mergedStations.push(def);
+                }
+              } catch {
+                mergedStations.push(def);
+              }
+            }
+          }
+
+          // Add any remaining backend stations not matching any default
+          for (const code of Object.keys(backendByCode)) {
+            const station = backendByCode[code];
+            mergedStations.push({
+              id: station.id,
+              name: station.name,
+              type: (station.plantType || station.plant_type) as 'PPC' | 'FP',
+              category: (station.stationType || station.station_type) as ProductionStation['category'],
+              capacity: station.capacity || 2,
+              currentStaff: (station.assignments || []).map((a: any) => ({
+                id: a.id,
+                stationId: station.id,
+                staffId: a.staffId || a.staff_id,
+                staffName: a.staff?.full_name || a.staffName || a.staff_name || 'Unknown',
+                startTime: a.startTime || a.start_time || '08:00',
+                endTime: a.endTime || a.end_time || '16:00',
+                shiftType: 'Day' as const,
+                skills: [],
+                certifications: []
+              })),
+              requiredSkills: (station.requiredSkills || station.required_skills)?.split?.(',')?.map((s: string) => s.trim()) || [],
+              status: (station.status || 'operational') as 'operational' | 'maintenance' | 'offline',
+              coordinates: { x: 0, y: 0 },
+              formType: undefined,
+              equipmentIds: []
+            });
+          }
           
           // Keep both plants — merge with the other plant's defaults
           const otherDefaults = selectedPlant === 'PPC' ? DEFAULT_FP_STATIONS : DEFAULT_PPC_STATIONS;
-          setStations([...merged, ...otherDefaults]);
+          setStations([...mergedStations, ...otherDefaults]);
           
-          // Also update assignments from the fetched data
-          const allAssignments = response.data.flatMap((station: any) => 
-            (station.assignments || []).map((a: any) => ({
-              id: a.id,
-              stationId: station.id,
-              staffId: a.staffId || a.staff_id,
-              staffName: a.staffName || a.staff_name || 'Unknown',
-              startTime: a.startTime || a.start_time || '08:00',
-              endTime: a.endTime || a.end_time || '16:00',
-              shiftType: 'Day' as const,
-              skills: [],
-              certifications: []
-            }))
-          );
+          // Also update assignments from the merged data
+          const allAssignments = mergedStations.flatMap(s => s.currentStaff);
           setAssignments(allAssignments);
         } else {
-          // Use default stations if API returns empty or fails
-          console.log('Using default stations, API returned:', response);
+          // No backend stations at all — auto-create all defaults
+          console.log('No backend stations found, auto-creating defaults...');
+          const createdStations: ProductionStation[] = [];
+          for (const def of defaults) {
+            try {
+              const createResp = await clamflowAPI.createStation({
+                name: def.name,
+                code: def.id,
+                plant_type: def.type,
+                station_type: def.category,
+                capacity: def.capacity,
+                status: def.status || 'operational',
+                station_order: defaults.indexOf(def),
+                required_skills: def.requiredSkills.join(', '),
+                description: def.name,
+              });
+              if (createResp.success && createResp.data) {
+                createdStations.push({ ...def, id: createResp.data.id });
+              } else {
+                createdStations.push(def);
+              }
+            } catch {
+              createdStations.push(def);
+            }
+          }
+          const otherDefaults = selectedPlant === 'PPC' ? DEFAULT_FP_STATIONS : DEFAULT_PPC_STATIONS;
+          setStations([...createdStations, ...otherDefaults]);
         }
       } catch (error) {
         console.error('Error fetching stations:', error);
