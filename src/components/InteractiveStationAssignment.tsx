@@ -873,9 +873,8 @@ export const InteractiveStationAssignment: React.FC = () => {
                         isSelected={selectedStation?.id === station.id}
                       />
                     ))}
-                    <div className="non-staffable-area machine-room">
-                      <div className="area-icon">🔧</div>
-                      <div className="area-label">Machine Room / Boiler Room</div>
+                    <div className="non-staffable-label">
+                      🔧 Machine Room / Boiler Room
                     </div>
                   </div>
 
@@ -1511,22 +1510,20 @@ export const InteractiveStationAssignment: React.FC = () => {
           flex: 1;
         }
 
-        .non-staffable-area {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
+        .non-staffable-label {
+          display: inline-flex;
           align-items: center;
-          justify-content: center;
-          gap: 0.5rem;
+          align-self: flex-start;
+          gap: 0.35rem;
+          padding: 0.4rem 0.75rem;
           background: #f0f0f0;
-          border: 2px dashed #ccc;
-          border-radius: 12px;
-          padding: 1rem;
-          color: #888;
+          border: 1px dashed #ccc;
+          border-radius: 8px;
+          font-size: 0.75rem;
+          font-weight: 500;
+          color: #999;
+          white-space: nowrap;
         }
-
-        .area-icon { font-size: 1.5rem; }
-        .area-label { font-size: 0.8rem; font-weight: 600; text-align: center; }
 
         .layout-row-store, .layout-row-gate {
           max-width: 50%;
