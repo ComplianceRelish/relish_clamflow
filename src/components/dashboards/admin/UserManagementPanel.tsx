@@ -278,9 +278,6 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
       return false;
     }
   };
-      return false;
-    }
-  };
 
   const deleteUser = async (userId: string) => {
     try {
