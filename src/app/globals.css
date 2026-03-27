@@ -9,6 +9,56 @@
     --relish-seafoam: #10B981;
     --relish-cream: #F5F5DC;
     --logo-background: #F0EBE0; /* Matches your logo background */
+
+    /* ClamFlow Design Tokens */
+    /* Traffic Light System Colors */
+    --status-green: #10b981;
+    --status-green-light: #d1fae5;
+    --status-green-dark: #047857;
+    --status-amber: #f59e0b;
+    --status-amber-light: #fef3c7;
+    --status-amber-dark: #d97706;
+    --status-red: #ef4444;
+    --status-red-light: #fee2e2;
+    --status-red-dark: #dc2626;
+
+    /* Workflow Status Colors */
+    --workflow-active: #3b82f6;
+    --workflow-completed: #10b981;
+    --workflow-pending: #94a3b8;
+    --workflow-locked: #64748b;
+    --workflow-awaiting: #f59e0b;
+    --workflow-rejected: #ef4444;
+
+    /* Brand Colors */
+    --brand-primary: #1e40af;
+    --brand-secondary: #0ea5e9;
+
+    /* Tablet-Optimized Spacing */
+    --spacing-touch-target: 44px;
+    --spacing-form-field: 24px;
+    --spacing-section: 32px;
+    --spacing-card-padding: 24px;
+
+    /* Typography Scale (Tablet-optimized) */
+    --text-xs: 0.75rem;
+    --text-sm: 0.875rem;
+    --text-base: 1rem;
+    --text-lg: 1.125rem;
+    --text-xl: 1.25rem;
+    --text-2xl: 1.5rem;
+    --text-3xl: 1.875rem;
+
+    /* Form Elements */
+    --input-height: 44px;
+    --button-height: 44px;
+    --select-height: 44px;
+
+    /* Elevation/Shadow Tokens */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
   }
   
   * {
