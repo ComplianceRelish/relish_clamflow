@@ -200,68 +200,30 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
       // Generate secure random password
       const generatedPassword = userData.password || `Clam${Math.random().toString(36).slice(2, 10)}!`;
 
-      const newUser: User = {
-        id: `user_${Date.now()}`,
-        username,
-        full_name: userData.full_name,
-        role: userData.role,
-        station: userData.station || 'Unassigned',
-        is_active: true,
-        created_at: new Date().toISOString(),
-        last_login: undefined
-      };
+      const response = await fetch(`${API_BASE_URL}/api/users/`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          ...userData,
+          username,
+          password: generatedPassword
+        })
+      });
 
-      // Try API first
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/users/`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            ...userData,
-            username,
-            password: generatedPassword
-          })
-        });
-
-        if (response.ok) {
-          const createdUser = await response.json();
-          setUsers(prev => [...prev, createdUser]);
-          
-          // 🔔 Send WhatsApp welcome message
-          if (userData.phone_number) {
-            setWhatsappStatus('Sending WhatsApp welcome message...');
-            const whatsappResult = await sendWelcomeMessage({
-              username,
-              password: generatedPassword,
-              full_name: userData.full_name,
-              role: userData.role,
-              phone_number: userData.phone_number
-            });
-            
-            if (whatsappResult.success) {
-              setWhatsappStatus('✅ WhatsApp welcome message sent successfully!');
-              console.log('✅ Welcome message sent to:', userData.phone_number);
-            } else {
-              setWhatsappStatus(`⚠️ User created but WhatsApp failed: ${whatsappResult.error}`);
-              console.warn('WhatsApp delivery failed:', whatsappResult.error);
-            }
-          }
-          
-          return true;
-        }
-      } catch (err) {
-        console.warn('API failed, using local fallback:', err);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        const errorMsg = errorData?.detail || errorData?.message || `Server error (${response.status})`;
+        setFormError(`Failed to create user: ${errorMsg}`);
+        return false;
       }
 
-      // Fallback to local storage
-      const updatedUsers = [...users, newUser];
-      setUsers(updatedUsers);
-      localStorage.setItem('clamflow_users', JSON.stringify(updatedUsers));
+      const createdUser = await response.json();
+      setUsers(prev => [...prev, createdUser]);
       
-      // 🔔 Send WhatsApp for fallback users too
+      // 🔔 Send WhatsApp welcome message
       if (userData.phone_number) {
         setWhatsappStatus('Sending WhatsApp welcome message...');
         const whatsappResult = await sendWelcomeMessage({
@@ -273,84 +235,75 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
         });
         
         if (whatsappResult.success) {
-          setWhatsappStatus('✅ WhatsApp welcome message sent!');
+          setWhatsappStatus('✅ WhatsApp welcome message sent successfully!');
+          console.log('✅ Welcome message sent to:', userData.phone_number);
         } else {
           setWhatsappStatus(`⚠️ User created but WhatsApp failed: ${whatsappResult.error}`);
+          console.warn('WhatsApp delivery failed:', whatsappResult.error);
         }
       }
       
       return true;
     } catch (err) {
       console.error('Error creating user:', err);
-      setFormError('Failed to create user');
+      setFormError('Failed to create user. Check network connection.');
       return false;
     }
   };
 
   const updateUser = async (userId: string, userData: any) => {
     try {
-      // Try API first
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(userData)
-        });
+      const response = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(userData)
+      });
 
-        if (response.ok) {
-          const updatedUser = await response.json();
-          setUsers(prev => prev.map(u => u.id === userId ? updatedUser : u));
-          return true;
-        }
-      } catch (err) {
-        console.warn('API failed, using local fallback:', err);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        const errorMsg = errorData?.detail || errorData?.message || `Server error (${response.status})`;
+        setFormError(`Failed to update user: ${errorMsg}`);
+        return false;
       }
 
-      // Fallback to local storage
-      const updatedUsers = users.map(u => u.id === userId ? { ...u, ...userData } : u);
-      setUsers(updatedUsers);
-      localStorage.setItem('clamflow_users', JSON.stringify(updatedUsers));
-      
+      const updatedUser = await response.json();
+      setUsers(prev => prev.map(u => u.id === userId ? updatedUser : u));
       return true;
     } catch (err) {
       console.error('Error updating user:', err);
-      setFormError('Failed to update user');
+      setFormError('Failed to update user. Check network connection.');
+      return false;
+    }
+  };
       return false;
     }
   };
 
   const deleteUser = async (userId: string) => {
     try {
-      // Try API first
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (response.ok) {
-          setUsers(prev => prev.filter(u => u.id !== userId));
-          return true;
+      const response = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
-      } catch (err) {
-        console.warn('API failed, using local fallback:', err);
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        const errorMsg = errorData?.detail || errorData?.message || `Server error (${response.status})`;
+        setFormError(`Failed to delete user: ${errorMsg}`);
+        return false;
       }
 
-      // Fallback to local storage
-      const updatedUsers = users.filter(u => u.id !== userId);
-      setUsers(updatedUsers);
-      localStorage.setItem('clamflow_users', JSON.stringify(updatedUsers));
-      
+      setUsers(prev => prev.filter(u => u.id !== userId));
       return true;
     } catch (err) {
       console.error('Error deleting user:', err);
-      setFormError('Failed to delete user');
+      setFormError('Failed to delete user. Check network connection.');
       return false;
     }
   };
