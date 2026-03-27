@@ -55,7 +55,7 @@ const DashboardPage: React.FC = () => {
           <p className="text-red-800">{error || 'Authentication required'}</p>
           <button
             onClick={() => router.push('/login')}
-            className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors min-h-[44px]"
           >
             Return to Login
           </button>

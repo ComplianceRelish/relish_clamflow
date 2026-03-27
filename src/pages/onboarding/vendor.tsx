@@ -140,7 +140,7 @@ export default function VendorOnboardingPage() {
             />
           </div>
           <h1 className="text-3xl font-bold text-gray-900">ClamFlow</h1>
-          <p className="text-lg text-relish-purple font-semibold mb-2">Quality • Productivity • Assured</p>
+          <p className="text-lg text-relish-blue font-semibold mb-2">Quality • Productivity • Assured</p>
           <h2 className="text-2xl font-bold text-gray-800">Vendor Onboarding</h2>
           <p className="text-gray-600">Register new service provider / vendor</p>
           <div className="mt-2 text-sm text-gray-500">
@@ -189,7 +189,7 @@ export default function VendorOnboardingPage() {
                     required
                     value={formData.first_name}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-purple focus:border-relish-purple"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-blue focus:border-relish-blue"
                     placeholder="Contact person's first name"
                   />
                 </div>
@@ -205,7 +205,7 @@ export default function VendorOnboardingPage() {
                     required
                     value={formData.last_name}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-purple focus:border-relish-purple"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-blue focus:border-relish-blue"
                     placeholder="Contact person's last name"
                   />
                 </div>
@@ -223,7 +223,7 @@ export default function VendorOnboardingPage() {
                   pattern="[0-9]{12}"
                   value={formData.aadhar_number}
                   onChange={handleInputChange}
-                  className="w-full md:w-1/2 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-purple focus:border-relish-purple"
+                  className="w-full md:w-1/2 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-blue focus:border-relish-blue"
                   placeholder="XXXX XXXX XXXX"
                   maxLength={12}
                 />
@@ -247,7 +247,7 @@ export default function VendorOnboardingPage() {
                     required
                     value={formData.name_of_firm}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-purple focus:border-relish-purple"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-blue focus:border-relish-blue"
                     placeholder="Enter company/firm name"
                   />
                 </div>
@@ -262,7 +262,7 @@ export default function VendorOnboardingPage() {
                     required
                     value={formData.category}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-purple focus:border-relish-purple"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-blue focus:border-relish-blue"
                   >
                     <option value="">Select Vendor Category</option>
                     {vendorCategories.map((category) => (
@@ -288,7 +288,7 @@ export default function VendorOnboardingPage() {
                     name="gst_number"
                     value={formData.gst_number}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-purple focus:border-relish-purple"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-blue focus:border-relish-blue"
                     placeholder="Enter GST number (optional)"
                   />
                   <p className="text-xs text-gray-500 mt-1">15-digit GST number (optional)</p>
@@ -312,7 +312,7 @@ export default function VendorOnboardingPage() {
                     required
                     value={formData.address}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-purple focus:border-relish-purple"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-blue focus:border-relish-blue"
                     placeholder="Enter complete business address"
                   />
                 </div>
@@ -329,7 +329,7 @@ export default function VendorOnboardingPage() {
                       required
                       value={formData.contact_number}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-purple focus:border-relish-purple"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-blue focus:border-relish-blue"
                       placeholder="+91 XXXXX XXXXX"
                     />
                   </div>
@@ -344,7 +344,7 @@ export default function VendorOnboardingPage() {
                       name="start_date"
                       value={formData.start_date}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-purple focus:border-relish-purple"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-blue focus:border-relish-blue"
                     />
                   </div>
                 </div>
@@ -365,7 +365,7 @@ export default function VendorOnboardingPage() {
                   name="face_image"
                   value={formData.face_image}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-purple focus:border-relish-purple"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-blue focus:border-relish-blue"
                   placeholder="https://example.com/contact-person-photo.jpg"
                 />
                 <p className="text-xs text-gray-500 mt-1">Optional: URL to contact person's photo for identification</p>
@@ -396,7 +396,7 @@ export default function VendorOnboardingPage() {
               <button
                 type="button"
                 onClick={() => router.back()}
-                className="px-6 py-3 border border-gray-300 rounded-md shadow-sm text-base font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-relish-purple"
+                className="px-6 py-3 border border-gray-300 rounded-md shadow-sm text-base font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-relish-blue"
               >
                 Cancel
               </button>

@@ -64,9 +64,9 @@ const UserManagement: React.FC = () => {
           <div className="text-2xl font-bold text-yellow-600">{userStats.inactiveUsers}</div>
           <div className="text-xs text-yellow-700">Inactive Users</div>
         </div>
-        <div className="text-center p-3 bg-purple-50 rounded-lg">
-          <div className="text-2xl font-bold text-purple-600">{userStats.recentRegistrations}</div>
-          <div className="text-xs text-purple-700">New (30d)</div>
+        <div className="text-center p-3 bg-blue-50 rounded-lg">
+          <div className="text-2xl font-bold text-blue-600">{userStats.recentRegistrations}</div>
+          <div className="text-xs text-blue-700">New (30d)</div>
         </div>
       </div>
       

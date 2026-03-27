@@ -3,6 +3,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { User, LogOut } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 interface HeaderProps {
@@ -14,115 +15,61 @@ export default function Header({ pageTitle, pageSubtitle }: HeaderProps) {
   const { user, logout } = useAuth();
 
   return (
-    <>
-      {/* Mobile Header - Includes Logo, Title, and Sign Out */}
-      <header className="lg:hidden bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
-        {/* Main Header Row: 12px padding + 36px content = 48px total */}
-        <div className="flex items-center justify-between h-12 px-3">
-          {/* Logo + ClamFlow Title Only */}
-          <Link href="/dashboard" className="flex items-center space-x-2 min-w-0 flex-1">
-            <div className="w-6 h-6 bg-white rounded-md shadow-sm border border-gray-200 flex items-center justify-center flex-shrink-0">
+    <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
+      <div className="px-4 py-3 sm:px-6">
+        {/* Top row: Logo + Page Title center + User info */}
+        <div className="flex items-center justify-between">
+          {/* Logo and Branding */}
+          <Link href="/dashboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <div className="flex items-center justify-center w-10 h-10 bg-white rounded-lg shadow-sm border border-gray-200">
               <Image
                 src="/logo-relish.png"
-                alt="ClamFlow"
-                width={16}
-                height={16}
-                className="rounded-sm"
+                alt="Relish Logo"
+                width={28}
+                height={28}
+                className="rounded-md"
                 priority
               />
             </div>
-            <span className="text-base font-bold text-gray-900 truncate">ClamFlow</span>
+            <div className="hidden sm:block">
+              <h1 className="text-lg font-bold text-gray-900 leading-tight">ClamFlow</h1>
+              <p className="text-[10px] text-gray-500 leading-tight">Quality • Productivity • Assured</p>
+            </div>
           </Link>
 
-          {/* User Info and Sign Out Button - Right aligned */}
-          <div className="flex items-center space-x-2 ml-2"> {/* Added ml-2 for spacing */}
-            {user && (
-              <div className="flex items-center space-x-1">
-                <div className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center border border-emerald-200">
-                  <span className="text-emerald-700 font-medium text-xs">
-                    {(user.full_name || user.username || '').charAt(0).toUpperCase()}
-                  </span>
-                </div>
-                <button
-                  onClick={logout}
-                  className="text-xs text-gray-600 hover:text-gray-900 px-2 py-1 rounded-md hover:bg-gray-100 transition-colors border border-transparent hover:border-gray-200 min-h-[28px] min-w-[44px] flex items-center justify-center"
-                >
-                  Sign Out
-                </button>
-              </div>
+          {/* Page Title - Center */}
+          <div className="flex-1 text-center px-4">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900">{pageTitle}</h2>
+            {pageSubtitle && (
+              <p className="text-xs sm:text-sm text-gray-500">{pageSubtitle}</p>
             )}
           </div>
-        </div>
 
-        {/* Separate Gray Bar for Current Page Title */}
-        <div className="px-3 py-1 bg-gray-50 border-t border-gray-100">
-          <p className="text-xs font-medium text-gray-700 truncate">{pageTitle}</p>
-        </div>
-      </header>
-
-      {/* Desktop Header - Full Layout */}
-      <header className="hidden lg:block bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo and Branding */}
-            <div className="flex items-center space-x-4">
-              <Link href="/dashboard" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
-                <div className="flex items-center justify-center w-10 h-10 bg-white rounded-lg shadow-sm border border-gray-200">
-                  <Image
-                    src="/logo-relish.png"
-                    alt="Relish Logo"
-                    width={32}
-                    height={32}
-                    className="rounded-md"
-                    priority
-                  />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">ClamFlow</h1>
-                  <p className="text-xs text-gray-600">Quality • Productivity • Assured</p>
-                </div>
-              </Link>
-            </div>
-
-            {/* Page Title */}
-            <div className="flex-1 text-center">
-              <h2 className="text-xl font-semibold text-gray-800">{pageTitle}</h2>
-              {pageSubtitle && (
-                <p className="text-sm text-gray-600">{pageSubtitle}</p>
-              )}
-            </div>
-
-            {/* User Info */}
-            {user && (
-              <div className="flex items-center space-x-4">
-                <div className="text-right">
-                  <p className="text-sm font-medium text-gray-900">
-                    {user.full_name || user.username}
-                  </p>
-                  {user.role && (
-                    <p className="text-xs text-gray-600 capitalize">
-                      {user.role}
-                    </p>
-                  )}
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center border border-emerald-200">
-                    <span className="text-emerald-700 font-medium text-sm">
-                      {(user.full_name || user.username || '').charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                  <button
-                    onClick={logout}
-                    className="text-sm text-gray-600 hover:text-gray-900 px-3 py-1 rounded-md hover:bg-gray-100 transition-colors border border-transparent hover:border-gray-200"
-                  >
-                    Sign Out
-                  </button>
-                </div>
+          {/* User Info */}
+          {user && (
+            <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg border border-gray-200">
+              <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-full">
+                <User className="h-4 w-4 text-blue-600" />
               </div>
-            )}
-          </div>
+              <div className="text-left hidden sm:block">
+                <div className="text-sm font-medium text-gray-900">
+                  {user.full_name || user.username}
+                </div>
+                {user.role && (
+                  <div className="text-xs text-gray-500">{user.role}</div>
+                )}
+              </div>
+              <button
+                onClick={logout}
+                className="ml-1 p-2 min-h-[36px] min-w-[36px] rounded-md hover:bg-gray-100 transition-colors flex items-center justify-center"
+                title="Sign Out"
+              >
+                <LogOut className="h-4 w-4 text-gray-500" />
+              </button>
+            </div>
+          )}
         </div>
-      </header>
-    </>
+      </div>
+    </header>
   );
 }

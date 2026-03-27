@@ -462,7 +462,7 @@ const QCFlowDashboard: React.FC<QCFlowDashboardProps> = ({ currentUser }) => {
                   </button>
                   <button
                     onClick={() => setCurrentView('ppc-form-new')}
-                    className="block w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg shadow-lg text-sm"
+                    className="block w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-lg text-sm"
                   >
                     [DEMO] Create PPC Form
                   </button>

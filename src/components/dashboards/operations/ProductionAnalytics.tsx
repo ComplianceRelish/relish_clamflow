@@ -96,7 +96,7 @@ const ProductionAnalytics: React.FC = () => {
           </div>
           <div className="text-xs text-gray-500 mt-1">System-wide average</div>
         </div>
-        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-purple-500">
+        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
           <div className="text-sm font-medium text-gray-600">Quality Pass Rate</div>
           <div className="text-3xl font-bold text-gray-900 mt-2">
             {quality?.passRate?.toFixed(1) || 0}%
@@ -136,7 +136,7 @@ const ProductionAnalytics: React.FC = () => {
             </div>
             <div>
               <div className="text-sm font-medium text-gray-600 mb-2">Avg Time per Lot</div>
-              <div className="text-4xl font-bold text-purple-600">
+              <div className="text-4xl font-bold text-blue-600">
                 {efficiency && efficiency.length > 0 ? efficiency[0]?.avgProcessingTime?.toFixed(0) : 0}
                 <span className="text-lg text-gray-500 ml-2">min</span>
               </div>

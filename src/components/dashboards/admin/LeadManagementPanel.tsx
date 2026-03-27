@@ -152,7 +152,7 @@ const LeadManagementPanel: React.FC<LeadManagementPanelProps> = ({ onClose }) =>
   const getRoleColor = (role: string) => {
     switch (role) {
       case 'Production Lead': return 'bg-blue-100 text-blue-800';
-      case 'QC Lead': return 'bg-purple-100 text-purple-800';
+      case 'QC Lead': return 'bg-blue-100 text-blue-800';
       case 'Staff Lead': return 'bg-indigo-100 text-indigo-800';
       case 'Shift Lead': return 'bg-orange-100 text-orange-800';
       default: return 'bg-gray-100 text-gray-800';
@@ -384,13 +384,13 @@ const LeadManagementPanel: React.FC<LeadManagementPanelProps> = ({ onClose }) =>
                       </div>
                     </div>
 
-                    <div className="bg-purple-50 rounded-lg p-4">
+                    <div className="bg-blue-50 rounded-lg p-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-purple-600 font-medium">Quality Score</p>
-                          <p className="text-2xl font-bold text-purple-900">{selectedLead.metrics.quality_score}%</p>
+                          <p className="text-sm text-blue-600 font-medium">Quality Score</p>
+                          <p className="text-2xl font-bold text-blue-900">{selectedLead.metrics.quality_score}%</p>
                         </div>
-                        <Target className="w-8 h-8 text-purple-600" />
+                        <Target className="w-8 h-8 text-blue-600" />
                       </div>
                     </div>
 

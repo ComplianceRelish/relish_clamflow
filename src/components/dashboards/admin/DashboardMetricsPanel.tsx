@@ -344,7 +344,7 @@ export default function DashboardMetricsPanel({ currentUser }: DashboardMetricsP
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center space-x-2">
-                  <CheckCircle className="h-5 w-5 text-purple-500" />
+                  <CheckCircle className="h-5 w-5 text-blue-500" />
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Completion Rate</p>
                     <p className={`text-2xl font-bold ${getPercentageColor(metrics.overview.completion_rate)}`}>
@@ -461,7 +461,7 @@ export default function DashboardMetricsPanel({ currentUser }: DashboardMetricsP
                       {metrics.production.efficiency_score}%
                     </p>
                   </div>
-                  <Activity className="h-8 w-8 text-purple-500" />
+                  <Activity className="h-8 w-8 text-blue-500" />
                 </div>
                 <div className="mt-2 flex items-center space-x-2">
                   <Badge variant={metrics.production.stations_active > 7 ? "default" : "secondary"}>

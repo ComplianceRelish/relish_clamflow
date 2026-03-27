@@ -502,7 +502,7 @@ const SampleExtractionForm: React.FC<SampleExtractionFormProps> = ({ onSubmit, c
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full bg-purple-600 text-white py-3 px-4 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-lg font-semibold"
+          className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-lg font-semibold"
         >
           {isSubmitting ? 'Extracting Sample...' : 'Extract Sample'}
         </button>

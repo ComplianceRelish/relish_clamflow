@@ -62,11 +62,11 @@ const ProductionOverview: React.FC = () => {
           <div className="text-2xl font-bold text-blue-600">{productionStats.weeklyProduction}</div>
           <div className="text-xs text-blue-700">This Week (kg)</div>
         </div>
-        <div className="text-center p-3 bg-purple-50 rounded-lg">
-          <div className="text-2xl font-bold text-purple-600">
+        <div className="text-center p-3 bg-blue-50 rounded-lg">
+          <div className="text-2xl font-bold text-blue-600">
             {productionStats.activeStations}/{productionStats.totalStations}
           </div>
-          <div className="text-xs text-purple-700">Active Stations</div>
+          <div className="text-xs text-blue-700">Active Stations</div>
         </div>
         <div className="text-center p-3 bg-orange-50 rounded-lg">
           <div className="text-2xl font-bold text-orange-600">--</div>

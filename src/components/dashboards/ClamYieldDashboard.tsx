@@ -259,9 +259,9 @@ const ClamYieldDashboard: React.FC<ClamYieldDashboardProps> = ({ currentUser }) 
           <h3 className="text-sm font-medium text-gray-500">Avg Yield</h3>
           <p className="text-2xl font-bold text-green-600">{(yieldMetrics.avgYieldPercentage ?? 0).toFixed(1)}%</p>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow border-l-4 border-purple-500">
+        <div className="bg-white p-6 rounded-lg shadow border-l-4 border-blue-500">
           <h3 className="text-sm font-medium text-gray-500">Raw Material</h3>
-          <p className="text-2xl font-bold text-purple-600">{(yieldMetrics.totalRawMaterial ?? 0).toFixed(0)} kg</p>
+          <p className="text-2xl font-bold text-blue-600">{(yieldMetrics.totalRawMaterial ?? 0).toFixed(0)} kg</p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow border-l-4 border-emerald-500">
           <h3 className="text-sm font-medium text-gray-500">Final Product</h3>

@@ -771,7 +771,7 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
                               size="sm"
                               variant="outline"
                               onClick={() => handleStartOnboarding(user)}
-                              className="hover:bg-purple-50 hover:border-purple-500 text-purple-600"
+                              className="hover:bg-blue-50 hover:border-blue-500 text-blue-600"
                               title="Complete Onboarding"
                             >
                               <Fingerprint className="w-4 h-4" />
@@ -966,7 +966,7 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
                                 setShowCreateForm(false);
                                 handleStartOnboarding(editingUser);
                               }}
-                              className="w-full bg-purple-600 hover:bg-purple-700 mt-2"
+                              className="w-full bg-blue-600 hover:bg-blue-700 mt-2"
                             >
                               <Fingerprint className="w-4 h-4 mr-2" />
                               Complete Onboarding
@@ -1022,12 +1022,12 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
       {showOnboardingModal && onboardingUser && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <Card className="w-full max-w-lg mx-4 bg-white shadow-xl max-h-[90vh] overflow-y-auto">
-            <CardHeader className="bg-gradient-to-r from-purple-600 to-purple-800 text-white">
+            <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-800 text-white">
               <CardTitle className="flex items-center gap-2">
                 <Fingerprint className="w-5 h-5" />
                 Complete Onboarding - {onboardingUser.full_name}
               </CardTitle>
-              <p className="text-purple-100 text-sm mt-1">
+              <p className="text-blue-100 text-sm mt-1">
                 Aadhar Verification & Face Registration
               </p>
             </CardHeader>
@@ -1035,7 +1035,7 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
               {/* Onboarding Progress */}
               <div className="flex items-center justify-center gap-4 pb-4 border-b">
                 <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
-                  onboardingStep === 'aadhar' ? 'bg-purple-100 text-purple-800' : 
+                  onboardingStep === 'aadhar' ? 'bg-blue-100 text-blue-800' : 
                   aadharVerified ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'
                 }`}>
                   <CreditCard className="w-4 h-4" />
@@ -1044,7 +1044,7 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
                 </div>
                 <div className="w-8 h-0.5 bg-gray-300" />
                 <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
-                  onboardingStep === 'face' ? 'bg-purple-100 text-purple-800' : 
+                  onboardingStep === 'face' ? 'bg-blue-100 text-blue-800' : 
                   faceRegistered ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'
                 }`}>
                   <Camera className="w-4 h-4" />
@@ -1069,7 +1069,7 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
               {onboardingStep === 'aadhar' && !aadharVerified && (
                 <div className="space-y-4">
                   <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-                    <CreditCard className="w-5 h-5 text-purple-600" />
+                    <CreditCard className="w-5 h-5 text-blue-600" />
                     Aadhar Verification
                   </h3>
                   
@@ -1090,7 +1090,7 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
                       <Button
                         onClick={sendAadharOtp}
                         disabled={aadharVerifying || aadharNumber.replace(/\s/g, '').length !== 12}
-                        className="w-full bg-purple-600 hover:bg-purple-700"
+                        className="w-full bg-blue-600 hover:bg-blue-700"
                       >
                         {aadharVerifying ? 'Sending OTP...' : 'Send OTP'}
                       </Button>
@@ -1123,7 +1123,7 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
                         <Button
                           onClick={verifyAadharOtp}
                           disabled={aadharVerifying || aadharOtp.length !== 6}
-                          className="flex-1 bg-purple-600 hover:bg-purple-700"
+                          className="flex-1 bg-blue-600 hover:bg-blue-700"
                         >
                           {aadharVerifying ? 'Verifying...' : 'Verify OTP'}
                         </Button>
@@ -1140,7 +1140,7 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
                   <p className="text-green-700 font-medium">Aadhar Verified Successfully!</p>
                   <Button
                     onClick={() => setOnboardingStep('face')}
-                    className="mt-4 bg-purple-600 hover:bg-purple-700"
+                    className="mt-4 bg-blue-600 hover:bg-blue-700"
                   >
                     Continue to Face Registration →
                   </Button>
@@ -1151,7 +1151,7 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
               {onboardingStep === 'face' && !faceRegistered && (
                 <div className="space-y-4">
                   <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-                    <Camera className="w-5 h-5 text-purple-600" />
+                    <Camera className="w-5 h-5 text-blue-600" />
                     Face Registration
                   </h3>
 
@@ -1183,7 +1183,7 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
 
                   <div className="flex gap-2">
                     {!isCameraActive && !faceImage && (
-                      <Button onClick={startCamera} className="flex-1 bg-purple-600 hover:bg-purple-700">
+                      <Button onClick={startCamera} className="flex-1 bg-blue-600 hover:bg-blue-700">
                         <Camera className="w-4 h-4 mr-2" />
                         Start Camera
                       </Button>

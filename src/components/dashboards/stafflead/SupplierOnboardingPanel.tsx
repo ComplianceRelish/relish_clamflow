@@ -1108,9 +1108,9 @@ const SupplierOnboardingPanel: React.FC<SupplierOnboardingPanelProps> = ({ curre
             {/* STEP 5: Agent Declarations (Boat Owners Only) */}
             {currentStep === 'agents' && supplierType === 'boat_owner' && (
               <>
-                <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                  <h3 className="font-medium text-purple-800">👥 Step 5: Agent Declarations (Optional)</h3>
-                  <p className="text-sm text-purple-600 mt-1">Declare authorized agents who can act on your behalf</p>
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <h3 className="font-medium text-blue-800">👥 Step 5: Agent Declarations (Optional)</h3>
+                  <p className="text-sm text-blue-600 mt-1">Declare authorized agents who can act on your behalf</p>
                 </div>
 
                 {agentDeclarations.length > 0 && (
@@ -1128,7 +1128,7 @@ const SupplierOnboardingPanel: React.FC<SupplierOnboardingPanelProps> = ({ curre
                 )}
 
                 {showAgentForm ? (
-                  <div className="p-4 border border-purple-200 rounded-lg space-y-4">
+                  <div className="p-4 border border-blue-200 rounded-lg space-y-4">
                     <h4 className="font-medium">Add New Agent Declaration</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <input type="text" value={newAgent.agent_name} onChange={(e) => setNewAgent(prev => ({ ...prev, agent_name: e.target.value }))} placeholder="Agent Name *" className="px-3 py-2 border rounded-lg" />
@@ -1140,12 +1140,12 @@ const SupplierOnboardingPanel: React.FC<SupplierOnboardingPanelProps> = ({ curre
                       <label className="text-sm">I authorize this person to act as my agent</label>
                     </div>
                     <div className="flex space-x-2">
-                      <button type="button" onClick={addAgentDeclaration} className="px-4 py-2 bg-purple-600 text-white rounded-lg">Add Agent</button>
+                      <button type="button" onClick={addAgentDeclaration} className="px-4 py-2 bg-blue-600 text-white rounded-lg">Add Agent</button>
                       <button type="button" onClick={() => setShowAgentForm(false)} className="px-4 py-2 border border-gray-300 rounded-lg">Cancel</button>
                     </div>
                   </div>
                 ) : (
-                  <button type="button" onClick={() => setShowAgentForm(true)} className="w-full py-3 border-2 border-dashed border-purple-300 rounded-lg text-purple-600 hover:bg-purple-50">
+                  <button type="button" onClick={() => setShowAgentForm(true)} className="w-full py-3 border-2 border-dashed border-blue-300 rounded-lg text-blue-600 hover:bg-blue-50">
                     ➕ Add Agent Declaration
                   </button>
                 )}
@@ -1210,7 +1210,7 @@ const SupplierOnboardingPanel: React.FC<SupplierOnboardingPanelProps> = ({ curre
                   </div>
 
                   {agentDeclarations.length > 0 && (
-                    <div className="p-4 bg-purple-50 rounded-lg">
+                    <div className="p-4 bg-blue-50 rounded-lg">
                       <h4 className="font-medium mb-2">👥 Agent Declarations ({agentDeclarations.length})</h4>
                       {agentDeclarations.map(a => <p key={a.id} className="text-sm">{a.agent_name} - {a.agent_phone}</p>)}
                     </div>

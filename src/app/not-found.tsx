@@ -16,7 +16,7 @@ export default function NotFound() {
         <p className="text-gray-500 mb-8">
           The page you are looking for doesn't exist or has been moved.
         </p>
-        <Link href="/dashboard" className="px-4 py-2 bg-relish-purple text-white rounded-md hover:bg-purple-700 transition-colors">
+        <Link href="/dashboard" className="px-4 py-2 bg-relish-blue text-white rounded-md hover:bg-blue-700 transition-colors">
           Return to Dashboard
         </Link>
         <p className="text-xs text-gray-500 mt-4">Powered by Relish</p>

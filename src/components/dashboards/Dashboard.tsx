@@ -397,7 +397,7 @@ const Dashboard: React.FC = () => {
             <ProductionAccess>
               <button 
                 onClick={() => window.location.href = '/fp-forms/create'}
-                className="bg-purple-600 hover:bg-purple-700 text-white p-4 rounded-lg text-center transition-colors"
+                className="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-lg text-center transition-colors"
               >
                 <div className="text-2xl mb-2">📋</div>
                 <div className="text-sm font-medium">Create FP Form</div>

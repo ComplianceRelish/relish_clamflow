@@ -31,7 +31,7 @@ const RecentActivity: React.FC<RecentActivityProps> = ({ activities }) => {
     switch (type) {
       case 'login': return 'bg-blue-50 text-blue-700';
       case 'form_submitted': return 'bg-green-50 text-green-700';
-      case 'approval': return 'bg-purple-50 text-purple-700';
+      case 'approval': return 'bg-blue-50 text-blue-700';
       case 'system': return 'bg-gray-50 text-gray-700';
       default: return 'bg-gray-50 text-gray-700';
     }

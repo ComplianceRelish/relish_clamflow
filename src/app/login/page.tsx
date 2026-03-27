@@ -83,7 +83,7 @@ const LoginPage: React.FC = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <LoadingSpinner size="lg" className="text-relish-purple" />
+        <LoadingSpinner size="lg" className="text-relish-blue" />
       </div>
     );
   }

@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useCallback } from 'react'
+import { LayoutDashboard, Users, Wrench, Tablet, BarChart3, Settings, Menu, X, RefreshCw, Bell, Database } from 'lucide-react'
 import { User } from '../../types/auth'
 import UserManagementPanel from './admin/UserManagementPanel'
 import HardwareManagementPanel from './admin/HardwareManagementPanel'
@@ -198,16 +199,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
   }, [notificationPermission, notificationSettings.soundEnabled, notificationSettings.soundType, requestNotificationPermission, playNotificationSound])
 
   const navigationItems = [
-    { id: 'overview', label: 'Overview', icon: '📊' },
-    { id: 'users', label: 'User Management', icon: '👥' },
-    { id: 'hardware', label: 'Hardware Config', icon: '🔧' },
-    { id: 'device-registry', label: 'Device Registry', icon: '📋' },
-    { id: 'metrics', label: 'Metrics', icon: '📈' },
-    { id: 'settings', label: 'Settings', icon: '⚙️' }
+    { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+    { id: 'users', label: 'User Management', icon: Users },
+    { id: 'hardware', label: 'Hardware Config', icon: Wrench },
+    { id: 'device-registry', label: 'Device Registry', icon: Tablet },
+    { id: 'metrics', label: 'Metrics', icon: BarChart3 },
+    { id: 'settings', label: 'Settings', icon: Settings }
   ]
 
   return (
-    <div className="flex h-full bg-gray-100 relative">
+    <div className="flex h-full bg-gray-50 relative">
       {/* Mobile Overlay */}
       {isMobile && isSidebarOpen && (
         <div 
@@ -223,61 +224,61 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
             ? `fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`
             : 'relative flex-shrink-0'
           }
-          w-64 bg-white shadow-lg
+          w-64 bg-white border-r border-gray-200 shadow-sm
         `}
       >
-        <div className="p-6 border-b bg-gradient-to-r from-purple-600 to-purple-700">
+        <div className="p-5 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl font-bold text-white">Admin Panel</h1>
-              <p className="text-sm text-purple-100">ClamFlow Management</p>
+              <h1 className="text-lg font-bold text-gray-900">Admin Panel</h1>
+              <p className="text-xs text-gray-500">ClamFlow Management</p>
             </div>
             {/* Close button for mobile */}
             {isMobile && (
               <button 
                 onClick={() => setIsSidebarOpen(false)}
-                className="text-white p-1 hover:bg-purple-500 rounded"
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <X className="w-5 h-5" />
               </button>
             )}
           </div>
         </div>
         
-        <nav className="p-4 overflow-y-auto max-h-[calc(100vh-100px)]">
-          {navigationItems.map(item => (
-            <button
-              key={item.id}
-              onClick={() => handleNavClick(item.id as AdminView)}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg mb-2 text-left transition-colors ${
-                activeView === item.id
-                  ? 'bg-purple-100 text-purple-700 border-l-4 border-purple-700'
-                  : 'text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              <span className="text-lg">{item.icon}</span>
-              <span className="font-medium">{item.label}</span>
-            </button>
-          ))}
+        <nav className="p-3 overflow-y-auto max-h-[calc(100vh-100px)]">
+          {navigationItems.map(item => {
+            const Icon = item.icon
+            const isActive = activeView === item.id
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleNavClick(item.id as AdminView)}
+                className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg mb-1 text-left transition-colors min-h-[44px] ${
+                  isActive
+                    ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                }`}
+              >
+                <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-blue-600' : 'text-gray-400'}`} />
+                <span className="font-medium text-sm">{item.label}</span>
+              </button>
+            )
+          })}
         </nav>
       </div>
 
       {/* Main Content Area */}
       <div className="flex-1 overflow-auto min-w-0">
         {/* Sub-header */}
-        <div className="bg-white shadow-sm p-4 md:p-6 border-b sticky top-0 z-10">
+        <div className="bg-white border-b border-gray-200 p-4 md:p-6 sticky top-0 z-10 shadow-sm">
           <div className="flex items-center gap-4">
             {/* Hamburger Menu Button for Mobile */}
             {isMobile && (
               <button 
                 onClick={() => setIsSidebarOpen(true)}
-                className="p-2 rounded-lg hover:bg-gray-100 text-gray-700"
+                className="p-2 rounded-lg hover:bg-gray-100 text-gray-600 min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
+                <Menu className="w-5 h-5" />
               </button>
             )}
             <div className="flex-1 min-w-0">
@@ -298,27 +299,36 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
         <div className="p-4 md:p-6">
           {activeView === 'overview' && (
             <div className="space-y-6">
-              <div className="bg-white p-4 md:p-6 rounded-lg shadow">
+              <div className="bg-white p-4 md:p-6 rounded-lg border border-gray-200 shadow-sm">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Admin Overview</h3>
-                <p className="text-gray-600 mb-4">
+                <p className="text-sm text-gray-600 mb-6">
                   Welcome to the Admin Dashboard. {isMobile ? 'Tap the menu icon to navigate.' : 'Use the sidebar to navigate between different management sections.'}
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div className="p-4 border rounded-lg hover:bg-purple-50 cursor-pointer active:bg-purple-100 transition-colors" onClick={() => handleNavClick('users')}>
-                    <div className="text-2xl mb-2">👥</div>
-                    <h4 className="font-medium">User Management</h4>
-                    <p className="text-sm text-gray-500">Manage users, roles, and permissions</p>
-                  </div>
-                  <div className="p-4 border rounded-lg hover:bg-purple-50 cursor-pointer active:bg-purple-100 transition-colors" onClick={() => handleNavClick('hardware')}>
-                    <div className="text-2xl mb-2">🔧</div>
-                    <h4 className="font-medium">Hardware</h4>
-                    <p className="text-sm text-gray-500">Monitor and configure hardware devices</p>
-                  </div>
-                  <div className="p-4 border rounded-lg hover:bg-purple-50 cursor-pointer active:bg-purple-100 transition-colors" onClick={() => handleNavClick('metrics')}>
-                    <div className="text-2xl mb-2">📈</div>
-                    <h4 className="font-medium">Metrics</h4>
-                    <p className="text-sm text-gray-500">View system performance metrics</p>
-                  </div>
+                  <button
+                    onClick={() => handleNavClick('users')}
+                    className="p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 cursor-pointer active:scale-[0.99] transition-all text-left group"
+                  >
+                    <Users className="w-8 h-8 text-blue-500 mb-3 group-hover:text-blue-600 transition-colors" />
+                    <h4 className="font-medium text-gray-900">User Management</h4>
+                    <p className="text-sm text-gray-500 mt-1">Manage users, roles, and permissions</p>
+                  </button>
+                  <button
+                    onClick={() => handleNavClick('hardware')}
+                    className="p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 cursor-pointer active:scale-[0.99] transition-all text-left group"
+                  >
+                    <Wrench className="w-8 h-8 text-blue-500 mb-3 group-hover:text-blue-600 transition-colors" />
+                    <h4 className="font-medium text-gray-900">Hardware</h4>
+                    <p className="text-sm text-gray-500 mt-1">Monitor and configure hardware devices</p>
+                  </button>
+                  <button
+                    onClick={() => handleNavClick('metrics')}
+                    className="p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 cursor-pointer active:scale-[0.99] transition-all text-left group"
+                  >
+                    <BarChart3 className="w-8 h-8 text-blue-500 mb-3 group-hover:text-blue-600 transition-colors" />
+                    <h4 className="font-medium text-gray-900">Metrics</h4>
+                    <p className="text-sm text-gray-500 mt-1">View system performance metrics</p>
+                  </button>
                 </div>
               </div>
             </div>
@@ -333,52 +343,58 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
           {activeView === 'settings' && (
             <div className="space-y-6">
               {/* Quick Settings Cards */}
-              <div className="bg-white p-4 md:p-6 rounded-lg shadow">
+              <div className="bg-white p-4 md:p-6 rounded-lg border border-gray-200 shadow-sm">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Settings</h3>
                 <div className="space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg gap-3 hover:border-purple-300 transition-colors">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border border-gray-200 rounded-lg gap-3 hover:border-blue-300 transition-colors">
                     <div className="flex items-center gap-3">
-                      <span className="text-2xl">🔄</span>
+                      <div className="p-2 bg-blue-50 rounded-lg">
+                        <RefreshCw className="w-5 h-5 text-blue-600" />
+                      </div>
                       <div>
-                        <h4 className="font-medium">Auto Refresh Dashboard</h4>
-                        <p className="text-sm text-gray-600">
+                        <h4 className="font-medium text-gray-900">Auto Refresh Dashboard</h4>
+                        <p className="text-sm text-gray-500">
                           {autoRefreshEnabled ? `Enabled - every ${refreshInterval}s` : 'Disabled'}
                         </p>
                       </div>
                     </div>
                     <button 
                       onClick={() => setShowRefreshModal(true)}
-                      className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 w-full sm:w-auto transition-colors"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 w-full sm:w-auto transition-colors min-h-[44px] text-sm font-medium"
                     >
                       Configure
                     </button>
                   </div>
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg gap-3 hover:border-purple-300 transition-colors">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border border-gray-200 rounded-lg gap-3 hover:border-blue-300 transition-colors">
                     <div className="flex items-center gap-3">
-                      <span className="text-2xl">🔔</span>
+                      <div className="p-2 bg-blue-50 rounded-lg">
+                        <Bell className="w-5 h-5 text-blue-600" />
+                      </div>
                       <div>
-                        <h4 className="font-medium">Notification Settings</h4>
-                        <p className="text-sm text-gray-600">Manage notification preferences</p>
+                        <h4 className="font-medium text-gray-900">Notification Settings</h4>
+                        <p className="text-sm text-gray-500">Manage notification preferences</p>
                       </div>
                     </div>
                     <button 
                       onClick={() => setShowNotificationModal(true)}
-                      className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 w-full sm:w-auto transition-colors"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 w-full sm:w-auto transition-colors min-h-[44px] text-sm font-medium"
                     >
                       Configure
                     </button>
                   </div>
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg gap-3 hover:border-purple-300 transition-colors">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border border-gray-200 rounded-lg gap-3 hover:border-blue-300 transition-colors">
                     <div className="flex items-center gap-3">
-                      <span className="text-2xl">💾</span>
+                      <div className="p-2 bg-blue-50 rounded-lg">
+                        <Database className="w-5 h-5 text-blue-600" />
+                      </div>
                       <div>
-                        <h4 className="font-medium">System Backup</h4>
-                        <p className="text-sm text-gray-600">Configure automated backups</p>
+                        <h4 className="font-medium text-gray-900">System Backup</h4>
+                        <p className="text-sm text-gray-500">Configure automated backups</p>
                       </div>
                     </div>
                     <button 
                       onClick={() => setShowBackupModal(true)}
-                      className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 w-full sm:w-auto transition-colors"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 w-full sm:w-auto transition-colors min-h-[44px] text-sm font-medium"
                     >
                       Configure
                     </button>
@@ -394,17 +410,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
           {/* Auto Refresh Modal */}
           {showRefreshModal && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                <h3 className="text-lg font-semibold mb-4">Auto Refresh Settings</h3>
+              <div className="bg-white rounded-xl p-6 w-full max-w-md border border-gray-200 shadow-lg">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Auto Refresh Settings</h3>
                 <div className="space-y-4">
                   <label className="flex items-center gap-3">
                     <input 
                       type="checkbox" 
                       checked={autoRefreshEnabled}
                       onChange={(e) => setAutoRefreshEnabled(e.target.checked)}
-                      className="w-5 h-5 text-purple-600 rounded"
+                      className="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                     />
-                    <span>Enable auto refresh</span>
+                    <span className="text-sm text-gray-700">Enable auto refresh</span>
                   </label>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -413,7 +429,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
                     <select 
                       value={refreshInterval}
                       onChange={(e) => setRefreshInterval(Number(e.target.value))}
-                      className="w-full border rounded-lg p-2"
+                      className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       disabled={!autoRefreshEnabled}
                     >
                       <option value={15}>15 seconds</option>
@@ -427,13 +443,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
                 <div className="flex gap-3 mt-6">
                   <button 
                     onClick={() => setShowRefreshModal(false)}
-                    className="flex-1 px-4 py-2 border rounded hover:bg-gray-100"
+                    className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium text-gray-700 transition-colors min-h-[44px]"
                   >
                     Cancel
                   </button>
                   <button 
                     onClick={handleSaveRefreshSettings}
-                    className="flex-1 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+                    className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors min-h-[44px]"
                   >
                     Save
                   </button>
@@ -445,14 +461,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
           {/* Notification Settings Modal */}
           {showNotificationModal && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
-                <h3 className="text-lg font-semibold mb-4">Notification Settings</h3>
+              <div className="bg-white rounded-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto border border-gray-200 shadow-lg">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Notification Settings</h3>
                 
                 {/* Browser Notification Permission */}
-                <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-medium text-sm">Browser Notifications</p>
+                      <p className="font-medium text-sm text-gray-900">Browser Notifications</p>
                       <p className="text-xs text-gray-500">
                         {notificationPermission === 'granted' && '✅ Enabled'}
                         {notificationPermission === 'denied' && '❌ Blocked - Enable in browser settings'}
@@ -462,7 +478,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
                     {notificationPermission !== 'granted' && (
                       <button
                         onClick={requestNotificationPermission}
-                        className="px-3 py-1 text-sm bg-purple-600 text-white rounded hover:bg-purple-700"
+                        className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
                       >
                         Enable
                       </button>
@@ -477,50 +493,50 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
                       type="checkbox" 
                       checked={notificationSettings.approvalRequests}
                       onChange={(e) => setNotificationSettings(prev => ({ ...prev, approvalRequests: e.target.checked }))}
-                      className="w-5 h-5 text-purple-600 rounded"
+                      className="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                     />
-                    <span>Approval requests</span>
+                    <span className="text-sm text-gray-700">Approval requests</span>
                   </label>
                   <label className="flex items-center gap-3">
                     <input 
                       type="checkbox" 
                       checked={notificationSettings.systemAlerts}
                       onChange={(e) => setNotificationSettings(prev => ({ ...prev, systemAlerts: e.target.checked }))}
-                      className="w-5 h-5 text-purple-600 rounded"
+                      className="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                     />
-                    <span>System alerts</span>
+                    <span className="text-sm text-gray-700">System alerts</span>
                   </label>
                   <label className="flex items-center gap-3">
                     <input 
                       type="checkbox" 
                       checked={notificationSettings.hardwareWarnings}
                       onChange={(e) => setNotificationSettings(prev => ({ ...prev, hardwareWarnings: e.target.checked }))}
-                      className="w-5 h-5 text-purple-600 rounded"
+                      className="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                     />
-                    <span>Hardware warnings</span>
+                    <span className="text-sm text-gray-700">Hardware warnings</span>
                   </label>
                   <label className="flex items-center gap-3">
                     <input 
                       type="checkbox" 
                       checked={notificationSettings.emailNotifications}
                       onChange={(e) => setNotificationSettings(prev => ({ ...prev, emailNotifications: e.target.checked }))}
-                      className="w-5 h-5 text-purple-600 rounded"
+                      className="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                     />
-                    <span>Email notifications</span>
+                    <span className="text-sm text-gray-700">Email notifications</span>
                   </label>
                 </div>
 
                 {/* Sound Settings */}
-                <div className="mt-4 pt-4 border-t space-y-3">
+                <div className="mt-4 pt-4 border-t border-gray-200 space-y-3">
                   <p className="text-sm font-medium text-gray-700">Sound Settings:</p>
                   <label className="flex items-center gap-3">
                     <input 
                       type="checkbox" 
                       checked={notificationSettings.soundEnabled}
                       onChange={(e) => setNotificationSettings(prev => ({ ...prev, soundEnabled: e.target.checked }))}
-                      className="w-5 h-5 text-purple-600 rounded"
+                      className="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                     />
-                    <span>🔔 Enable notification sounds</span>
+                    <span className="text-sm text-gray-700">Enable notification sounds</span>
                   </label>
                   
                   {notificationSettings.soundEnabled && (
@@ -529,7 +545,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
                       <select
                         value={notificationSettings.soundType}
                         onChange={(e) => setNotificationSettings(prev => ({ ...prev, soundType: e.target.value }))}
-                        className="w-full border rounded-lg p-2"
+                        className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       >
                         <option value="default">Default</option>
                         <option value="chime">Chime</option>
@@ -541,25 +557,25 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
                 </div>
 
                 {/* Test Notification */}
-                <div className="mt-4 pt-4 border-t">
+                <div className="mt-4 pt-4 border-t border-gray-200">
                   <button
                     onClick={testNotification}
-                    className="w-full px-4 py-2 border-2 border-dashed border-purple-300 text-purple-600 rounded-lg hover:bg-purple-50 transition-colors"
+                    className="w-full px-4 py-2.5 border-2 border-dashed border-blue-300 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors text-sm font-medium min-h-[44px]"
                   >
-                    🔔 Test Notification
+                    Test Notification
                   </button>
                 </div>
 
                 <div className="flex gap-3 mt-6">
                   <button 
                     onClick={() => setShowNotificationModal(false)}
-                    className="flex-1 px-4 py-2 border rounded hover:bg-gray-100"
+                    className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium text-gray-700 transition-colors min-h-[44px]"
                   >
                     Cancel
                   </button>
                   <button 
                     onClick={handleSaveNotificationSettings}
-                    className="flex-1 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+                    className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors min-h-[44px]"
                   >
                     Save
                   </button>
@@ -571,21 +587,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
           {/* Backup Modal */}
           {showBackupModal && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                <h3 className="text-lg font-semibold mb-4">System Backup</h3>
+              <div className="bg-white rounded-xl p-6 w-full max-w-md border border-gray-200 shadow-lg">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">System Backup</h3>
                 <div className="space-y-4">
-                  <p className="text-gray-600">
+                  <p className="text-sm text-gray-600">
                     Create a backup of all system data including users, configurations, and logs.
                   </p>
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                    <p className="text-sm text-yellow-800">
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                    <p className="text-sm text-amber-800">
                       ⚠️ This process may take a few minutes. Please do not close the browser.
                     </p>
                   </div>
                   {backupInProgress && (
-                    <div className="flex items-center gap-3 p-4 bg-purple-50 rounded-lg">
-                      <div className="animate-spin h-5 w-5 border-2 border-purple-600 border-t-transparent rounded-full"></div>
-                      <span className="text-purple-700">Backup in progress...</span>
+                    <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="animate-spin h-5 w-5 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+                      <span className="text-sm text-blue-700">Backup in progress...</span>
                     </div>
                   )}
                 </div>
@@ -593,14 +609,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
                   <button 
                     onClick={() => setShowBackupModal(false)}
                     disabled={backupInProgress}
-                    className="flex-1 px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50"
+                    className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 text-sm font-medium text-gray-700 transition-colors min-h-[44px]"
                   >
                     Cancel
                   </button>
                   <button 
                     onClick={handleBackup}
                     disabled={backupInProgress}
-                    className="flex-1 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50"
+                    className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm font-medium transition-colors min-h-[44px]"
                   >
                     {backupInProgress ? 'Backing up...' : 'Start Backup'}
                   </button>

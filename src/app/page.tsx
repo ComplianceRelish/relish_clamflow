@@ -21,7 +21,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-logo flex items-center justify-center">
       <div className="text-center">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-4 border-purple-600 mx-auto mb-4"></div>
+        <div className="animate-spin rounded-full h-10 w-10 border-b-4 border-blue-600 mx-auto mb-4"></div>
         <p className="text-gray-600">Loading ClamFlow...</p>
       </div>
     </div>

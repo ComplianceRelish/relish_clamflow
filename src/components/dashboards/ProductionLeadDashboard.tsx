@@ -242,7 +242,7 @@ const ProductionLeadDashboard: React.FC = () => {
                   <QuickActionButton
                     title="Onboard Staff"
                     icon="👤+"
-                    color="purple"
+                    color="blue"
                     onClick={() => router.push('/onboarding/staff')}
                     description="Add new Production, QC or Security staff"
                   />
@@ -490,7 +490,7 @@ const StatCard: React.FC<{
     green: 'bg-green-50 border-green-200 text-green-700',
     orange: 'bg-orange-50 border-orange-200 text-orange-700',
     yellow: 'bg-yellow-50 border-yellow-200 text-yellow-700',
-    purple: 'bg-purple-50 border-purple-200 text-purple-700',
+    blue: 'bg-blue-50 border-blue-200 text-blue-700',
     red: 'bg-red-50 border-red-200 text-red-700',
   };
 
@@ -520,7 +520,7 @@ const QuickActionButton: React.FC<{
     green: 'bg-green-600 hover:bg-green-700',
     orange: 'bg-orange-600 hover:bg-orange-700',
     yellow: 'bg-yellow-600 hover:bg-yellow-700',
-    purple: 'bg-purple-600 hover:bg-purple-700',
+    blue: 'bg-blue-600 hover:bg-blue-700',
     red: 'bg-red-600 hover:bg-red-700',
     indigo: 'bg-indigo-600 hover:bg-indigo-700',
     teal: 'bg-teal-600 hover:bg-teal-700',

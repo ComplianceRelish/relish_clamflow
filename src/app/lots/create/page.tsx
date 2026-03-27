@@ -145,7 +145,7 @@ export default function CreateLotPage() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-500 to-blue-600">
         <div className="text-center text-white">
           <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-white mx-auto mb-4"></div>
           <p className="text-lg">Loading...</p>
@@ -181,7 +181,7 @@ export default function CreateLotPage() {
     : weightNotes;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-500 to-purple-600 p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-500 to-blue-600 p-4 md:p-8">
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
         <button

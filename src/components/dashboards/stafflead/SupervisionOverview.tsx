@@ -381,7 +381,7 @@ const SupervisionOverview: React.FC<SupervisionOverviewProps> = ({ currentUser, 
           </button>
           <button
             onClick={fetchOverviewData}
-            className="flex flex-col items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors"
+            className="flex flex-col items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
           >
             <span className="text-3xl mb-2">📊</span>
             <span className="text-sm font-medium text-gray-700">Refresh Data</span>

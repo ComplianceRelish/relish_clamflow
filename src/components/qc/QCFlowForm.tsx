@@ -170,7 +170,7 @@ const QCFlowForm: React.FC<QCFlowFormProps> = ({
     if (!step.requiresApproval) return null
     
     const badges: Record<string, { bg: string; text: string }> = {
-      'qc_staff': { bg: 'bg-purple-100', text: 'QC Staff' },
+      'qc_staff': { bg: 'bg-blue-100', text: 'QC Staff' },
       'qc_lead': { bg: 'bg-indigo-100', text: 'QC Lead' },
       'production_lead': { bg: 'bg-orange-100', text: 'Prod. Lead' },
       'supervisor': { bg: 'bg-teal-100', text: 'Supervisor' }
@@ -407,7 +407,7 @@ const QCFlowForm: React.FC<QCFlowFormProps> = ({
                           <span className={`
                             px-2 py-0.5 rounded text-xs font-medium
                             ${form.formType === 'weight_note' ? 'bg-blue-100 text-blue-800' :
-                              form.formType === 'ppc_form' ? 'bg-purple-100 text-purple-800' :
+                              form.formType === 'ppc_form' ? 'bg-blue-100 text-blue-800' :
                               form.formType === 'fp_form' ? 'bg-green-100 text-green-800' :
                               'bg-gray-100 text-gray-800'}
                           `}>

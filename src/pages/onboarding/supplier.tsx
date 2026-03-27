@@ -160,7 +160,7 @@ export default function SupplierOnboardingPage() {
             />
           </div>
           <h1 className="text-3xl font-bold text-gray-900">ClamFlow</h1>
-          <p className="text-lg text-relish-purple font-semibold mb-2">Quality • Productivity • Assured</p>
+          <p className="text-lg text-relish-blue font-semibold mb-2">Quality • Productivity • Assured</p>
           <h2 className="text-2xl font-bold text-gray-800">Supplier Onboarding</h2>
           <p className="text-gray-600">Register new clam supplier (Boat Owner / Agent)</p>
           <div className="mt-2 text-sm text-gray-500">
@@ -212,13 +212,13 @@ export default function SupplierOnboardingPage() {
                       />
                       <div className={`p-4 border-2 rounded-lg transition-colors ${
                         formData.type === type.value 
-                          ? 'border-relish-purple bg-purple-50' 
+                          ? 'border-relish-blue bg-blue-50' 
                           : 'border-gray-300 bg-white hover:border-gray-400'
                       }`}>
                         <div className="flex items-center">
                           <div className={`w-4 h-4 rounded-full border-2 mr-3 ${
                             formData.type === type.value 
-                              ? 'border-relish-purple bg-relish-purple' 
+                              ? 'border-relish-blue bg-relish-blue' 
                               : 'border-gray-300'
                           }`}>
                             {formData.type === type.value && (
@@ -253,7 +253,7 @@ export default function SupplierOnboardingPage() {
                     required
                     value={formData.first_name}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-purple focus:border-relish-purple"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-blue focus:border-relish-blue"
                     placeholder="Enter first name"
                   />
                 </div>
@@ -269,7 +269,7 @@ export default function SupplierOnboardingPage() {
                     required
                     value={formData.last_name}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-purple focus:border-relish-purple"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-blue focus:border-relish-blue"
                     placeholder="Enter last name"
                   />
                 </div>
@@ -292,7 +292,7 @@ export default function SupplierOnboardingPage() {
                     required
                     value={formData.address}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-purple focus:border-relish-purple"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-blue focus:border-relish-blue"
                     placeholder="Enter full address"
                   />
                 </div>
@@ -309,7 +309,7 @@ export default function SupplierOnboardingPage() {
                       required
                       value={formData.contact_number}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-purple focus:border-relish-purple"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-blue focus:border-relish-blue"
                       placeholder="+91 XXXXX XXXXX"
                     />
                   </div>
@@ -326,7 +326,7 @@ export default function SupplierOnboardingPage() {
                       pattern="[0-9]{12}"
                       value={formData.aadhar_number}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-purple focus:border-relish-purple"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-blue focus:border-relish-blue"
                       placeholder="XXXX XXXX XXXX"
                       maxLength={12}
                     />
@@ -352,7 +352,7 @@ export default function SupplierOnboardingPage() {
                     required
                     value={formData.boat_registration_number}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-purple focus:border-relish-purple"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-blue focus:border-relish-blue"
                     placeholder="Enter boat registration number"
                   />
                 </div>
@@ -367,7 +367,7 @@ export default function SupplierOnboardingPage() {
                     name="gst_number"
                     value={formData.gst_number}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-purple focus:border-relish-purple"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-blue focus:border-relish-blue"
                     placeholder="Enter GST number (optional)"
                   />
                   <p className="text-xs text-gray-500 mt-1">15-digit GST number (optional)</p>
@@ -384,7 +384,7 @@ export default function SupplierOnboardingPage() {
                   name="start_date"
                   value={formData.start_date}
                   onChange={handleInputChange}
-                  className="w-full md:w-1/2 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-purple focus:border-relish-purple"
+                  className="w-full md:w-1/2 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-blue focus:border-relish-blue"
                 />
               </div>
             </div>
@@ -403,7 +403,7 @@ export default function SupplierOnboardingPage() {
                       type="text"
                       value={linkedBoatOwnerInput}
                       onChange={(e) => setLinkedBoatOwnerInput(e.target.value)}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-purple focus:border-relish-purple"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-blue focus:border-relish-blue"
                       placeholder="Enter boat owner ID or name"
                     />
                     <button
@@ -422,7 +422,7 @@ export default function SupplierOnboardingPage() {
                         {formData.linked_boat_owners.map((owner, index) => (
                           <span
                             key={index}
-                            className="inline-flex items-center px-3 py-1 bg-relish-purple text-white text-sm rounded-full"
+                            className="inline-flex items-center px-3 py-1 bg-relish-blue text-white text-sm rounded-full"
                           >
                             {owner}
                             <button
@@ -455,7 +455,7 @@ export default function SupplierOnboardingPage() {
                   name="face_image"
                   value={formData.face_image}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-purple focus:border-relish-purple"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-blue focus:border-relish-blue"
                   placeholder="https://example.com/face-image.jpg"
                 />
                 <p className="text-xs text-gray-500 mt-1">Optional: URL to face image for identification</p>
@@ -486,7 +486,7 @@ export default function SupplierOnboardingPage() {
               <button
                 type="button"
                 onClick={() => router.back()}
-                className="px-6 py-3 border border-gray-300 rounded-md shadow-sm text-base font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-relish-purple"
+                className="px-6 py-3 border border-gray-300 rounded-md shadow-sm text-base font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-relish-blue"
               >
                 Cancel
               </button>

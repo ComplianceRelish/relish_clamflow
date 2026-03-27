@@ -130,7 +130,7 @@ export default function StaffOnboardingPage() {
             />
           </div>
           <h1 className="text-3xl font-bold text-gray-900">ClamFlow</h1>
-          <p className="text-lg text-relish-purple font-semibold mb-2">Quality • Productivity • Assured</p>
+          <p className="text-lg text-relish-blue font-semibold mb-2">Quality • Productivity • Assured</p>
           <h2 className="text-2xl font-bold text-gray-800">Staff Onboarding</h2>
           <p className="text-gray-600">Add new team member to ClamFlow system</p>
           <div className="mt-2 text-sm text-gray-500">
@@ -179,7 +179,7 @@ export default function StaffOnboardingPage() {
                     required
                     value={formData.first_name}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-purple focus:border-relish-purple"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-blue focus:border-relish-blue"
                     placeholder="Enter first name"
                   />
                 </div>
@@ -195,7 +195,7 @@ export default function StaffOnboardingPage() {
                     required
                     value={formData.last_name}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-purple focus:border-relish-purple"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-blue focus:border-relish-blue"
                     placeholder="Enter last name"
                   />
                 </div>
@@ -218,7 +218,7 @@ export default function StaffOnboardingPage() {
                     required
                     value={formData.address}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-purple focus:border-relish-purple"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-blue focus:border-relish-blue"
                     placeholder="Enter full address"
                   />
                 </div>
@@ -235,7 +235,7 @@ export default function StaffOnboardingPage() {
                       required
                       value={formData.contact_number}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-purple focus:border-relish-purple"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-blue focus:border-relish-blue"
                       placeholder="+91 XXXXX XXXXX"
                     />
                   </div>
@@ -252,7 +252,7 @@ export default function StaffOnboardingPage() {
                       pattern="[0-9]{12}"
                       value={formData.aadhar_number}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-purple focus:border-relish-purple"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-blue focus:border-relish-blue"
                       placeholder="XXXX XXXX XXXX"
                       maxLength={12}
                     />
@@ -277,7 +277,7 @@ export default function StaffOnboardingPage() {
                     required
                     value={formData.designation}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-purple focus:border-relish-purple"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-blue focus:border-relish-blue"
                   >
                     <option value="">Select Designation</option>
                     {designationOptions.map((option) => (
@@ -298,7 +298,7 @@ export default function StaffOnboardingPage() {
                     name="start_date"
                     value={formData.start_date}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-purple focus:border-relish-purple"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-blue focus:border-relish-blue"
                   />
                 </div>
               </div>
@@ -318,7 +318,7 @@ export default function StaffOnboardingPage() {
                   name="face_image"
                   value={formData.face_image}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-purple focus:border-relish-purple"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-relish-blue focus:border-relish-blue"
                   placeholder="https://example.com/face-image.jpg"
                 />
                 <p className="text-xs text-gray-500 mt-1">Optional: URL to face image for RFID badge</p>
@@ -349,7 +349,7 @@ export default function StaffOnboardingPage() {
               <button
                 type="button"
                 onClick={() => router.back()}
-                className="px-6 py-3 border border-gray-300 rounded-md shadow-sm text-base font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-relish-purple"
+                className="px-6 py-3 border border-gray-300 rounded-md shadow-sm text-base font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-relish-blue"
               >
                 Cancel
               </button>

@@ -221,12 +221,12 @@ const SystemHealth: React.FC = () => {
                 <p className="text-sm text-green-800">Uptime</p>
               </div>
               
-              <div className="text-center p-4 bg-purple-50 rounded-lg">
-                <p className="text-2xl font-bold text-purple-600">
+              <div className="text-center p-4 bg-blue-50 rounded-lg">
+                <p className="text-2xl font-bold text-blue-600">
                   {Object.values(state.health.services).filter(Boolean).length}/
                   {Object.keys(state.health.services).length}
                 </p>
-                <p className="text-sm text-purple-800">Services Online</p>
+                <p className="text-sm text-blue-800">Services Online</p>
               </div>
             </div>
           </Card>

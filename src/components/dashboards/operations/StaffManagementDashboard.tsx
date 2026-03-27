@@ -76,7 +76,7 @@ const StaffManagementDashboard: React.FC = () => {
           <div className="text-3xl font-bold text-gray-900 mt-2">{totalStaff}</div>
           <div className="text-xs text-gray-500 mt-1">Staff members</div>
         </div>
-        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-purple-500">
+        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
           <div className="text-sm font-medium text-gray-600">Active Locations</div>
           <div className="text-3xl font-bold text-gray-900 mt-2">{locations.length}</div>
           <div className="text-xs text-gray-500 mt-1">Locations</div>

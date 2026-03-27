@@ -249,7 +249,7 @@ const ApprovalDashboard: React.FC<ApprovalDashboardProps> = ({
     const badges: Record<string, { bg: string; text: string; label: string }> = {
       'pending_qc': { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Pending QC' },
       'pending_production_lead': { bg: 'bg-orange-100', text: 'text-orange-800', label: 'Pending Prod. Lead' },
-      'pending_qc_lead': { bg: 'bg-purple-100', text: 'text-purple-800', label: 'Pending QC Lead' },
+      'pending_qc_lead': { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Pending QC Lead' },
     }
     return badges[status] || { bg: 'bg-gray-100', text: 'text-gray-800', label: status }
   }
@@ -258,7 +258,7 @@ const ApprovalDashboard: React.FC<ApprovalDashboardProps> = ({
   const getFormTypeBadge = (formType: string): { bg: string; icon: string } => {
     const badges: Record<string, { bg: string; icon: string }> = {
       'weight_note': { bg: 'bg-red-100 text-red-800', icon: '⚖️' },
-      'ppc_form': { bg: 'bg-purple-100 text-purple-800', icon: '📦' },
+      'ppc_form': { bg: 'bg-blue-100 text-blue-800', icon: '📦' },
       'fp_form': { bg: 'bg-green-100 text-green-800', icon: '❄️' },
       'depuration_form': { bg: 'bg-blue-100 text-blue-800', icon: '💧' },
     }

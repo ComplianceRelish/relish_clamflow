@@ -260,7 +260,7 @@ export const RoleDisplay: React.FC<{ role: UserRole; className?: string }> = ({ 
   const getRoleColor = (role: UserRole): string => {
     const colorMap: Record<UserRole, string> = {
       'Super Admin': 'bg-red-100 text-red-800 border-red-200',
-      'Admin': 'bg-purple-100 text-purple-800 border-purple-200',
+      'Admin': 'bg-blue-100 text-blue-800 border-blue-200',
       'Production Lead': 'bg-blue-100 text-blue-800 border-blue-200',
       'QC Lead': 'bg-green-100 text-green-800 border-green-200',
       'Staff Lead': 'bg-yellow-100 text-yellow-800 border-yellow-200',

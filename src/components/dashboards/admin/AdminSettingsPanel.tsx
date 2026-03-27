@@ -110,7 +110,7 @@ const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({ onClose }) => {
       <div className="bg-gray-50 border rounded-lg p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
-            <Shield className="w-6 h-6 text-purple-600" />
+            <Shield className="w-6 h-6 text-blue-600" />
             <h3 className="text-lg font-semibold">Your Permissions</h3>
           </div>
           <div className="flex items-center text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded">

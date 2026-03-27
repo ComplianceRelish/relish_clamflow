@@ -402,9 +402,9 @@ const QCFlowDashboard: React.FC<QCFlowDashboardProps> = ({ currentUser }) => {
                   <h3 className="text-sm font-medium text-gray-500">Pending</h3>
                   <p className="text-2xl font-bold text-yellow-600">{qcMetrics.pendingTests}</p>
                 </div>
-                <div className="bg-white p-4 rounded-lg shadow border-l-4 border-purple-500">
+                <div className="bg-white p-4 rounded-lg shadow border-l-4 border-blue-500">
                   <h3 className="text-sm font-medium text-gray-500">Today</h3>
-                  <p className="text-2xl font-bold text-purple-600">{qcMetrics.testsToday}</p>
+                  <p className="text-2xl font-bold text-blue-600">{qcMetrics.testsToday}</p>
                 </div>
                 <div className="bg-white p-4 rounded-lg shadow border-l-4 border-indigo-500">
                   <h3 className="text-sm font-medium text-gray-500">Avg Time (hrs)</h3>

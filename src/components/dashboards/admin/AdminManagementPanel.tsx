@@ -299,7 +299,7 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
     return (
       <div className="flex items-center justify-center p-12">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading admins...</p>
         </div>
       </div>
@@ -315,7 +315,7 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
         </div>
         <button
           onClick={() => setShowCreateForm(!showCreateForm)}
-          className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
         >
           {showCreateForm ? '✕ Cancel' : '+ Create Admin'}
         </button>
@@ -353,7 +353,7 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
                     const newUsername = formData.full_name ? generateUsername(newRole, formData.full_name) : '';
                     setFormData({ ...formData, role: newRole, username: newUsername });
                   }}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
                   disabled={editingAdmin ? true : false}
                 >
@@ -376,7 +376,7 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
                       username: editingAdmin ? formData.username : generateUsername(formData.role, newFullName)
                     });
                   }}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="John Doe"
                   required
                 />
@@ -400,7 +400,7 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="john@clamflow.com (optional)"
                 />
               </div>
@@ -411,7 +411,7 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
                   type="tel"
                   value={formData.contact_number}
                   onChange={(e) => setFormData({ ...formData, contact_number: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="+1234567890"
                 />
               </div>
@@ -422,7 +422,7 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
                   type="password"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder={editingAdmin ? 'Leave blank to keep current password' : 'Min. 8 characters'}
                   minLength={8}
                   required={!editingAdmin}
@@ -435,7 +435,7 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
                   type="text"
                   value={formData.station}
                   onChange={(e) => setFormData({ ...formData, station: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Main Office"
                   required
                 />
@@ -453,7 +453,7 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
               <button
                 type="submit"
                 disabled={submitting}
-                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
                 {submitting ? (editingAdmin ? 'Updating...' : 'Creating...') : (editingAdmin ? 'Update Admin' : 'Create Admin')}
               </button>
@@ -494,7 +494,7 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
                     <td className="px-6 py-4">
                       <div>
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          admin.role === 'Super Admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                          admin.role === 'Super Admin' ? 'bg-blue-100 text-blue-800' : 'bg-blue-100 text-blue-800'
                         }`}>
                           {admin.role}
                         </span>
@@ -541,19 +541,19 @@ const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({ currentUser
         </div>
       </div>
 
-      <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+      <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-purple-900">Total Admins</p>
-            <p className="text-2xl font-bold text-purple-600">{admins.length}</p>
+            <p className="text-sm font-medium text-blue-900">Total Admins</p>
+            <p className="text-2xl font-bold text-blue-600">{admins.length}</p>
           </div>
           <div>
-            <p className="text-sm font-medium text-purple-900">Active</p>
+            <p className="text-sm font-medium text-blue-900">Active</p>
             <p className="text-2xl font-bold text-green-600">{admins.filter(a => a.is_active).length}</p>
           </div>
           <div>
-            <p className="text-sm font-medium text-purple-900">Super Admins</p>
-            <p className="text-2xl font-bold text-purple-600">{admins.filter(a => a.role === 'Super Admin').length}</p>
+            <p className="text-sm font-medium text-blue-900">Super Admins</p>
+            <p className="text-2xl font-bold text-blue-600">{admins.filter(a => a.role === 'Super Admin').length}</p>
           </div>
         </div>
       </div>

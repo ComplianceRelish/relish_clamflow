@@ -389,9 +389,9 @@ const QAFlowDashboard: React.FC<QAFlowDashboardProps> = ({ currentUser }) => {
                   <h3 className="text-sm font-medium text-gray-500">Pass Rate</h3>
                   <p className="text-2xl font-bold text-emerald-600">{(qaMetrics.passRate ?? 0).toFixed(1)}%</p>
                 </div>
-                <div className="bg-white p-6 rounded-lg shadow border-l-4 border-purple-500">
+                <div className="bg-white p-6 rounded-lg shadow border-l-4 border-blue-500">
                   <h3 className="text-sm font-medium text-gray-500">Avg Time (hrs)</h3>
-                  <p className="text-2xl font-bold text-purple-600">{(qaMetrics.averageProcessingTime ?? 0).toFixed(1)}</p>
+                  <p className="text-2xl font-bold text-blue-600">{(qaMetrics.averageProcessingTime ?? 0).toFixed(1)}</p>
                 </div>
                 <div className="bg-white p-6 rounded-lg shadow border-l-4 border-red-500">
                   <h3 className="text-sm font-medium text-gray-500">Critical Issues</h3>

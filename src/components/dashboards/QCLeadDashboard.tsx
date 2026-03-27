@@ -234,7 +234,7 @@ const QCLeadDashboard: React.FC = () => {
                 title="Lots Awaiting Tests"
                 value={stats.lotsAwaitingTest}
                 icon="🧪"
-                color="purple"
+                color="blue"
                 onClick={() => setActiveTab('testing')}
               />
               <StatCard
@@ -284,7 +284,7 @@ const QCLeadDashboard: React.FC = () => {
                   <QuickActionButton
                     title="Depuration Testing"
                     icon="🧫"
-                    color="purple"
+                    color="blue"
                     onClick={() => router.push('/testing/depuration')}
                     description="Extract, test & report"
                   />
@@ -336,19 +336,19 @@ const QCLeadDashboard: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 
                 {/* Depuration Workflow */}
-                <div className="border rounded-lg p-4 bg-purple-50">
-                  <h4 className="font-semibold text-purple-800 mb-3">🧫 Depuration Testing</h4>
-                  <ol className="space-y-2 text-sm text-purple-700">
+                <div className="border rounded-lg p-4 bg-blue-50">
+                  <h4 className="font-semibold text-blue-800 mb-3">🧫 Depuration Testing</h4>
+                  <ol className="space-y-2 text-sm text-blue-700">
                     <li className="flex items-center">
-                      <span className="w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-xs mr-2">1</span>
+                      <span className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs mr-2">1</span>
                       Extract Depuration Samples (or designate QC Staff)
                     </li>
                     <li className="flex items-center">
-                      <span className="w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-xs mr-2">2</span>
+                      <span className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs mr-2">2</span>
                       Perform Depuration Tests
                     </li>
                     <li className="flex items-center">
-                      <span className="w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-xs mr-2">3</span>
+                      <span className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs mr-2">3</span>
                       Generate & Upload Depuration Report
                     </li>
                   </ol>
@@ -456,21 +456,21 @@ const QCLeadDashboard: React.FC = () => {
                   <div className="space-y-3">
                     <button 
                       onClick={() => router.push('/testing/depuration/extract')}
-                      className="w-full px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-left"
+                      className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-left"
                     >
                       <div className="font-medium">Extract Samples</div>
                       <div className="text-sm opacity-80">Or designate QC Staff</div>
                     </button>
                     <button 
                       onClick={() => router.push('/testing/depuration/test')}
-                      className="w-full px-4 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 text-left"
+                      className="w-full px-4 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-left"
                     >
                       <div className="font-medium">Perform Tests</div>
                       <div className="text-sm opacity-80">Run depuration tests</div>
                     </button>
                     <button 
                       onClick={() => router.push('/testing/depuration/report')}
-                      className="w-full px-4 py-3 bg-purple-400 text-white rounded-lg hover:bg-purple-500 text-left"
+                      className="w-full px-4 py-3 bg-blue-400 text-white rounded-lg hover:bg-blue-500 text-left"
                     >
                       <div className="font-medium">Generate & Upload Report</div>
                       <div className="text-sm opacity-80">Complete depuration report</div>
@@ -592,7 +592,7 @@ const StatCard: React.FC<{
     green: 'bg-green-50 border-green-200 text-green-700',
     orange: 'bg-orange-50 border-orange-200 text-orange-700',
     yellow: 'bg-yellow-50 border-yellow-200 text-yellow-700',
-    purple: 'bg-purple-50 border-purple-200 text-purple-700',
+    blue: 'bg-blue-50 border-blue-200 text-blue-700',
     cyan: 'bg-cyan-50 border-cyan-200 text-cyan-700',
     gray: 'bg-gray-50 border-gray-200 text-gray-700',
   };
@@ -623,7 +623,7 @@ const QuickActionButton: React.FC<{
     green: 'bg-green-600 hover:bg-green-700',
     orange: 'bg-orange-600 hover:bg-orange-700',
     yellow: 'bg-yellow-600 hover:bg-yellow-700',
-    purple: 'bg-purple-600 hover:bg-purple-700',
+    blue: 'bg-blue-600 hover:bg-blue-700',
     indigo: 'bg-indigo-600 hover:bg-indigo-700',
     teal: 'bg-teal-600 hover:bg-teal-700',
     cyan: 'bg-cyan-600 hover:bg-cyan-700',
@@ -685,7 +685,7 @@ const ApprovalCard: React.FC<{
   const typeColors: Record<string, string> = {
     qc_form: 'bg-green-100 text-green-700',
     fp_form: 'bg-blue-100 text-blue-700',
-    ppc_form: 'bg-purple-100 text-purple-700',
+    ppc_form: 'bg-blue-100 text-blue-700',
   };
 
   return (

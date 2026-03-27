@@ -17,7 +17,7 @@ const AUTHORIZED_ROLES = [
 const STATUS_COLORS: Record<string, string> = {
   received: 'bg-blue-100 text-blue-800',
   washing: 'bg-cyan-100 text-cyan-800',
-  depuration: 'bg-purple-100 text-purple-800',
+  depuration: 'bg-blue-100 text-blue-800',
   ppc: 'bg-yellow-100 text-yellow-800',
   fp: 'bg-orange-100 text-orange-800',
   shipped: 'bg-green-100 text-green-800',
@@ -138,7 +138,7 @@ export default function LotsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white px-6 py-6">
+      <div className="bg-gradient-to-r from-indigo-600 to-blue-700 text-white px-6 py-6">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">📦 Lot Management</h1>

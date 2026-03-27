@@ -27,7 +27,7 @@ const LiveOperationsMonitor: React.FC = () => {
     switch (stage) {
       case 'Receiving': return 'bg-blue-100 text-blue-800';
       case 'Washing': return 'bg-cyan-100 text-cyan-800';
-      case 'Depuration': return 'bg-purple-100 text-purple-800';
+      case 'Depuration': return 'bg-blue-100 text-blue-800';
       case 'PPC Processing': return 'bg-indigo-100 text-indigo-800';
       case 'Final Product': return 'bg-teal-100 text-teal-800';
       default: return 'bg-gray-100 text-gray-800';
@@ -57,7 +57,7 @@ const LiveOperationsMonitor: React.FC = () => {
     return (
       <div className="flex items-center justify-center p-12">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading operations data...</p>
         </div>
       </div>
@@ -265,9 +265,9 @@ const LiveOperationsMonitor: React.FC = () => {
             {stations.filter(s => s.status === 'active').length} / {stations.length}
           </p>
         </div>
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-6 border border-purple-200">
-          <p className="text-sm font-medium text-purple-900">Avg. Efficiency</p>
-          <p className="text-3xl font-bold text-purple-600 mt-2">
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6 border border-blue-200">
+          <p className="text-sm font-medium text-blue-900">Avg. Efficiency</p>
+          <p className="text-3xl font-bold text-blue-600 mt-2">
             {Math.round(stations.filter(s => s.status === 'active').reduce((sum, s) => sum + s.efficiency, 0) / 
               Math.max(stations.filter(s => s.status === 'active').length, 1))}%
           </p>

@@ -547,8 +547,8 @@ export default function DeviceRegistryPanel() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Activity className="w-5 h-5 text-purple-600" />
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Activity className="w-5 h-5 text-blue-600" />
               </div>
               <div>
                 <p className="text-sm text-gray-600">Total Devices</p>
@@ -615,14 +615,14 @@ export default function DeviceRegistryPanel() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Shield className="w-5 h-5 text-purple-600" />
+            <Shield className="w-5 h-5 text-blue-600" />
             Registered Devices ({filteredDevices.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
             <div className="text-center py-8">
-              <div className="animate-spin h-8 w-8 border-2 border-purple-600 border-t-transparent rounded-full mx-auto" />
+              <div className="animate-spin h-8 w-8 border-2 border-blue-600 border-t-transparent rounded-full mx-auto" />
               <p className="mt-2 text-gray-600">Loading devices...</p>
             </div>
           ) : filteredDevices.length === 0 ? (
@@ -907,7 +907,7 @@ export default function DeviceRegistryPanel() {
           <div className="mt-4">
             {auditLoading ? (
               <div className="text-center py-8">
-                <div className="animate-spin h-8 w-8 border-2 border-purple-600 border-t-transparent rounded-full mx-auto" />
+                <div className="animate-spin h-8 w-8 border-2 border-blue-600 border-t-transparent rounded-full mx-auto" />
               </div>
             ) : auditLogs.length === 0 ? (
               <p className="text-center py-8 text-gray-500">No audit logs found</p>

@@ -92,7 +92,7 @@ export function WorkflowStep({
           <div className="flex items-center gap-2 flex-wrap">
             <StatusBadge status={status} size="sm" />
             {showOrganolepticsIndicator && (
-              <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded border border-purple-200">
+              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded border border-blue-200">
                 Organoleptics Required
               </span>
             )}

@@ -59,13 +59,13 @@ const AdminAnalytics: React.FC<AdminAnalyticsProps> = ({ onClose }) => {
           </div>
         </div>
 
-        <div className="bg-purple-50 rounded-lg p-6">
+        <div className="bg-blue-50 rounded-lg p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-purple-600">Quality Score</p>
-              <p className="text-2xl font-bold text-purple-900">91%</p> 
+              <p className="text-sm font-medium text-blue-600">Quality Score</p>
+              <p className="text-2xl font-bold text-blue-900">91%</p> 
             </div>
-            <Target className="w-8 h-8 text-purple-600" />
+            <Target className="w-8 h-8 text-blue-600" />
           </div>
         </div>
 

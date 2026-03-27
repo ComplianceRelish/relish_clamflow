@@ -256,9 +256,9 @@ const ApprovalDashboard: React.FC<ApprovalDashboardProps> = ({ currentUser }) =>
               <h3 className="text-sm font-medium text-gray-500">Rejected Today</h3>
               <p className="text-2xl font-bold text-rose-600">{stats.rejectedToday}</p>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow border-l-4 border-purple-500">
+            <div className="bg-white p-6 rounded-lg shadow border-l-4 border-blue-500">
               <h3 className="text-sm font-medium text-gray-500">Avg Time (hrs)</h3>
-              <p className="text-2xl font-bold text-purple-600">{(stats.avgApprovalTime ?? 0).toFixed(1)}</p>
+              <p className="text-2xl font-bold text-blue-600">{(stats.avgApprovalTime ?? 0).toFixed(1)}</p>
             </div>
           </div>
 

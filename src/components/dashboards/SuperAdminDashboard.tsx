@@ -106,7 +106,7 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ currentUser }
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-purple-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600 font-medium">Loading Dashboard...</p>
         </div>
       </div>
@@ -116,14 +116,14 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ currentUser }
   return (
     <div className="flex flex-col md:flex-row h-screen bg-gray-100">
       {/* Mobile Header */}
-      <div className="md:hidden bg-gradient-to-r from-purple-900 to-purple-800 p-4 flex justify-between items-center sticky top-0 z-50 shadow-lg">
+      <div className="md:hidden bg-gradient-to-r from-blue-900 to-blue-800 p-4 flex justify-between items-center sticky top-0 z-50 shadow-lg">
         <div>
           <h1 className="text-lg font-bold text-white">⚡ SUPER ADMIN</h1>
-          <p className="text-xs text-purple-200">{currentUser?.full_name}</p>
+          <p className="text-xs text-blue-200">{currentUser?.full_name}</p>
         </div>
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="text-white p-2 hover:bg-purple-700 rounded-lg transition-colors"
+          className="text-white p-2 hover:bg-blue-700 rounded-lg transition-colors"
           aria-label="Toggle menu"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -145,27 +145,27 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ currentUser }
         left-0
         w-64 
         h-full
-        bg-gradient-to-b from-purple-900 to-purple-800 
+        bg-gradient-to-b from-blue-900 to-blue-800 
         shadow-2xl
         transform transition-transform duration-300 ease-in-out
         z-40
         overflow-y-auto
       `}>
         {/* Desktop Header */}
-        <div className="hidden md:block p-6 border-b border-purple-700">
+        <div className="hidden md:block p-6 border-b border-blue-700">
           <h1 className="text-xl font-bold text-white">⚡ SUPER ADMIN</h1>
-          <p className="text-sm text-purple-200">Maximum Control</p>
+          <p className="text-sm text-blue-200">Maximum Control</p>
         </div>
 
         {/* Mobile Close Button */}
-        <div className="md:hidden p-4 border-b border-purple-700 flex justify-between items-center">
+        <div className="md:hidden p-4 border-b border-blue-700 flex justify-between items-center">
           <div>
             <h1 className="text-lg font-bold text-white">Menu</h1>
-            <p className="text-xs text-purple-200">{currentUser?.username}</p>
+            <p className="text-xs text-blue-200">{currentUser?.username}</p>
           </div>
           <button
             onClick={() => setMobileMenuOpen(false)}
-            className="text-white p-2 hover:bg-purple-700 rounded-lg"
+            className="text-white p-2 hover:bg-blue-700 rounded-lg"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -180,8 +180,8 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ currentUser }
               onClick={() => handleNavClick(item.id as SuperAdminView)}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg mb-2 text-left transition-all ${
                 activeView === item.id
-                  ? 'bg-purple-700 text-white border-l-4 border-orange-500 shadow-lg'
-                  : 'text-purple-100 hover:bg-purple-700 hover:shadow-md'
+                  ? 'bg-blue-700 text-white border-l-4 border-orange-500 shadow-lg'
+                  : 'text-blue-100 hover:bg-blue-700 hover:shadow-md'
               }`}
             >
               <span className="text-xl">{item.icon}</span>
@@ -202,13 +202,13 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ currentUser }
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 to-purple-700 shadow-md p-4 md:p-6 border-b sticky top-0 z-10">
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 shadow-md p-4 md:p-6 border-b sticky top-0 z-10">
           <div className="flex flex-col md:flex-row md:justify-between md:items-center space-y-2 md:space-y-0">
             <div>
               <h2 className="text-xl md:text-2xl font-bold text-white">
                 {navigationItems.find(item => item.id === activeView)?.label}
               </h2>
-              <p className="text-purple-100 text-xs md:text-sm mt-1">
+              <p className="text-blue-100 text-xs md:text-sm mt-1">
                 Super Admin: {currentUser?.full_name} • Highest Privilege Level
               </p>
             </div>
@@ -267,9 +267,9 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ currentUser }
                 <div className="bg-white p-4 md:p-6 rounded-xl shadow-lg">
                   <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">📊 System Status</h3>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-purple-50 p-3 md:p-4 rounded-lg">
+                    <div className="bg-blue-50 p-3 md:p-4 rounded-lg">
                       <p className="text-xs md:text-sm text-gray-600 mb-1">System Uptime</p>
-                      <p className="text-lg md:text-xl font-bold text-purple-600">{systemHealth.uptime || '99.9%'}</p>
+                      <p className="text-lg md:text-xl font-bold text-blue-600">{systemHealth.uptime || '99.9%'}</p>
                     </div>
                     <div className="bg-teal-50 p-3 md:p-4 rounded-lg">
                       <p className="text-xs md:text-sm text-gray-600 mb-1">Database</p>

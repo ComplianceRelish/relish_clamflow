@@ -170,8 +170,8 @@ export const DigitalSignatureGenerator: React.FC<DigitalSignatureProps> = ({
         </div>
 
         {/* QR Code */}
-        <div className="bg-purple-50 rounded-lg p-4">
-          <h4 className="font-medium text-purple-900 mb-2">QR Code for Authentication</h4>
+        <div className="bg-blue-50 rounded-lg p-4">
+          <h4 className="font-medium text-blue-900 mb-2">QR Code for Authentication</h4>
           {qrCodeData && (
             <div className="flex items-center space-x-4">
               <div className="bg-white p-2 rounded border">
@@ -187,7 +187,7 @@ export const DigitalSignatureGenerator: React.FC<DigitalSignatureProps> = ({
                 </div>
                 <button
                   onClick={downloadQRCode}
-                  className="px-4 py-2 bg-purple-600 text-white text-sm rounded hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   Download QR Code
                 </button>

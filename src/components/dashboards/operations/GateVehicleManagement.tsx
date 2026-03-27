@@ -71,7 +71,7 @@ const GateVehicleManagement: React.FC = () => {
           <div className="text-sm font-medium text-gray-600">Total Vehicles Today</div>
           <div className="text-3xl font-bold text-gray-900 mt-2">{vehicles?.length || 0}</div>
         </div>
-        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-purple-500">
+        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
           <div className="text-sm font-medium text-gray-600">Active Suppliers</div>
           <div className="text-3xl font-bold text-gray-900 mt-2">{suppliers?.length || 0}</div>
         </div>

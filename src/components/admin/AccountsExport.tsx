@@ -602,7 +602,7 @@ const AccountsExport: React.FC = () => {
                             ? 'bg-blue-100 text-blue-700' 
                             : row.type === 'supplier'
                               ? 'bg-green-100 text-green-700'
-                              : 'bg-purple-100 text-purple-700'
+                              : 'bg-blue-100 text-blue-700'
                         }`}>
                           {row.type.charAt(0).toUpperCase() + row.type.slice(1)}
                         </span>

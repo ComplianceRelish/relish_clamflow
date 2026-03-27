@@ -614,18 +614,18 @@ const StaffOnboarding: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-purple-800 shadow-lg">
+      <div className="bg-gradient-to-r from-blue-600 to-blue-800 shadow-lg">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-white">Staff Onboarding</h1>
-              <p className="text-purple-100 mt-1">
+              <p className="text-blue-100 mt-1">
                 Add new Production, QC & Security staff
               </p>
             </div>
             <button
               onClick={() => router.back()}
-              className="px-4 py-2 bg-white text-purple-600 rounded-lg hover:bg-purple-50"
+              className="px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50"
             >
               ← Back
             </button>
@@ -641,7 +641,7 @@ const StaffOnboarding: React.FC = () => {
               onClick={() => setActiveTab('new')}
               className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
                 activeTab === 'new'
-                  ? 'border-purple-600 text-purple-600'
+                  ? 'border-blue-600 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
@@ -651,7 +651,7 @@ const StaffOnboarding: React.FC = () => {
               onClick={() => setActiveTab('pending')}
               className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
                 activeTab === 'pending'
-                  ? 'border-purple-600 text-purple-600'
+                  ? 'border-blue-600 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
@@ -671,7 +671,7 @@ const StaffOnboarding: React.FC = () => {
               onClick={() => setActiveTab('approved')}
               className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
                 activeTab === 'approved'
-                  ? 'border-purple-600 text-purple-600'
+                  ? 'border-blue-600 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
@@ -713,7 +713,7 @@ const StaffOnboarding: React.FC = () => {
                       <div 
                         className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${
                           currentStep === step 
-                            ? 'bg-purple-600 text-white' 
+                            ? 'bg-blue-600 text-white' 
                             : ['basic', 'aadhar', 'bank', 'face', 'review'].indexOf(currentStep) > index
                               ? 'bg-green-500 text-white'
                               : 'bg-gray-200 text-gray-600'
@@ -769,7 +769,7 @@ const StaffOnboarding: React.FC = () => {
                           value={formData.full_name}
                           onChange={handleInputChange}
                           required
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                           placeholder="John Doe"
                         />
                       </div>
@@ -783,7 +783,7 @@ const StaffOnboarding: React.FC = () => {
                           name="username"
                           value={formData.username}
                           onChange={handleInputChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                           placeholder="Auto-generated if empty"
                         />
                       </div>
@@ -799,7 +799,7 @@ const StaffOnboarding: React.FC = () => {
                           name="department"
                           value={formData.department}
                           onChange={handleInputChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         >
                           <option value="production">Production</option>
                           <option value="qc">Quality Control (QC)</option>
@@ -815,7 +815,7 @@ const StaffOnboarding: React.FC = () => {
                           name="role"
                           value={formData.role}
                           onChange={handleInputChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         >
                           {getRoleOptions(formData.department).map(role => (
                             <option key={role} value={role}>{role}</option>
@@ -836,7 +836,7 @@ const StaffOnboarding: React.FC = () => {
                           value={formData.phone}
                           onChange={handleInputChange}
                           required
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                           placeholder="+91 9876543210"
                         />
                       </div>
@@ -850,7 +850,7 @@ const StaffOnboarding: React.FC = () => {
                           name="email"
                           value={formData.email}
                           onChange={handleInputChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                           placeholder="john@example.com"
                         />
                       </div>
@@ -864,7 +864,7 @@ const StaffOnboarding: React.FC = () => {
                           name="emergency_contact"
                           value={formData.emergency_contact}
                           onChange={handleInputChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                           placeholder="+91 9876543210"
                         />
                       </div>
@@ -882,7 +882,7 @@ const StaffOnboarding: React.FC = () => {
                           value={formData.start_date}
                           onChange={handleInputChange}
                           required
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         />
                       </div>
 
@@ -895,7 +895,7 @@ const StaffOnboarding: React.FC = () => {
                           name="initial_station"
                           value={formData.initial_station}
                           onChange={handleInputChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                           placeholder="e.g., RM Station 1"
                         />
                       </div>
@@ -912,7 +912,7 @@ const StaffOnboarding: React.FC = () => {
                             setError('Please fill Full Name and Phone before proceeding');
                           }
                         }}
-                        className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                       >
                         Next: Aadhar Verification →
                       </button>
@@ -1008,7 +1008,7 @@ const StaffOnboarding: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setCurrentStep('bank')}
-                        className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                       >
                         {aadharVerified ? 'Next: Bank Details →' : 'Skip for Now →'}
                       </button>
@@ -1126,7 +1126,7 @@ const StaffOnboarding: React.FC = () => {
                             setCurrentStep('face'); // Allow skip
                           }
                         }}
-                        className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                       >
                         Next: Face Registration →
                       </button>
@@ -1237,7 +1237,7 @@ const StaffOnboarding: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setCurrentStep('review')}
-                        className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                       >
                         Next: Review & Submit →
                       </button>
@@ -1248,9 +1248,9 @@ const StaffOnboarding: React.FC = () => {
                 {/* STEP 5: Review & Submit */}
                 {currentStep === 'review' && (
                   <>
-                    <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg mb-4">
-                      <h3 className="font-medium text-purple-800">📝 Step 5: Review & Submit</h3>
-                      <p className="text-sm text-purple-600 mt-1">Verify all information before submission</p>
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg mb-4">
+                      <h3 className="font-medium text-blue-800">📝 Step 5: Review & Submit</h3>
+                      <p className="text-sm text-blue-600 mt-1">Verify all information before submission</p>
                     </div>
 
                     {/* Onboarding Status Summary */}
@@ -1365,7 +1365,7 @@ const StaffOnboarding: React.FC = () => {
                       <button
                         type="submit"
                         disabled={loading}
-                        className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
+                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                       >
                         {loading ? 'Submitting...' : 'Submit for Approval'}
                       </button>
@@ -1412,7 +1412,7 @@ const StaffOnboarding: React.FC = () => {
                       </div>
                     </div>
                     <button 
-                      className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
                       onClick={() => {
                         // Navigate to complete verification
                         console.log('Complete verification for:', record.id);
@@ -1502,7 +1502,7 @@ const OnboardingRequestCard: React.FC<{
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center space-x-4">
-        <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+        <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
           <span className="text-xl">👤</span>
         </div>
         <div>

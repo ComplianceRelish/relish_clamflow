@@ -65,7 +65,7 @@ const RoleAudit: React.FC = () => {
 
   const getRoleBadgeColor = (role: User['role']) => {
     const colors = {
-      'Super Admin': 'bg-purple-100 text-purple-800',
+      'Super Admin': 'bg-blue-100 text-blue-800',
       'Admin': 'bg-blue-100 text-blue-800',
       'Production Lead': 'bg-green-100 text-green-800',
       'QC Lead': 'bg-orange-100 text-orange-800',

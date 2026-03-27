@@ -141,7 +141,7 @@ const PWAInstallPrompt: React.FC = () => {
         <div className="flex space-x-2">
           <button
             onClick={handleInstallClick}
-            className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 text-white text-xs font-medium py-2.5 px-3 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200 flex items-center justify-center space-x-2"
+            className="flex-1 bg-gradient-to-r from-blue-600 to-blue-600 text-white text-xs font-medium py-2.5 px-3 rounded-lg hover:from-blue-700 hover:to-blue-700 transition-all duration-200 flex items-center justify-center space-x-2"
           >
             <ArrowDownTrayIcon className="h-4 w-4" />
             <span>Install App</span>

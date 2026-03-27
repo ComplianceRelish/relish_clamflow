@@ -435,13 +435,13 @@ const UserActivitiesPanel: React.FC<UserActivitiesPanelProps> = ({ onClose }) =>
           </div>
         </div>
 
-        <div className="bg-purple-50 rounded-lg p-4">
+        <div className="bg-blue-50 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-purple-600">Avg Session</p>
-              <p className="text-xl font-bold text-purple-900">{stats.avg_session_duration}m</p>
+              <p className="text-sm font-medium text-blue-600">Avg Session</p>
+              <p className="text-xl font-bold text-blue-900">{stats.avg_session_duration}m</p>
             </div>
-            <Clock className="w-6 h-6 text-purple-600" />
+            <Clock className="w-6 h-6 text-blue-600" />
           </div>
         </div>
 
