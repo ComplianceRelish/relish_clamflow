@@ -223,23 +223,29 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
       const createdUser = await response.json();
       setUsers(prev => [...prev, createdUser]);
       
-      // 🔔 Send WhatsApp welcome message
+      // 🔔 Send WhatsApp welcome message (best-effort, non-blocking)
       if (userData.phone_number) {
-        setWhatsappStatus('Sending WhatsApp welcome message...');
-        const whatsappResult = await sendWelcomeMessage({
-          username,
-          password: generatedPassword,
-          full_name: userData.full_name,
-          role: userData.role,
-          phone_number: userData.phone_number
-        });
-        
-        if (whatsappResult.success) {
-          setWhatsappStatus('✅ WhatsApp welcome message sent successfully!');
-          console.log('✅ Welcome message sent to:', userData.phone_number);
-        } else {
-          setWhatsappStatus(`⚠️ User created but WhatsApp failed: ${whatsappResult.error}`);
-          console.warn('WhatsApp delivery failed:', whatsappResult.error);
+        try {
+          setWhatsappStatus('Sending WhatsApp welcome message...');
+          const whatsappResult = await sendWelcomeMessage({
+            username,
+            password: generatedPassword,
+            full_name: userData.full_name,
+            role: userData.role,
+            phone_number: userData.phone_number
+          });
+          
+          if (whatsappResult.success) {
+            setWhatsappStatus('✅ WhatsApp welcome message sent successfully!');
+          } else if (whatsappResult.error === 'WhatsApp service is disabled' || whatsappResult.error === 'Twilio credentials not configured') {
+            setWhatsappStatus('✅ User created successfully. WhatsApp notifications are not configured — please share credentials manually.');
+          } else {
+            setWhatsappStatus(`⚠️ User created but WhatsApp delivery failed. Please share credentials manually.`);
+            console.warn('WhatsApp delivery failed:', whatsappResult.error);
+          }
+        } catch (whatsappErr) {
+          console.warn('WhatsApp service unavailable:', whatsappErr);
+          setWhatsappStatus('✅ User created successfully. WhatsApp notifications are not available — please share credentials manually.');
         }
       }
       
@@ -769,11 +775,11 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
       {/* Create/Edit User Modal */}
       {showCreateForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md mx-4 bg-white shadow-xl">
-            <CardHeader className="bg-white border-b">
+          <Card className="w-full max-w-md mx-4 bg-white shadow-xl max-h-[90vh] flex flex-col">
+            <CardHeader className="bg-white border-b shrink-0">
               <CardTitle>{editingUser ? 'Edit User' : 'Create New User'}</CardTitle>
             </CardHeader>
-            <CardContent className="bg-white pt-4">
+            <CardContent className="bg-white pt-4 overflow-y-auto">
               <form onSubmit={handleSubmit} className="space-y-4">
                 {formError && (
                   <Alert>
