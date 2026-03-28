@@ -121,13 +121,29 @@ class APIClient {
     this.client.interceptors.response.use(
       (response: AxiosResponse) => response,
       async (error) => {
-        if (error.response?.status === 401) {
+        const status = error.response?.status;
+        const detail = error.response?.data?.detail || error.response?.data?.message || '';
+
+        if (status === 401) {
           console.error('Unauthorized access - redirecting to login');
-          // Clear localStorage tokens
           if (typeof window !== 'undefined') {
             localStorage.removeItem('clamflow_token');
             localStorage.removeItem('clamflow_user');
             window.location.href = '/login';
+          }
+        } else if (status === 403) {
+          console.warn('🔒 Forbidden [403]:', detail || 'Access denied or workflow prerequisite not met');
+          // Attach parsed detail for caller to use
+          error.userMessage = detail || 'You do not have permission or a prerequisite step must be completed first.';
+        } else if (status === 409) {
+          console.warn('⚠️ Conflict [409]:', detail || 'Resource already exists');
+          error.userMessage = detail || 'This resource already exists.';
+        } else if (status === 422) {
+          console.warn('❌ Validation Error [422]:', detail);
+          if (Array.isArray(detail)) {
+            error.userMessage = detail.map((err: any) => `${err.loc?.join('.') || 'field'}: ${err.msg}`).join(', ');
+          } else {
+            error.userMessage = detail || 'Validation failed. Please check your input.';
           }
         }
         return Promise.reject(error);

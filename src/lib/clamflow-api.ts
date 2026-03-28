@@ -28,6 +28,16 @@ import {
   PendingApproval,
   DashboardMetrics,
   SystemHealthData,
+  WorkflowStatus,
+  WorkflowStep,
+  WorkflowCompleteResponse,
+  AdminOverviewData,
+  AdminPendingTask,
+  AdminPendingTasksResponse,
+  AdminRecentActivity,
+  AdminRecentActivityResponse,
+  AdminOperationalAlert,
+  AdminOperationalAlertsResponse,
 } from '../types/dashboard';
 
 export interface ApiResponse<T = unknown> {
@@ -293,6 +303,24 @@ class ClamFlowAPI {
 
         const errorData = await response.json().catch(() => ({}));
         
+        // Handle 403 Forbidden — workflow prerequisites or permission issues
+        if (response.status === 403) {
+          const message = errorData.detail || errorData.message || 'Access denied or workflow prerequisite not met.';
+          console.warn('🔒 Forbidden [403]:', message);
+          const err = new Error(message);
+          (err as any).status = 403;
+          throw err;
+        }
+
+        // Handle 409 Conflict — duplicate resources
+        if (response.status === 409) {
+          const message = errorData.detail || errorData.message || 'This resource already exists.';
+          console.warn('⚠️ Conflict [409]:', message);
+          const err = new Error(message);
+          (err as any).status = 409;
+          throw err;
+        }
+        
         // Enhanced error handling for 422 validation errors
         if (response.status === 422) {
           console.error('🔴 Validation Error [422]:', errorData);
@@ -522,6 +550,71 @@ class ClamFlowAPI {
 
   async getBottlenecks(): Promise<ApiResponse<Bottleneck[]>> {
     return this.get('/api/operations/bottlenecks');
+  }
+
+  // ============================================
+  // WORKFLOW ENFORCEMENT API (13-step sequential)
+  // ============================================
+
+  async getWorkflowStatus(lotId: string): Promise<ApiResponse<WorkflowStatus>> {
+    return this.get(`/api/v1/workflow/${lotId}/status`);
+  }
+
+  async initializeWorkflow(lotId: string): Promise<ApiResponse<WorkflowStatus>> {
+    return this.post(`/api/v1/workflow/${lotId}/initialize`);
+  }
+
+  async startWorkflowStep(lotId: string, stepNumber: number): Promise<ApiResponse<WorkflowStep>> {
+    return this.post(`/api/v1/workflow/${lotId}/steps/${stepNumber}/start`);
+  }
+
+  async completeWorkflowStep(
+    lotId: string,
+    stepNumber: number,
+    data?: { qc_result?: string; qc_notes?: string; reference_type?: string; reference_id?: string }
+  ): Promise<ApiResponse<WorkflowCompleteResponse>> {
+    return this.post(`/api/v1/workflow/${lotId}/steps/${stepNumber}/complete`, data);
+  }
+
+  async failWorkflowStep(
+    lotId: string,
+    stepNumber: number,
+    qcNotes: string
+  ): Promise<ApiResponse<WorkflowStep>> {
+    return this.post(`/api/v1/workflow/${lotId}/steps/${stepNumber}/fail`, { qc_notes: qcNotes });
+  }
+
+  async retryWorkflowStep(lotId: string, stepNumber: number): Promise<ApiResponse<WorkflowStep>> {
+    return this.post(`/api/v1/workflow/${lotId}/steps/${stepNumber}/retry`);
+  }
+
+  // ============================================
+  // ADMIN DASHBOARD API (new { success, data } wrapper)
+  // ============================================
+
+  async getAdminOverview(): Promise<ApiResponse<AdminOverviewData>> {
+    const raw = await this.get<Record<string, unknown>>('/admin-dashboard/overview');
+    if (raw.success && raw.data) {
+      // Backend wraps in { success, data } — unwrap the inner data
+      const inner = (raw.data as any).data ?? raw.data;
+      return { success: true, data: inner as AdminOverviewData };
+    }
+    return { success: false, error: raw.error };
+  }
+
+  async getAdminPendingTasks(limit: number = 20): Promise<ApiResponse<AdminPendingTasksResponse>> {
+    const raw = await this.get<AdminPendingTasksResponse>(`/admin-dashboard/pending-tasks?limit=${limit}`);
+    return raw;
+  }
+
+  async getAdminRecentActivity(hours: number = 24): Promise<ApiResponse<AdminRecentActivityResponse>> {
+    const raw = await this.get<AdminRecentActivityResponse>(`/admin-dashboard/recent-activity?hours=${hours}`);
+    return raw;
+  }
+
+  async getAdminOperationalAlerts(): Promise<ApiResponse<AdminOperationalAlertsResponse>> {
+    const raw = await this.get<AdminOperationalAlertsResponse>('/admin-dashboard/operational-alerts');
+    return raw;
   }
 
   // LIVE OPERATIONS - Real-time dashboard data

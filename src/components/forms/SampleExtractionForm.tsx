@@ -203,7 +203,11 @@ const SampleExtractionForm: React.FC<SampleExtractionFormProps> = ({ onSubmit, c
 
     } catch (error: any) {
       console.error('❌ Sample extraction submission error:', error)
-      setError(error.message || 'Failed to submit sample extraction')
+      if (error.status === 403 || error.message?.includes('Washing QC') || error.message?.includes('step 2')) {
+        setError('Depuration sample cannot be extracted until Washing QC (step 2) is completed. Please complete the required workflow steps first.')
+      } else {
+        setError(error.message || 'Failed to submit sample extraction')
+      }
     } finally {
       setIsSubmitting(false)
     }

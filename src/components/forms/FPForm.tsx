@@ -195,7 +195,11 @@ const FPForm: React.FC<FPFormProps> = ({ onSubmit, currentUser }) => {
       
     } catch (error: any) {
       console.error('❌ Final Product form submission error:', error);
-      setError(error.message || 'Failed to submit Final Product form');
+      if (error.status === 403 || error.message?.includes('PPC step') || error.message?.includes('step 10')) {
+        setError('FP form cannot be created until PPC step (step 10) is completed. Please complete the required workflow steps first.');
+      } else {
+        setError(error.message || 'Failed to submit Final Product form');
+      }
     } finally {
       setIsSubmitting(false);
     }

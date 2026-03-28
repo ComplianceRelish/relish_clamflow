@@ -198,7 +198,11 @@ const DepurationForm: React.FC<DepurationFormProps> = ({ onSubmit, currentUser }
 
     } catch (error: any) {
       console.error('❌ Depuration form submission error:', error)
-      setError(error.message || 'Failed to submit depuration form')
+      if (error.status === 403 || error.message?.includes('Washing QC') || error.message?.includes('step 2')) {
+        setError('Depuration sample cannot be extracted until Washing QC (step 2) is completed. Please complete the required workflow steps first.')
+      } else {
+        setError(error.message || 'Failed to submit depuration form')
+      }
     } finally {
       setIsSubmitting(false)
     }

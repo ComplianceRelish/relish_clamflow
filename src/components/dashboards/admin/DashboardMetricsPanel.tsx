@@ -62,48 +62,84 @@ const metricsAPI = {
   dashboard: {
     getMetrics: async ({ timeRange }: { timeRange: string }) => {
       try {
-        const response = await clamflowAPI.getDashboardMetrics();
-        if (response.success && response.data) {
-          // Map backend response to expected format
-          return {
-            overview: {
-              total_forms_today: response.data.totalLots || 0,
-              total_forms_week: response.data.totalLots || 0,
-              active_users: response.data.activeUsers || 0,
-              completion_rate: 0,
-              avg_processing_time: 0,
-              quality_score: 0
-            },
-            production: {
-              daily_throughput: 0,
-              weekly_throughput: 0,
-              yield_percentage: 0,
-              waste_percentage: 0,
-              efficiency_score: 0,
-              stations_active: 0
-            },
-            quality: {
-              passed_inspections: 0,
-              failed_inspections: 0,
-              pending_reviews: response.data.pendingApprovals || 0,
-              compliance_rate: 0,
-              defect_rate: 0,
-              rework_rate: 0
-            },
-            trends: {
-              daily_production: [],
-              form_submissions: [],
-              user_activity: [],
-              quality_trends: []
-            },
-            alerts: {
-              critical: response.data.systemHealth === 'critical' ? 1 : 0,
-              warning: response.data.systemHealth === 'warning' ? 1 : 0,
-              info: 0,
-              recent_alerts: []
-            }
-          };
-        }
+        // Fetch from both /dashboard/metrics (Super Admin) and /admin-dashboard/* (Admin) endpoints
+        const [metricsRes, overviewRes, alertsRes] = await Promise.all([
+          clamflowAPI.getDashboardMetrics().catch(() => ({ success: false, data: null })),
+          clamflowAPI.getAdminOverview().catch(() => ({ success: false, data: null })),
+          clamflowAPI.getAdminOperationalAlerts().catch(() => ({ success: false, data: null })),
+        ]);
+
+        const metrics = metricsRes.success ? metricsRes.data : null;
+        const overview = overviewRes.success ? overviewRes.data : null;
+        const alertsData = alertsRes.success ? alertsRes.data : null;
+
+        // Build alerts from real operational alerts data
+        const recentAlerts = (alertsData as any)?.data?.map((a: any) => ({
+          id: a.id,
+          type: a.category || a.severity,
+          message: a.message || a.title,
+          timestamp: a.timestamp,
+          severity: a.severity as 'critical' | 'warning' | 'info',
+        })) || [];
+
+        const alertSummary = (alertsData as any)?.summary || { critical: 0, warning: 0, info: 0 };
+
+        return {
+          overview: {
+            total_forms_today: (overview as any)?.production?.pendingForms || metrics?.totalLots || 0,
+            total_forms_week: (overview as any)?.production?.formsReviewedToday || metrics?.totalLots || 0,
+            active_users: (overview as any)?.staff?.staffOnSite || metrics?.activeUsers || 0,
+            completion_rate: 0,
+            avg_processing_time: 0,
+            quality_score: 0
+          },
+          production: {
+            daily_throughput: 0,
+            weekly_throughput: 0,
+            yield_percentage: 0,
+            waste_percentage: 0,
+            efficiency_score: 0,
+            stations_active: 0
+          },
+          quality: {
+            passed_inspections: 0,
+            failed_inspections: 0,
+            pending_reviews: (overview as any)?.production?.pendingApprovals || metrics?.pendingApprovals || 0,
+            compliance_rate: 0,
+            defect_rate: 0,
+            rework_rate: 0
+          },
+          trends: {
+            daily_production: [],
+            form_submissions: [],
+            user_activity: [],
+            quality_trends: []
+          },
+          alerts: {
+            critical: alertSummary.critical || (metrics?.systemHealth === 'critical' ? 1 : 0),
+            warning: alertSummary.warning || (metrics?.systemHealth === 'warning' ? 1 : 0),
+            info: alertSummary.info || 0,
+            recent_alerts: recentAlerts
+          },
+          // NEW: gate section from admin overview
+          gate: overview ? {
+            vehiclesInside: (overview as any)?.gate?.vehiclesInside || 0,
+            pendingTransfers: (overview as any)?.gate?.pendingTransfers || 0,
+            entriesToday: (overview as any)?.gate?.entriesToday || 0,
+            exitsToday: (overview as any)?.gate?.exitsToday || 0,
+          } : null,
+          // NEW: staff section from admin overview
+          staffOverview: overview ? {
+            staffOnSite: (overview as any)?.staff?.staffOnSite || 0,
+            activeShifts: (overview as any)?.staff?.activeShifts || 0,
+            pendingShiftApprovals: (overview as any)?.staff?.pendingShiftApprovals || 0,
+          } : null,
+          quickStats: overview ? {
+            totalPendingTasks: (overview as any)?.quickStats?.totalPendingTasks || 0,
+            operationalAlerts: (overview as any)?.quickStats?.operationalAlerts || 0,
+            lastUpdated: (overview as any)?.quickStats?.lastUpdated || null,
+          } : null,
+        };
       } catch (err: any) {
         // Handle 403 gracefully - user may not have Super Admin access
         if (err?.message?.includes('403') || err?.message?.includes('Super Admin')) {
@@ -118,7 +154,10 @@ const metricsAPI = {
         production: { daily_throughput: 0, weekly_throughput: 0, yield_percentage: 0, waste_percentage: 0, efficiency_score: 0, stations_active: 0 },
         quality: { passed_inspections: 0, failed_inspections: 0, pending_reviews: 0, compliance_rate: 0, defect_rate: 0, rework_rate: 0 },
         trends: { daily_production: [], form_submissions: [], user_activity: [], quality_trends: [] },
-        alerts: { critical: 0, warning: 0, info: 0, recent_alerts: [] }
+        alerts: { critical: 0, warning: 0, info: 0, recent_alerts: [] },
+        gate: null,
+        staffOverview: null,
+        quickStats: null,
       };
     }
   }
@@ -167,6 +206,22 @@ interface DashboardMetrics {
       severity: 'critical' | 'warning' | 'info'
     }>
   }
+  gate?: {
+    vehiclesInside: number
+    pendingTransfers: number
+    entriesToday: number
+    exitsToday: number
+  } | null
+  staffOverview?: {
+    staffOnSite: number
+    activeShifts: number
+    pendingShiftApprovals: number
+  } | null
+  quickStats?: {
+    totalPendingTasks: number
+    operationalAlerts: number
+    lastUpdated: string | null
+  } | null
 }
 
 interface DashboardMetricsPanelProps {
@@ -369,6 +424,74 @@ export default function DashboardMetricsPanel({ currentUser }: DashboardMetricsP
               </CardContent>
             </Card>
           </div>
+
+          {/* Gate & Staff Overview Section */}
+          {(metrics.gate || metrics.staffOverview) && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Gate Management */}
+              {metrics.gate && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      🚛 Gate Management
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center p-3 bg-blue-50 rounded-lg">
+                        <p className="text-2xl font-bold text-blue-700">{metrics.gate.vehiclesInside}</p>
+                        <p className="text-xs text-blue-600">Vehicles Inside</p>
+                      </div>
+                      <div className="text-center p-3 bg-orange-50 rounded-lg">
+                        <p className="text-2xl font-bold text-orange-700">{metrics.gate.pendingTransfers}</p>
+                        <p className="text-xs text-orange-600">Pending Transfers</p>
+                      </div>
+                      <div className="text-center p-3 bg-green-50 rounded-lg">
+                        <p className="text-2xl font-bold text-green-700">{metrics.gate.entriesToday}</p>
+                        <p className="text-xs text-green-600">Entries Today</p>
+                      </div>
+                      <div className="text-center p-3 bg-gray-50 rounded-lg">
+                        <p className="text-2xl font-bold text-gray-700">{metrics.gate.exitsToday}</p>
+                        <p className="text-xs text-gray-600">Exits Today</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Staff Overview */}
+              {metrics.staffOverview && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Users className="h-5 w-5" /> Staff Overview
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="text-center p-3 bg-green-50 rounded-lg">
+                        <p className="text-2xl font-bold text-green-700">{metrics.staffOverview.staffOnSite}</p>
+                        <p className="text-xs text-green-600">On-site</p>
+                      </div>
+                      <div className="text-center p-3 bg-blue-50 rounded-lg">
+                        <p className="text-2xl font-bold text-blue-700">{metrics.staffOverview.activeShifts}</p>
+                        <p className="text-xs text-blue-600">Active Shifts</p>
+                      </div>
+                      <div className="text-center p-3 bg-orange-50 rounded-lg">
+                        <p className="text-2xl font-bold text-orange-700">{metrics.staffOverview.pendingShiftApprovals}</p>
+                        <p className="text-xs text-orange-600">Pending Approvals</p>
+                      </div>
+                    </div>
+                    {metrics.quickStats?.lastUpdated && (
+                      <p className="text-xs text-gray-400 mt-3 text-right">
+                        Last updated: {new Date(metrics.quickStats.lastUpdated).toLocaleString()}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
 
           {/* Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -657,8 +780,15 @@ export default function DashboardMetricsPanel({ currentUser }: DashboardMetricsP
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
+                {metrics.alerts.recent_alerts.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-4">No recent alerts</p>
+                )}
                 {metrics.alerts.recent_alerts.map(alert => (
-                  <div key={alert.id} className="flex items-start space-x-3 p-3 border rounded">
+                  <div key={alert.id} className={`flex items-start space-x-3 p-3 border rounded ${
+                    alert.severity === 'critical' ? 'border-red-300 bg-red-50' :
+                    alert.severity === 'warning' ? 'border-amber-300 bg-amber-50' :
+                    'border-blue-200 bg-blue-50'
+                  }`}>
                     <div className={`w-2 h-2 rounded-full mt-2 ${getSeverityColor(alert.severity)}`} />
                     <div className="flex-1">
                       <div className="flex justify-between items-start">
@@ -666,9 +796,14 @@ export default function DashboardMetricsPanel({ currentUser }: DashboardMetricsP
                           <p className="font-medium">{alert.message}</p>
                           <p className="text-sm text-muted-foreground">{alert.type}</p>
                         </div>
-                        <Badge variant={alert.severity === 'critical' ? 'destructive' : alert.severity === 'warning' ? 'default' : 'secondary'}>
-                          {alert.severity}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          {(alert as any).action_required && (
+                            <Badge variant="destructive" className="text-xs">Action Required</Badge>
+                          )}
+                          <Badge variant={alert.severity === 'critical' ? 'destructive' : alert.severity === 'warning' ? 'default' : 'secondary'}>
+                            {alert.severity}
+                          </Badge>
+                        </div>
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
                         {new Date(alert.timestamp).toLocaleString()}

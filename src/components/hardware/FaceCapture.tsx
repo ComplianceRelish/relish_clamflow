@@ -99,25 +99,43 @@ export const FaceCapture: React.FC<FaceCaptureProps> = ({
 
         const result = await response.json();
 
+        // Handle authenticated: false (200 OK with no match)
+        if (!result.authenticated) {
+          setError(result.message || 'Face not recognized. Please try again or request an override from Production Lead.');
+          onError?.(result.message || 'Face not recognized');
+          return;
+        }
+
         if (result.authenticated) {
-          // Record attendance - Backend: /attendance/ (POST)
+          // Record attendance - Backend: /api/attendance/log (POST)
+          // Now returns 201 with { success, person, method, timestamp }
           const token = localStorage.getItem('clamflow_token');
-          await fetch(`${API_BASE_URL}/attendance/`, {
+          const attendanceRes = await fetch(`${API_BASE_URL}/api/attendance/log`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              person_id: result.staff_id,
+              person_id: result.person_id,
               method: 'face',
               device_type: deviceType
             })
           });
 
-          onCapture?.(imageData, result);
-        } else {
-          setError('Face authentication failed');
+          // Accept 201 Created (new) or 200 OK
+          if (attendanceRes.status === 201 || attendanceRes.status === 200) {
+            const attendanceData = await attendanceRes.json();
+            onCapture?.(imageData, {
+              ...result,
+              attendance: attendanceData,
+              method: attendanceData.method || 'face',
+            });
+          } else if (attendanceRes.status === 401) {
+            setError('Authentication failed via RFID and face. Request override from Production Lead or Staff Lead.');
+          } else {
+            setError('Failed to record attendance');
+          }
         }
       } else {
         // Registration mode

@@ -178,7 +178,11 @@ const PPCForm: React.FC<PPCFormProps> = ({ onSubmit, currentUser }) => {
       
     } catch (error: any) {
       console.error('❌ PPC form submission error:', error);
-      setError(error.message || 'Failed to submit PPC form');
+      if (error.status === 403 || error.message?.includes('QC checkpoints') || error.message?.includes('steps 1-9')) {
+        setError('PPC form cannot be created until all QC checkpoints (steps 1-9) are completed. Please complete the required workflow steps first.');
+      } else {
+        setError(error.message || 'Failed to submit PPC form');
+      }
     } finally {
       setIsSubmitting(false);
     }

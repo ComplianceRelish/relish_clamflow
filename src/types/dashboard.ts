@@ -36,7 +36,7 @@ export interface Bottleneck {
   stationId: string;
   stationCode: string;
   stationName: string;
-  plantType: 'PPC' | 'FP';
+  plantType: 'PPC' | 'FP' | 'System';
   severity: 'high' | 'medium';
   currentStaff: number;
   requiredStaff: number;
@@ -273,6 +273,134 @@ export interface PendingApproval {
   submittedAt: string;
   approvalStage: 'qc' | 'supervisor';
   urgency: 'low' | 'medium' | 'high';
+}
+
+// ============================================
+// WORKFLOW ENFORCEMENT TYPES (13-step sequential)
+// ============================================
+
+export type WorkflowStepType = 'data_entry' | 'qc_check' | 'approval' | 'scan' | 'processing';
+export type WorkflowStepStatus = 'locked' | 'pending' | 'in_progress' | 'completed' | 'skipped' | 'failed';
+export type QCResult = 'pass' | 'fail' | 'conditional';
+
+export interface WorkflowStep {
+  id: string;
+  lotId: string;
+  stepNumber: number;
+  stepCode: string;
+  stepName: string;
+  stepType: WorkflowStepType;
+  status: WorkflowStepStatus;
+  startedAt: string | null;
+  completedAt: string | null;
+  completedBy: string | null;
+  qcStaffId: string | null;
+  qcResult: QCResult | null;
+  qcNotes: string | null;
+  referenceType: 'weight_note' | 'depuration_form' | 'ppc_form' | null;
+  referenceId: string | null;
+}
+
+export interface WorkflowStatus {
+  lotId: string;
+  lotNumber: string;
+  lotStatus: string;
+  currentStep: number;
+  totalSteps: number;
+  completedSteps: number;
+  steps: WorkflowStep[];
+}
+
+export interface WorkflowCompleteResponse {
+  message: string;
+  completedStep: WorkflowStep;
+  nextStep: WorkflowStep | null;
+}
+
+// ============================================
+// ADMIN DASHBOARD TYPES (new response shapes)
+// ============================================
+
+export interface AdminOverviewData {
+  production: {
+    pendingApprovals: number;
+    activeLots: number;
+    pendingForms: number;
+    formsReviewedToday: number;
+  };
+  staff: {
+    staffOnSite: number;
+    activeShifts: number;
+    pendingShiftApprovals: number;
+  };
+  gate: {
+    vehiclesInside: number;
+    pendingTransfers: number;
+    entriesToday: number;
+    exitsToday: number;
+  };
+  quickStats: {
+    totalPendingTasks: number;
+    operationalAlerts: number;
+    lastUpdated: string;
+  };
+}
+
+export interface AdminPendingTask {
+  id: string;
+  type: 'lot_approval' | 'form_review' | 'shift_approval';
+  title: string;
+  priority: 'high' | 'medium' | 'low';
+  createdAt: string | null;
+  location: string;
+}
+
+export interface AdminPendingTasksResponse {
+  success: boolean;
+  data: AdminPendingTask[];
+  total: number;
+  summary: {
+    highPriority: number;
+    mediumPriority: number;
+    lowPriority: number;
+  };
+}
+
+export interface AdminRecentActivity {
+  id: string;
+  type: 'lot_processed' | 'form_reviewed' | 'vehicle_entered' | 'vehicle_exited';
+  user: string;
+  description: string;
+  timestamp: string;
+  location: string;
+}
+
+export interface AdminRecentActivityResponse {
+  success: boolean;
+  data: AdminRecentActivity[];
+  total: number;
+  timeRangeHours: number;
+}
+
+export interface AdminOperationalAlert {
+  id: string;
+  severity: 'critical' | 'warning' | 'info';
+  category: string;
+  title: string;
+  message: string;
+  timestamp: string;
+  actionRequired: boolean;
+}
+
+export interface AdminOperationalAlertsResponse {
+  success: boolean;
+  data: AdminOperationalAlert[];
+  total: number;
+  summary: {
+    critical: number;
+    warning: number;
+    info: number;
+  };
 }
 
 // ============================================
