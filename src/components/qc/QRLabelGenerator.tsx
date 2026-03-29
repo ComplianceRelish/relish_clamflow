@@ -91,62 +91,10 @@ const QRLabelGenerator: React.FC<QRLabelGeneratorProps> = ({
         
         setGeneratedLabel(labelData)
       } else {
-        // Generate locally if API fails (demo mode)
-        const traceabilityCode = generateTraceabilityCode()
-        const demoLabel: QRLabelData = {
-          id: `LBL-${Date.now()}`,
-          qr_code_data: JSON.stringify({
-            lot: lotId,
-            box: boxNumber,
-            product: productType,
-            grade: grade,
-            weight: weight,
-            trace: traceabilityCode,
-            pack: packDate.toISOString(),
-            expiry: expiryDate.toISOString()
-          }),
-          qr_code_image: '', // Would be base64 in real implementation
-          lot_id: lotId,
-          box_number: boxNumber,
-          product_type: productType,
-          grade: grade,
-          weight: weight,
-          pack_date: packDate.toISOString(),
-          expiry_date: expiryDate.toISOString(),
-          traceability_code: traceabilityCode,
-          generated_at: new Date().toISOString(),
-          generated_by: staffId
-        }
-        
-        setGeneratedLabel(demoLabel)
+        setError(response.error || 'Failed to generate QR label. Please try again.')
       }
     } catch (err: any) {
-      // Fallback to demo generation
-      const traceabilityCode = generateTraceabilityCode()
-      const demoLabel: QRLabelData = {
-        id: `LBL-${Date.now()}`,
-        qr_code_data: JSON.stringify({
-          lot: lotId,
-          box: boxNumber,
-          product: productType,
-          grade: grade,
-          weight: weight,
-          trace: traceabilityCode
-        }),
-        qr_code_image: '',
-        lot_id: lotId,
-        box_number: boxNumber,
-        product_type: productType,
-        grade: grade,
-        weight: weight,
-        pack_date: packDate.toISOString(),
-        expiry_date: expiryDate.toISOString(),
-        traceability_code: traceabilityCode,
-        generated_at: new Date().toISOString(),
-        generated_by: staffId
-      }
-      
-      setGeneratedLabel(demoLabel)
+      setError(err.message || 'Failed to generate QR label. Please check your connection and try again.')
     } finally {
       setGenerating(false)
     }

@@ -87,8 +87,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
   const handleBackup = useCallback(async () => {
     setBackupInProgress(true)
     try {
-      // Simulate backup process
-      await new Promise(resolve => setTimeout(resolve, 3000))
+      const response = await fetch('/api/admin/backup', { method: 'POST' })
+      if (!response.ok) throw new Error('Backup request failed')
       setBackupInProgress(false)
       setShowBackupModal(false)
       alert('System backup completed successfully!')

@@ -239,12 +239,12 @@ export default function DeviceRegistryPanel() {
       setDevices(data?.devices || []);
       setError(null);
     } catch (err: unknown) {
-      // Handle 404 gracefully - endpoint may not be implemented yet
+      // Handle 404 gracefully - endpoint may not be deployed yet
       const error = err as { response?: { status?: number } };
       if (error?.response?.status === 404) {
         console.warn('Device registry endpoint not available yet');
-        // Use mock data for UI development
-        setDevices(getMockDevices());
+        setDevices([]);
+        setError('Device registry API is not available. Please contact support.');
       } else {
         setError('Failed to load device registry');
         console.error(err);
@@ -263,8 +263,7 @@ export default function DeviceRegistryPanel() {
     } catch (err: unknown) {
       const error = err as { response?: { status?: number } };
       if (error?.response?.status === 404) {
-        // Mock audit logs for development
-        setAuditLogs(getMockAuditLogs(deviceId));
+        setAuditLogs([]);
       } else {
         console.error('Failed to load audit logs:', err);
       }
@@ -363,118 +362,6 @@ export default function DeviceRegistryPanel() {
     
     return matchesSearch && matchesStatus && matchesType && matchesConnection;
   });
-
-  // ============================================
-  // MOCK DATA (for development before backend is ready)
-  // ============================================
-
-  function getMockDevices(): RegisteredDevice[] {
-    return [
-      {
-        id: '1',
-        device_name: 'Scale-WS-01',
-        device_type: 'scale',
-        serial_number: 'MT-2024-001234',
-        vendor_id: '0x1234',
-        product_id: '0x5678',
-        manufacturer: 'Mettler Toledo',
-        model: 'IND570',
-        station_location: 'Weight Station',
-        connection_type: 'serial',
-        status: 'approved',
-        is_active: true,
-        allowed_roles: ['Admin', 'Production Lead', 'Production Staff'],
-        registered_at: '2024-01-15T10:00:00Z',
-        last_connected_at: '2026-01-23T09:30:00Z',
-        connection_count: 1523
-      },
-      {
-        id: '2',
-        device_name: 'RFID-Gate-01',
-        device_type: 'rfid_reader',
-        serial_number: 'ZBR-2024-005678',
-        manufacturer: 'Zebra',
-        model: 'FX9600',
-        station_location: 'Gate',
-        connection_type: 'ethernet',
-        status: 'approved',
-        is_active: true,
-        allowed_roles: ['Admin', 'Security Guard'],
-        registered_at: '2024-01-10T08:00:00Z',
-        last_connected_at: '2026-01-23T08:00:00Z',
-        connection_count: 5421
-      },
-      {
-        id: '3',
-        device_name: 'TempSensor-Dep-01',
-        device_type: 'temperature_sensor',
-        serial_number: 'TEMP-2024-009999',
-        manufacturer: 'Omega',
-        model: 'PT100',
-        station_location: 'Depuration',
-        connection_type: 'ethernet',
-        status: 'approved',
-        is_active: true,
-        allowed_roles: ['Admin', 'QC Lead'],
-        registered_at: '2024-02-01T14:00:00Z',
-        connection_count: 0
-      },
-      {
-        id: '4',
-        device_name: 'Unknown-Scale',
-        device_type: 'scale',
-        serial_number: 'UNKNOWN-123',
-        vendor_id: '0xABCD',
-        product_id: '0xEF01',
-        station_location: 'Weight Station',
-        connection_type: 'usb',
-        status: 'pending',
-        is_active: false,
-        allowed_roles: [],
-        registered_at: '2026-01-23T10:15:00Z',
-        connection_count: 0
-      }
-    ];
-  }
-
-  function getMockAuditLogs(deviceId: string): DeviceAuditLog[] {
-    return [
-      {
-        id: '1',
-        event_type: 'connected',
-        event_timestamp: '2026-01-23T09:30:00Z',
-        device_id: deviceId,
-        device_serial: 'MT-2024-001234',
-        username: 'john.operator',
-        user_role: 'Production Staff',
-        station_name: 'Weight Station'
-      },
-      {
-        id: '2',
-        event_type: 'reading',
-        event_timestamp: '2026-01-23T09:31:00Z',
-        device_id: deviceId,
-        device_serial: 'MT-2024-001234',
-        username: 'john.operator',
-        user_role: 'Production Staff',
-        station_name: 'Weight Station',
-        reading_value: 125.5,
-        reading_unit: 'kg'
-      },
-      {
-        id: '3',
-        event_type: 'reading',
-        event_timestamp: '2026-01-23T09:32:00Z',
-        device_id: deviceId,
-        device_serial: 'MT-2024-001234',
-        username: 'john.operator',
-        user_role: 'Production Staff',
-        station_name: 'Weight Station',
-        reading_value: 98.2,
-        reading_unit: 'kg'
-      }
-    ];
-  }
 
   // ============================================
   // RENDER

@@ -35,33 +35,36 @@ const RFIDScanner: React.FC<RFIDScannerProps> = ({
   const [recentScans, setRecentScans] = useState<RFIDTagData[]>([])
   const [autoScanInterval, setAutoScanInterval] = useState<NodeJS.Timeout | null>(null)
 
-  // Simulate auto-scan polling (in real implementation, this would connect to RFID hardware)
+  // Auto-scan: poll RFID hardware reader via backend API
   const startAutoScan = useCallback(() => {
     if (autoScanInterval) clearInterval(autoScanInterval)
     
     const interval = setInterval(async () => {
-      // Simulate detecting a new RFID tag
-      const simulatedTagId = `RFID-${Date.now().toString(36).toUpperCase()}`
-      
       try {
-        // Check if tag already exists
-        const existingTag = await clamflowAPI.scanRFIDTag(simulatedTagId)
-        if (existingTag.success && existingTag.data) {
-          setScanResult({
-            success: false,
-            error: 'Tag already linked to another product',
-            validation_status: 'duplicate'
-          })
+        // Poll the backend for the latest RFID scan from the hardware reader
+        const response = await clamflowAPI.getLatestRFIDScan()
+        if (response.success && response.data?.tagId) {
+          const detectedTagId = response.data.tagId
+          // Verify the tag is not already linked
+          const existing = await clamflowAPI.scanRFIDTag(detectedTagId)
+          if (existing.success && existing.data) {
+            setScanResult({
+              success: false,
+              error: 'Tag already linked to another product',
+              validation_status: 'duplicate'
+            })
+          } else {
+            setTagId(detectedTagId)
+            setScanResult({
+              success: true,
+              validation_status: 'valid'
+            })
+          }
         }
       } catch {
-        // New tag detected - available for linking
-        setTagId(simulatedTagId)
-        setScanResult({
-          success: true,
-          validation_status: 'valid'
-        })
+        // No new tag detected — continue polling
       }
-    }, 2000) // Poll every 2 seconds
+    }, 2000)
 
     setAutoScanInterval(interval)
   }, [autoScanInterval])
@@ -185,16 +188,6 @@ const RFIDScanner: React.FC<RFIDScannerProps> = ({
     }
   }
 
-  // Generate demo tag ID
-  const generateDemoTagId = () => {
-    const demoId = `RFID-${Math.random().toString(36).substring(2, 10).toUpperCase()}`
-    setTagId(demoId)
-    setScanResult({
-      success: true,
-      validation_status: 'valid'
-    })
-  }
-
   return (
     <div className="min-h-screen bg-gray-100 p-4">
       <div className="max-w-2xl mx-auto">
@@ -295,14 +288,6 @@ const RFIDScanner: React.FC<RFIDScannerProps> = ({
                   </button>
                 </div>
               </div>
-
-              {/* Demo Button */}
-              <button
-                onClick={generateDemoTagId}
-                className="text-sm text-blue-600 hover:text-blue-800"
-              >
-                [Demo] Generate Sample Tag ID
-              </button>
             </div>
           </div>
         )}

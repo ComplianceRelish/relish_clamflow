@@ -15,7 +15,6 @@ import clamflowAPI, {
 import { 
   WorkflowStep, 
   WORKFLOW_STEPS, 
-  QC_STAFF_OPTIONS,
   QCViewMode,
   WorkflowState,
   FormAction
@@ -47,9 +46,6 @@ const QCFlowForm: React.FC<QCFlowFormProps> = ({
   // State for assigned stations (loaded from backend API)
   const [assignedStations, setAssignedStations] = useState<string[]>([])
   const [stationsLoaded, setStationsLoaded] = useState(false)
-  
-  // Get staff info for display (fallback to QC_STAFF_OPTIONS for demo)
-  const currentStaffInfo = QC_STAFF_OPTIONS.find(s => s.id === currentQCStaffId)
 
   // Load assigned stations from backend API
   const loadAssignedStations = useCallback(async () => {
@@ -60,7 +56,6 @@ const QCFlowForm: React.FC<QCFlowFormProps> = ({
       console.log(`✅ Loaded ${stations.length} assigned stations for ${currentQCStaffId}:`, stations)
     } catch (err) {
       console.error('Failed to load assigned stations:', err)
-      // Fall back to cached/demo data
       setAssignedStations(getQCStaffAssignedStations(currentQCStaffId))
       setStationsLoaded(true)
     }
@@ -241,7 +236,7 @@ const QCFlowForm: React.FC<QCFlowFormProps> = ({
               <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-2">
                 <span className="text-xs text-green-600">Assigned Stations</span>
                 <p className="text-sm font-medium text-green-900">
-                  {currentStaffInfo?.stations.join(', ') || 'None'}
+                  {assignedStations.length > 0 ? assignedStations.join(', ') : 'None'}
                 </p>
               </div>
 

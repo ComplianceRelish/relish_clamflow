@@ -12,7 +12,6 @@ interface BiometricAuthProps {
   description?: string;
   timeoutMs?: number;
   disabled?: boolean;
-  simulateSuccess?: boolean;
   className?: string;
 }
 
@@ -23,7 +22,6 @@ export function BiometricAuth({
   description = "Place your finger on the scanner to authenticate",
   timeoutMs = 15000,
   disabled = false,
-  simulateSuccess = false,
   className = "",
 }: BiometricAuthProps) {
   const [status, setStatus] = useState<BiometricStatus>("idle");
@@ -37,13 +35,8 @@ export function BiometricAuth({
       timer = setInterval(() => {
         setCountdown((prev) => {
           if (prev <= 1) {
-            if (simulateSuccess) {
-              setStatus("success");
-              onAuthenticated("SIM-" + Date.now());
-            } else {
-              setStatus("timeout");
-              onError?.("Scan timed out. Please try again.");
-            }
+            setStatus("timeout");
+            onError?.("Scan timed out. Please try again.");
             return 0;
           }
           return prev - 1;
@@ -51,7 +44,7 @@ export function BiometricAuth({
       }, 1000);
     }
     return () => clearInterval(timer);
-  }, [status, countdown, simulateSuccess, onAuthenticated, onError]);
+  }, [status, countdown, onAuthenticated, onError]);
 
   const startScan = useCallback(() => {
     if (disabled) return;

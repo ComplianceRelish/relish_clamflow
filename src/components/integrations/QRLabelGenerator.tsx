@@ -168,35 +168,26 @@ const QRLabelGenerator: React.FC<QRLabelGeneratorProps> = ({
           break;
 
         case 'qr_code':
-          // Simplified QR code representation (in real implementation, use a QR library)
+          // QR code placeholder — actual QR image is rendered from backend-generated base64 data
           if (content && content !== '{qr_code_data}') {
-            ctx.fillStyle = '#000';
-            ctx.fillRect(element.x, element.y, element.width || 100, element.height || 100);
-            
-            // Add some white squares to simulate QR pattern
-            ctx.fillStyle = '#fff';
-            for (let i = 0; i < 10; i++) {
-              for (let j = 0; j < 10; j++) {
-                if (Math.random() > 0.5) {
-                  ctx.fillRect(
-                    element.x + i * ((element.width || 100) / 10),
-                    element.y + j * ((element.height || 100) / 10),
-                    (element.width || 100) / 10,
-                    (element.height || 100) / 10
-                  );
-                }
-              }
+            const qrWidth = element.width || 100;
+            const qrHeight = element.height || 100;
+
+            // If content is a base64 image, draw it
+            if (content.startsWith('data:image')) {
+              const img = new Image();
+              img.src = content;
+              img.onload = () => ctx.drawImage(img, element.x, element.y, qrWidth, qrHeight);
+            } else {
+              // Draw a bordered placeholder box with the text "QR"
+              ctx.strokeStyle = '#000';
+              ctx.lineWidth = 2;
+              ctx.strokeRect(element.x, element.y, qrWidth, qrHeight);
+              ctx.fillStyle = '#666';
+              ctx.font = 'bold 14px Arial';
+              ctx.textAlign = 'center';
+              ctx.fillText('QR', element.x + qrWidth / 2, element.y + qrHeight / 2 + 5);
             }
-            
-            // Add QR positioning squares
-            ctx.fillStyle = '#000';
-            const cornerSize = (element.width || 100) / 7;
-            // Top-left corner
-            ctx.fillRect(element.x, element.y, cornerSize, cornerSize);
-            // Top-right corner
-            ctx.fillRect(element.x + (element.width || 100) - cornerSize, element.y, cornerSize, cornerSize);
-            // Bottom-left corner
-            ctx.fillRect(element.x, element.y + (element.height || 100) - cornerSize, cornerSize, cornerSize);
           }
           break;
       }

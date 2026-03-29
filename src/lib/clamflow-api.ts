@@ -1084,6 +1084,10 @@ class ClamFlowAPI {
     return this.get(`/api/rfid/scan/${tagId}`);
   }
 
+  async getLatestRFIDScan(): Promise<ApiResponse<RFIDTagResponse>> {
+    return this.get('/api/rfid/latest-scan');
+  }
+
   async getRFIDTags(): Promise<ApiResponse<RFIDTagResponse[]>> {
     return this.get('/api/rfid/tags');
   }
@@ -1355,17 +1359,12 @@ export function canApproveForm(userRole: string, formType: string): boolean {
 let staffStationCache: Map<string, { stations: string[]; expiry: number }> = new Map();
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes cache
 
-// Fallback data for demo/offline mode
-export const QC_STAFF_STATION_ASSIGNMENTS_FALLBACK: Record<string, string[]> = {
-  "qc_staff_001": ["RM Station", "Depuration Station"],
-  "qc_staff_002": ["PPC Station", "Separation Station"],
-  "qc_staff_003": ["FP Station"]
-};
+// No demo/fallback data — station assignments are fetched from the backend API only.
 
 /**
  * Fetch staff's assigned stations from the backend API.
  * Returns array of station names the staff is assigned to for today.
- * Falls back to cached data or demo data if API fails.
+ * Returns empty array if API call fails.
  */
 export async function fetchStaffAssignedStations(staffId: string): Promise<string[]> {
   // Check cache first
@@ -1406,8 +1405,9 @@ export async function fetchStaffAssignedStations(staffId: string): Promise<strin
     console.error('Failed to fetch staff station assignments:', error);
   }
   
-  // Fallback to demo data
-  return QC_STAFF_STATION_ASSIGNMENTS_FALLBACK[staffId] || [];
+  // Return cached data if available, otherwise empty
+  const fallback = staffStationCache.get(staffId);
+  return fallback ? fallback.stations : [];
 }
 
 /**
@@ -1419,8 +1419,7 @@ export function getQCStaffAssignedStations(staffId: string): string[] {
   if (cached) {
     return cached.stations;
   }
-  // Return fallback data if cache miss
-  return QC_STAFF_STATION_ASSIGNMENTS_FALLBACK[staffId] || [];
+  return [];
 }
 
 /**

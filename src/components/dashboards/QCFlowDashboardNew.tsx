@@ -1,277 +1,294 @@
 "use client"
 
-// src/components/dashboards/QCFlowDashboard.tsx
-// COMPLETE REPLACEMENT - Based on Figma Framework
-// Main entry point for QC Workflow with all components integrated
-// NOW CONNECTED TO REAL BACKEND STATION ASSIGNMENTS API
+// src/components/dashboards/QCFlowDashboardNew.tsx
+// QC Staff Dashboard — Lot-Based Approval & Oversight
+// QC Staff approves forms submitted by Production Staff AND performs
+// sequential QC checkpoints per lot (sample extraction, depuration
+// monitoring, RFID scanning, QR label generation, etc.)
 
 import React, { useState, useCallback, useEffect } from 'react'
 import { User } from '../../types/auth'
-import { 
-  QCViewMode, 
-  WorkflowState, 
-  RFIDTagData, 
-  QRLabelData,
-  QC_STAFF_OPTIONS,
-  FormAction,
-  WeightNoteData,
-  PPCFormData,
-  FPFormData
-} from '../../types/qc-workflow'
-import { preloadStaffStationAssignments, clearStationAssignmentCache } from '../../lib/clamflow-api'
+import { RFIDTagData, QRLabelData } from '../../types/qc-workflow'
+import clamflowAPI from '../../lib/clamflow-api'
 
-// Import QC Components
-import QCFlowForm from '../qc/QCFlowForm'
+// QC Components
 import RFIDScanner from '../qc/RFIDScanner'
 import QRLabelGenerator from '../qc/QRLabelGenerator'
 import ApprovalDashboard from '../qc/ApprovalDashboard'
 
-// Import Form Components
-import WeightNoteForm from '../forms/WeightNoteForm'
-import PPCForm from '../forms/PPCForm'
-import FPForm from '../forms/FPForm'
+// QC-specific Forms (tasks only QC Staff performs)
 import SampleExtractionForm from '../forms/SampleExtractionForm'
 import DepurationForm from '../forms/DepurationForm'
+
+// ============================================
+// QC CHECKPOINT DEFINITIONS (per-lot sequence)
+// ============================================
+
+interface QCCheckpoint {
+  id: string
+  step: number
+  label: string
+  description: string
+  icon: string
+  type: 'approval' | 'task' | 'scan' | 'label'
+}
+
+const QC_CHECKPOINTS: QCCheckpoint[] = [
+  { id: 'weight-note',       step: 1,  label: 'Weight Note Approval',   description: 'Review & approve incoming raw material weight note',          icon: '⚖️', type: 'approval' },
+  { id: 'sample-extraction', step: 3,  label: 'Sample Extraction',      description: 'Extract depuration sample for lab testing',                   icon: '🔬', type: 'task' },
+  { id: 'depuration',        step: 5,  label: 'Depuration Monitoring',  description: 'Monitor tank parameters — salinity, temp, pH, turbidity',     icon: '🧪', type: 'task' },
+  { id: 'ppc-qc-check',      step: 9,  label: 'PPC Quality Verification', description: 'Inspect freshness, colour, texture, smell of packed product', icon: '🔍', type: 'approval' },
+  { id: 'ppc-form',          step: 10, label: 'PPC Form Approval',      description: 'Approve PPC form → routes to Production Lead for gate pass',  icon: '📋', type: 'approval' },
+  { id: 'rfid-scan',         step: 11, label: 'RFID Tag Scan',          description: 'Scan & link RFID tag to FP receiving box',                    icon: '📡', type: 'scan' },
+  { id: 'fp-form',           step: 13, label: 'FP Form Approval',       description: 'Approve FP form → routes to Production Lead for inventory',   icon: '📦', type: 'approval' },
+  { id: 'qr-label',          step: 14, label: 'QR Label Generation',    description: 'Generate traceability QR label for FP box',                   icon: '🏷️', type: 'label' },
+]
+
+// ============================================
+// TYPES
+// ============================================
+
+type CheckpointStatus = 'blocked' | 'ready' | 'completed'
+
+interface LotData {
+  id: string
+  lotNumber: string
+  supplierName?: string
+  status: string
+  createdAt: string
+  checkpoints: Record<string, CheckpointStatus>
+}
+
+type DashboardView =
+  | 'tracker'
+  | 'lot-detail'
+  | 'approval-dashboard'
+  | 'sample-extraction'
+  | 'depuration-form'
+  | 'rfid-scanner'
+  | 'qr-generator'
+
+// ============================================
+// CHECKPOINT STATUS INFERENCE
+// Map lot status → which QC checkpoints are done / ready / blocked
+// Lot statuses: received, washing, depuration, ppc, fp, shipped, archived
+// ============================================
+
+const LOT_STATUS_ORDER: Record<string, number> = {
+  received: 0,
+  washing: 1,
+  depuration: 2,
+  ppc: 3,
+  fp: 4,
+  shipped: 5,
+  archived: 6,
+}
+
+function inferCheckpointStatus(lotStatus: string): Record<string, CheckpointStatus> {
+  const idx = LOT_STATUS_ORDER[lotStatus] ?? -1
+  const cp: Record<string, CheckpointStatus> = {}
+
+  // Step 1  — Weight Note: lot exists → already approved (lot was created after approval)
+  cp['weight-note'] = idx >= 0 ? 'completed' : 'ready'
+
+  // Step 3  — Sample Extraction: ready once lot is in washing, done once in depuration+
+  cp['sample-extraction'] = idx >= 2 ? 'completed' : idx >= 1 ? 'ready' : 'blocked'
+
+  // Step 5  — Depuration Monitoring: ready during depuration, done once in ppc+
+  cp['depuration'] = idx >= 3 ? 'completed' : idx >= 2 ? 'ready' : 'blocked'
+
+  // Step 9  — PPC QC Check: ready during ppc stage, done once in fp+
+  cp['ppc-qc-check'] = idx >= 4 ? 'completed' : idx >= 3 ? 'ready' : 'blocked'
+
+  // Step 10 — PPC Form Approval: same window as PPC QC check
+  cp['ppc-form'] = idx >= 4 ? 'completed' : idx >= 3 ? 'ready' : 'blocked'
+
+  // Step 11 — RFID Scan: ready during fp stage, done once shipped+
+  cp['rfid-scan'] = idx >= 5 ? 'completed' : idx >= 4 ? 'ready' : 'blocked'
+
+  // Step 13 — FP Form Approval: ready during fp, done once shipped+
+  cp['fp-form'] = idx >= 5 ? 'completed' : idx >= 4 ? 'ready' : 'blocked'
+
+  // Step 14 — QR Label: ready after fp-form approved, done once shipped
+  cp['qr-label'] = idx >= 5 ? 'completed' : idx >= 4 ? 'ready' : 'blocked'
+
+  return cp
+}
+
+// ============================================
+// HELPERS
+// ============================================
+
+function completedCount(lot: LotData): number {
+  return Object.values(lot.checkpoints).filter(s => s === 'completed').length
+}
+function readyCount(lot: LotData): number {
+  return Object.values(lot.checkpoints).filter(s => s === 'ready').length
+}
+function progressPercent(lot: LotData): number {
+  return Math.round((completedCount(lot) / QC_CHECKPOINTS.length) * 100)
+}
+
+const STATUS_PILL: Record<CheckpointStatus, string> = {
+  completed: 'text-green-700 bg-green-100',
+  ready:     'text-amber-700 bg-amber-100',
+  blocked:   'text-gray-500 bg-gray-100',
+}
+const STATUS_LABEL: Record<CheckpointStatus, string> = {
+  completed: 'Done',
+  ready:     'Action Needed',
+  blocked:   'Waiting',
+}
+const STATUS_DOT: Record<CheckpointStatus, string> = {
+  completed: 'bg-green-500',
+  ready:     'bg-amber-500',
+  blocked:   'bg-gray-300',
+}
+
+// ============================================
+// COMPONENT
+// ============================================
 
 interface QCFlowDashboardProps {
   currentUser: User | null
 }
 
 const QCFlowDashboard: React.FC<QCFlowDashboardProps> = ({ currentUser }) => {
-  // Current view state
-  const [currentView, setCurrentView] = useState<QCViewMode>('qc-form')
-  const [selectedFormData, setSelectedFormData] = useState<any>(null)
-  
-  // Workflow state management
-  const [workflowState, setWorkflowState] = useState<WorkflowState>({
-    weightNoteApproved: false,
-    supervisorHasCreatedLot: false,
-    currentLotId: null,
-    rfidTagData: null,
-    qrLabelData: null
-  })
+  const [view, setView] = useState<DashboardView>('tracker')
+  const [lots, setLots] = useState<LotData[]>([])
+  const [selectedLot, setSelectedLot] = useState<LotData | null>(null)
+  const [pendingCount, setPendingCount] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [scanContext, setScanContext] = useState<Record<string, unknown> | null>(null)
 
-  // Current QC Staff ID (from authenticated user)
-  const [currentQCStaffId, setCurrentQCStaffId] = useState(currentUser?.id || "qc_staff_001")
-  const currentStationId = "rm_station" // Would come from user's station assignment
+  const currentStaffId = currentUser?.id || ''
 
-  // Preload station assignments when user changes
+  // ── Data fetching ──────────────────────────────────────
+
+  const loadData = useCallback(async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const [lotsRes, pendingRes] = await Promise.all([
+        clamflowAPI.getLots(),
+        clamflowAPI.getPendingQCForms(),
+      ])
+
+      if (lotsRes.success && lotsRes.data) {
+        const arr = Array.isArray(lotsRes.data) ? lotsRes.data : []
+        const active: LotData[] = arr
+          .filter((l: any) => l.status !== 'shipped' && l.status !== 'archived')
+          .map((l: any) => ({
+            id: l.id,
+            lotNumber: l.lotNumber || l.lot_number || l.id,
+            supplierName: l.supplierName || l.supplier_name,
+            status: l.status || 'received',
+            createdAt: l.createdAt || l.created_at || new Date().toISOString(),
+            checkpoints: inferCheckpointStatus(l.status || 'received'),
+          }))
+        setLots(active)
+      }
+
+      if (pendingRes.success && pendingRes.data) {
+        setPendingCount(Array.isArray(pendingRes.data) ? pendingRes.data.length : 0)
+      }
+    } catch (err) {
+      console.error('Failed to load QC dashboard data:', err)
+      setError('Failed to load data. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { loadData() }, [loadData])
+
+  // Keep selectedLot in sync after refresh
   useEffect(() => {
-    if (currentQCStaffId) {
-      console.log(`🔄 Preloading station assignments for ${currentQCStaffId}...`)
-      preloadStaffStationAssignments(currentQCStaffId)
+    if (selectedLot) {
+      const updated = lots.find(l => l.id === selectedLot.id)
+      if (updated) setSelectedLot(updated)
     }
-  }, [currentQCStaffId])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lots])
 
-  // Helper function to create placeholder data based on form type
-  const createPlaceholderData = useCallback((type: 'weight-note' | 'ppc' | 'fp'): Record<string, unknown> => {
-    const baseData = {
-      id: "placeholder-id",
-      lot_id: workflowState.currentLotId || "pending-lot-creation",
-      qc_staff_id: currentQCStaffId,
-      submitted_at: new Date().toISOString(),
-      qc_approved: false,
-      qc_approved_by: null,
-      qc_approved_at: null,
-      remarks: null
-    }
+  // ── Navigation ─────────────────────────────────────────
 
-    switch (type) {
-      case 'weight-note':
-        return {
-          ...baseData,
-          status: "pending",
-          lot_id: "pending-supervisor-lot-creation",
-          supplier_id: "placeholder-supplier-id",
-          box_number: "N/A",
-          weight: 0
-        }
-      
-      case 'ppc':
-        return {
-          ...baseData,
-          status: "draft",
-          box_number: "N/A",
-          product_type: "N/A",
-          grade: "N/A",
-          weight: 0
-        }
-      
-      case 'fp':
-        return {
-          ...baseData,
-          status: "draft",
-          box_number: "N/A",
-          product_type: "N/A",
-          grade: "N/A",
-          weight: 0
-        }
-        
-      default:
-        return baseData
-    }
-  }, [workflowState.currentLotId, currentQCStaffId])
-
-  // Simulate supervisor creating a lot (for demo purposes)
-  const simulateSupervisorLotCreation = useCallback(() => {
-    const newLotId = `LOT-${Date.now().toString(36).toUpperCase()}`
-    setWorkflowState(prev => ({
-      ...prev,
-      currentLotId: newLotId,
-      supervisorHasCreatedLot: true
-    }))
-    alert(`Production Supervisor has created Lot: ${newLotId}. The washing step is now active.`)
-  }, [])
-
-  // RFID Tag linking handler
-  const handleRFIDLinked = useCallback((rfidData: RFIDTagData) => {
-    setWorkflowState(prev => ({ ...prev, rfidTagData: rfidData }))
-    console.log("RFID Tag linked to product:", rfidData)
-    alert(`RFID Tag ${rfidData.tag_id} successfully linked to ${rfidData.box_number}`)
-    setCurrentView('qc-form')
-  }, [])
-
-  // QR Label generation handler
-  const handleQRLabelGenerated = useCallback((labelData: QRLabelData) => {
-    setWorkflowState(prev => ({ ...prev, qrLabelData: labelData }))
-    console.log("QR Label generated:", labelData)
-    alert(`QR Label generated for ${labelData.box_number}. Product ready for inventory.`)
-    setCurrentView('qc-form')
-  }, [])
-
-  // Weight Note Form submission handler
-  const handleWeightNoteFormSubmitted = useCallback((formId: string) => {
-    console.log("Weight Note Form submitted:", formId)
-    alert(`Weight Note Form ${formId} submitted to RM Station QC for approval.`)
-    setCurrentView('qc-form')
-  }, [])
-
-  // PPC Form submission handler
-  const handlePPCFormSubmitted = useCallback((formData: any) => {
-    console.log("PPC Form submitted:", formData)
-    alert(`PPC Form ${formData.id || 'new'} submitted to Station QC for approval.`)
-    setCurrentView('qc-form')
-  }, [])
-
-  // FP Form submission handler
-  const handleFPFormSubmitted = useCallback((formData: any) => {
-    console.log("FP Form submitted:", formData)
-    alert(`FP Form ${formData.id || 'new'} submitted to Station QC for approval.`)
-    setCurrentView('qc-form')
-  }, [])
-
-  // FP Label generation request handler
-  const handleFPLabelRequest = useCallback((boxData: any) => {
-    console.log("FP Label generation requested for box:", boxData)
-    setSelectedFormData({
-      ...boxData,
-      type: 'fp',
-      box_number: boxData.final_box_number || boxData.box_number
-    })
-    setCurrentView('qr-generator')
-  }, [])
-
-  // Step action handler from QCFlowForm
-  const handleStepAction = useCallback((step: number, action: FormAction, formData?: unknown) => {
-    console.log(`Step ${step} - ${action}`, formData)
-    
-    // If formData is provided (from pending forms list), use it
-    if (formData) {
-      setSelectedFormData(formData)
-    }
-    
-    switch (step) {
-      case 0: // From pending forms list
-        if (action === 'view' || action === 'approve') {
-          setCurrentView('approval-dashboard')
-        }
-        break
-        
-      case 1: // RM Station - Weight Note
-        if (action === 'view' || action === 'approve') {
-          setSelectedFormData(createPlaceholderData('weight-note'))
-          setCurrentView('weight-note')
-        }
-        break
-        
-      case 3: // Depuration - Sample Extraction
-        if (action === 'view' || action === 'approve') {
-          setCurrentView('sample-extraction')
-        }
-        break
-        
-      case 5: // Depuration Form
-        if (action === 'view' || action === 'approve') {
-          setCurrentView('depuration-form')
-        }
-        break
-        
-      case 10: // PPC Packing
-        if (action === 'view' || action === 'approve') {
-          setSelectedFormData(createPlaceholderData('ppc'))
-          setCurrentView('ppc-form')
-        }
-        break
-        
-      case 11: // FP Receiving - RFID
-        if (action === 'view' || action === 'scan') {
-          setSelectedFormData(createPlaceholderData('ppc'))
-          setCurrentView('rfid-scanner')
-        }
-        break
-        
-      case 13: // Frozen Product - FP Form
-        if (action === 'view' || action === 'approve') {
-          setSelectedFormData(createPlaceholderData('fp'))
-          setCurrentView('fp-form')
-        }
-        break
-        
-      case 14: // QR Label Generation
-        if (action === 'generate_label') {
-          setSelectedFormData(createPlaceholderData('fp'))
-          setCurrentView('qr-generator')
-        }
-        break
-        
-      default:
-        console.log(`Step ${step} functionality not yet fully implemented`)
-        break
-    }
-  }, [createPlaceholderData])
-
-  // Back to dashboard handler
-  const handleBackToDashboard = useCallback(() => {
-    setCurrentView('qc-form')
-    setSelectedFormData(null)
-  }, [])
-
-  // Form approval handlers from ApprovalDashboard
-  const handleFormApprovedInDashboard = useCallback((formId: string, formType: 'ppc' | 'fp' | 'weight_note' | 'depuration') => {
-    console.log(`${formType.toUpperCase()} Form ${formId} approved`)
-    
-    if (formType === 'weight_note') {
-      setWorkflowState(prev => ({ ...prev, weightNoteApproved: true }))
-      alert(`Weight Note ${formId} approved. Waiting for Supervisor to create lot.`)
-      // Simulate supervisor creating lot after 3 seconds (for demo)
-      setTimeout(() => {
-        simulateSupervisorLotCreation()
-      }, 3000)
-    } else if (formType === 'ppc') {
-      alert(`PPC Form ${formId} approved. Gate pass will be generated.`)
-    } else if (formType === 'fp') {
-      alert(`FP Form ${formId} approved. Data will be inserted into inventory.`)
+  const handleBack = useCallback(() => {
+    if (view === 'lot-detail') {
+      setSelectedLot(null)
+      setView('tracker')
     } else {
-      alert(`Depuration Form ${formId} approved. Lot continues to next stage.`)
+      loadData()
+      setView(selectedLot ? 'lot-detail' : 'tracker')
     }
-  }, [simulateSupervisorLotCreation])
+  }, [view, selectedLot, loadData])
 
-  const handleFormRejectedInDashboard = useCallback((formId: string, formType: 'ppc' | 'fp' | 'weight_note' | 'depuration', reason: string) => {
-    console.log(`${formType.toUpperCase()} Form ${formId} rejected:`, reason)
-    alert(`${formType.toUpperCase()} Form ${formId} rejected and sent back for rectification.`)
-  }, [])
+  const openLotDetail = (lot: LotData) => {
+    setSelectedLot(lot)
+    setView('lot-detail')
+  }
 
-  // Get user role for approval dashboard
+  // ── Checkpoint action router ───────────────────────────
+
+  const handleCheckpointAction = (cp: QCCheckpoint, lot: LotData) => {
+    setSelectedLot(lot)
+
+    switch (cp.id) {
+      case 'weight-note':
+      case 'ppc-qc-check':
+      case 'ppc-form':
+      case 'fp-form':
+        setView('approval-dashboard')
+        break
+      case 'sample-extraction':
+        setView('sample-extraction')
+        break
+      case 'depuration':
+        setView('depuration-form')
+        break
+      case 'rfid-scan':
+        setScanContext({
+          lot_id: lot.id,
+          box_number: `${lot.lotNumber}-BOX-001`,
+          product_type: 'Whole Clam',
+          grade: 'A',
+          weight: 25,
+        })
+        setView('rfid-scanner')
+        break
+      case 'qr-label':
+        setScanContext({
+          lot_id: lot.id,
+          box_number: `${lot.lotNumber}-FP-001`,
+          product_type: 'Whole Clam',
+          grade: 'A',
+          weight: 25,
+        })
+        setView('qr-generator')
+        break
+    }
+  }
+
+  // ── Approval handlers ──────────────────────────────────
+
+  const handleFormApproved = useCallback(
+    (formId: string, formType: 'ppc' | 'fp' | 'weight_note' | 'depuration') => {
+      const label = formType.replace('_', ' ').toUpperCase()
+      alert(`${label} ${formId} approved successfully.`)
+      loadData()
+    },
+    [loadData],
+  )
+
+  const handleFormRejected = useCallback(
+    (formId: string, formType: 'ppc' | 'fp' | 'weight_note' | 'depuration', reason: string) => {
+      const label = formType.replace('_', ' ').toUpperCase()
+      alert(`${label} ${formId} rejected — sent back for correction.\nReason: ${reason}`)
+    },
+    [],
+  )
+
   const getUserRole = (): 'qc_staff' | 'qc_lead' | 'production_lead' | 'station_qa' | 'admin' => {
     const role = currentUser?.role?.toLowerCase() || ''
     if (role.includes('admin') || role.includes('super')) return 'admin'
@@ -280,231 +297,361 @@ const QCFlowDashboard: React.FC<QCFlowDashboardProps> = ({ currentUser }) => {
     return 'qc_staff'
   }
 
-  // Render current view
-  const renderCurrentView = () => {
-    switch (currentView) {
+  // ════════════════════════════════════════════════════════
+  // RENDER: LOT TRACKER (default view)
+  // ════════════════════════════════════════════════════════
+
+  const renderLotTracker = () => (
+    <div className="p-6 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">QC Oversight Dashboard</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            {currentUser?.full_name || 'QC Staff'} &mdash; {lots.length} active lot{lots.length !== 1 ? 's' : ''}
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setView('approval-dashboard')}
+            className="relative inline-flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium"
+          >
+            Pending Approvals
+            {pendingCount > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                {pendingCount}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={loadData}
+            disabled={loading}
+            className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm disabled:opacity-50"
+          >
+            {loading ? 'Loading…' : 'Refresh'}
+          </button>
+        </div>
+      </div>
+
+      {/* Error banner */}
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+          {error}
+          <button onClick={loadData} className="ml-2 underline font-medium">Retry</button>
+        </div>
+      )}
+
+      {/* Loading */}
+      {loading && lots.length === 0 && (
+        <div className="flex items-center justify-center py-16">
+          <div className="animate-spin h-8 w-8 border-4 border-teal-500 border-t-transparent rounded-full" />
+          <span className="ml-3 text-gray-600">Loading lots…</span>
+        </div>
+      )}
+
+      {/* Empty state */}
+      {!loading && lots.length === 0 && (
+        <div className="text-center py-16">
+          <div className="text-5xl mb-4">📦</div>
+          <h3 className="text-lg font-medium text-gray-900">No Active Lots</h3>
+          <p className="text-gray-500 mt-1">Lots will appear here once Production Lead creates them after weight note approval.</p>
+          <button
+            onClick={() => setView('approval-dashboard')}
+            className="mt-4 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 text-sm"
+          >
+            Check Pending Approvals
+          </button>
+        </div>
+      )}
+
+      {/* Lot cards grid */}
+      {lots.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {lots.map(lot => {
+            const done = completedCount(lot)
+            const ready = readyCount(lot)
+            const pct = progressPercent(lot)
+
+            return (
+              <div
+                key={lot.id}
+                onClick={() => openLotDetail(lot)}
+                className="bg-white rounded-xl border border-gray-200 p-5 cursor-pointer hover:shadow-md hover:border-teal-300 transition-all"
+              >
+                {/* Lot header */}
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <h3 className="font-semibold text-gray-900">{lot.lotNumber}</h3>
+                    {lot.supplierName && <p className="text-xs text-gray-500">{lot.supplierName}</p>}
+                  </div>
+                  <span className={`text-xs font-medium px-2 py-1 rounded-full capitalize ${
+                    lot.status === 'fp' || lot.status === 'ppc' ? 'bg-blue-100 text-blue-700' :
+                    lot.status === 'received' ? 'bg-yellow-100 text-yellow-700' :
+                    'bg-gray-100 text-gray-600'
+                  }`}>
+                    {lot.status}
+                  </span>
+                </div>
+
+                {/* Progress bar */}
+                <div className="mb-3">
+                  <div className="flex justify-between text-xs text-gray-500 mb-1">
+                    <span>{done}/{QC_CHECKPOINTS.length} QC checks</span>
+                    <span>{pct}%</span>
+                  </div>
+                  <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-teal-500 rounded-full transition-all"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Checkpoint dot indicators */}
+                <div className="flex flex-wrap gap-1.5">
+                  {QC_CHECKPOINTS.map(cp => (
+                    <div
+                      key={cp.id}
+                      className={`h-2.5 w-2.5 rounded-full ${STATUS_DOT[lot.checkpoints[cp.id] || 'blocked']}`}
+                      title={`${cp.label}: ${lot.checkpoints[cp.id] || 'blocked'}`}
+                    />
+                  ))}
+                </div>
+
+                {/* Ready actions badge */}
+                {ready > 0 && (
+                  <div className="mt-3 text-xs text-amber-600 font-medium">
+                    {ready} action{ready !== 1 ? 's' : ''} needed
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+
+  // ════════════════════════════════════════════════════════
+  // RENDER: LOT DETAIL (sequential QC checklist)
+  // ════════════════════════════════════════════════════════
+
+  const renderLotDetail = () => {
+    if (!selectedLot) return null
+    const done = completedCount(selectedLot)
+
+    return (
+      <div className="p-6 max-w-3xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-6">
+          <button
+            onClick={() => { setSelectedLot(null); setView('tracker') }}
+            className="p-2 hover:bg-gray-100 rounded-lg text-gray-600"
+            aria-label="Back to lot tracker"
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+          </button>
+          <div className="flex-1 min-w-0">
+            <h2 className="text-xl font-bold text-gray-900">Lot {selectedLot.lotNumber}</h2>
+            <p className="text-sm text-gray-500">
+              {selectedLot.supplierName ? `${selectedLot.supplierName} · ` : ''}
+              Stage: <span className="capitalize font-medium">{selectedLot.status}</span> · {done}/{QC_CHECKPOINTS.length} checks complete
+            </p>
+          </div>
+          <button
+            onClick={() => setView('approval-dashboard')}
+            className="px-3 py-1.5 bg-teal-600 text-white text-sm rounded-lg hover:bg-teal-700"
+          >
+            All Approvals
+          </button>
+        </div>
+
+        {/* Sequential checklist */}
+        <div className="space-y-1">
+          {QC_CHECKPOINTS.map((cp, idx) => {
+            const status = selectedLot.checkpoints[cp.id] || 'blocked'
+            const isLast = idx === QC_CHECKPOINTS.length - 1
+
+            return (
+              <div key={cp.id} className="relative">
+                {/* Vertical connector */}
+                {!isLast && (
+                  <div className={`absolute left-5 top-[3.25rem] w-0.5 h-5 ${
+                    status === 'completed' ? 'bg-green-300' : 'bg-gray-200'
+                  }`} />
+                )}
+
+                <div className={`flex items-start gap-4 p-4 rounded-lg border transition-all ${
+                  status === 'ready'
+                    ? 'bg-amber-50 border-amber-200 shadow-sm'
+                    : status === 'completed'
+                    ? 'bg-green-50 border-green-200'
+                    : 'bg-gray-50 border-gray-100'
+                }`}>
+                  {/* Circle indicator */}
+                  <div className={`flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center text-base ${
+                    status === 'completed' ? 'bg-green-500 text-white' :
+                    status === 'ready'     ? 'bg-amber-500 text-white' :
+                    'bg-gray-200 text-gray-400'
+                  }`}>
+                    {status === 'completed' ? '✓' : cp.icon}
+                  </div>
+
+                  {/* Text */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium text-gray-900">{cp.label}</span>
+                      <span className="text-xs text-gray-400">Step {cp.step}</span>
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_PILL[status]}`}>
+                        {STATUS_LABEL[status]}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-500 mt-0.5">{cp.description}</p>
+                  </div>
+
+                  {/* Action button */}
+                  {status === 'ready' && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleCheckpointAction(cp, selectedLot) }}
+                      className="flex-shrink-0 px-4 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition-colors"
+                    >
+                      {cp.type === 'approval' ? 'Review' :
+                       cp.type === 'scan'     ? 'Scan'   :
+                       cp.type === 'label'    ? 'Generate' : 'Start'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
+
+  // ════════════════════════════════════════════════════════
+  // RENDER: SUB-VIEWS (approval, forms, scanners)
+  // ════════════════════════════════════════════════════════
+
+  const renderSubViewHeader = (title: string) => (
+    <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-3 sticky top-0 z-10">
+      <button onClick={handleBack} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-600" aria-label="Back">
+        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+      </button>
+      <span className="font-medium text-gray-900">{title}</span>
+      {selectedLot && <span className="text-sm text-gray-500">· Lot {selectedLot.lotNumber}</span>}
+    </div>
+  )
+
+  const renderSubView = () => {
+    switch (view) {
+      case 'approval-dashboard':
+        return (
+          <ApprovalDashboard
+            userRole={getUserRole()}
+            userId={currentStaffId}
+            onFormApproved={handleFormApproved}
+            onFormRejected={handleFormRejected}
+            onClose={handleBack}
+          />
+        )
+
       case 'sample-extraction':
         return (
-          <SampleExtractionForm 
-            currentUser={currentUser}
-            onSubmit={(data) => {
-              console.log("Sample extraction submitted:", data)
-              setCurrentView('depuration-form')
-            }}
-          />
+          <>
+            {renderSubViewHeader('Sample Extraction')}
+            <SampleExtractionForm
+              currentUser={currentUser}
+              onSubmit={(data) => {
+                console.log('Sample extraction submitted:', data)
+                alert('Sample extracted successfully. Depuration monitoring is now available.')
+                handleBack()
+              }}
+            />
+          </>
         )
 
       case 'depuration-form':
         return (
-          <DepurationForm 
-            currentUser={currentUser}
-            onSubmit={(data) => {
-              console.log("Depuration test results submitted:", data)
-              alert("Depuration Form submitted successfully! Lot continues to next stage.")
-              handleBackToDashboard()
-            }}
-          />
-        )
-
-      case 'weight-note':
-      case 'weight-note-new':
-        return (
-          <WeightNoteForm 
-            onSubmit={handleWeightNoteFormSubmitted}
-            onCancel={handleBackToDashboard}
-            currentUser={currentUser}
-          />
-        )
-
-      case 'ppc-form':
-      case 'ppc-form-new':
-        return workflowState.currentLotId ? (
-          <PPCForm 
-            onSubmit={handlePPCFormSubmitted}
-            currentUser={currentUser}
-          />
-        ) : (
-          <div className="p-8 text-center">
-            <p className="text-lg text-gray-600">No active lot. Please wait for supervisor to create a lot.</p>
-            <button onClick={handleBackToDashboard} className="mt-4 px-4 py-2 bg-gray-200 rounded">Back</button>
-          </div>
-        )
-
-      case 'fp-form':
-      case 'fp-form-new':
-        return workflowState.currentLotId ? (
-          <FPForm 
-            onSubmit={handleFPFormSubmitted}
-            currentUser={currentUser}
-          />
-        ) : (
-          <div className="p-8 text-center">
-            <p className="text-lg text-gray-600">No active lot. Please wait for supervisor to create a lot.</p>
-            <button onClick={handleBackToDashboard} className="mt-4 px-4 py-2 bg-gray-200 rounded">Back</button>
-          </div>
+          <>
+            {renderSubViewHeader('Depuration Monitoring')}
+            <DepurationForm
+              currentUser={currentUser}
+              onSubmit={(data) => {
+                console.log('Depuration monitoring submitted:', data)
+                alert('Depuration parameters recorded. Awaiting QC Lead approval.')
+                handleBack()
+              }}
+            />
+          </>
         )
 
       case 'rfid-scanner':
-        return selectedFormData ? (
-          <RFIDScanner 
-            lotId={selectedFormData.lot_id || workflowState.currentLotId || "demo-lot"}
-            boxNumber={selectedFormData.box_number || "DEMO-BOX-001"}
-            productType={selectedFormData.product_type || "Whole Clam"}
-            grade={selectedFormData.grade || "A"}
-            weight={selectedFormData.weight || 25.5}
-            onRFIDLinked={handleRFIDLinked}
-            onClose={handleBackToDashboard}
-          />
+        return scanContext ? (
+          <>
+            {renderSubViewHeader('RFID Tag Scan')}
+            <RFIDScanner
+              lotId={String(scanContext.lot_id)}
+              boxNumber={String(scanContext.box_number)}
+              productType={String(scanContext.product_type)}
+              grade={String(scanContext.grade)}
+              weight={Number(scanContext.weight)}
+              onRFIDLinked={(rfidData: RFIDTagData) => {
+                alert(`RFID Tag ${rfidData.tag_id} linked to ${rfidData.box_number}`)
+                handleBack()
+              }}
+              onClose={handleBack}
+            />
+          </>
         ) : (
-          <div className="p-8 text-center">
-            <p className="text-lg text-gray-600">No box selected for RFID scanning.</p>
-            <button onClick={handleBackToDashboard} className="mt-4 px-4 py-2 bg-gray-200 rounded">Back</button>
+          <div className="p-8 text-center text-gray-500">
+            No box selected for RFID scanning.
+            <button onClick={handleBack} className="ml-2 text-teal-600 underline">Back</button>
           </div>
         )
 
       case 'qr-generator':
-        return selectedFormData ? (
-          <QRLabelGenerator 
-            lotId={selectedFormData.lot_id || workflowState.currentLotId || "demo-lot"}
-            boxNumber={selectedFormData.final_box_number || selectedFormData.box_number || "DEMO-BOX-001"}
-            productType={selectedFormData.product_type || "Whole Clam"}
-            grade={selectedFormData.grade || "A"}
-            weight={selectedFormData.weight || 25.5}
-            rfidTagId={selectedFormData.rfid_tag_id || workflowState.rfidTagData?.tag_id}
-            staffId={currentQCStaffId}
-            onLabelGenerated={handleQRLabelGenerated}
-            onClose={handleBackToDashboard}
-            originalBoxNumber={selectedFormData.original_box_number}
-          />
-        ) : (
-          <div className="p-8 text-center">
-            <p className="text-lg text-gray-600">No box selected for label generation.</p>
-            <button onClick={handleBackToDashboard} className="mt-4 px-4 py-2 bg-gray-200 rounded">Back</button>
-          </div>
-        )
-        
-      case 'approval-dashboard':
-        return (
-          <ApprovalDashboard 
-            userRole={getUserRole()}
-            userId={currentQCStaffId}
-            onFormApproved={handleFormApprovedInDashboard}
-            onFormRejected={handleFormRejectedInDashboard}
-            onClose={handleBackToDashboard}
-          />
-        )
-        
-      default:
-        return (
-          <div className="relative">
-            <QCFlowForm 
-              loggedInUser={currentUser?.full_name || QC_STAFF_OPTIONS.find(staff => staff.id === currentQCStaffId)?.name || "QC Staff"}
-              currentLotId={workflowState.currentLotId}
-              supervisorHasCreatedLot={workflowState.supervisorHasCreatedLot}
-              onStepAction={handleStepAction}
-              currentQCStaffId={currentQCStaffId}
-              currentStationId={currentStationId}
+        return scanContext ? (
+          <>
+            {renderSubViewHeader('QR Label Generation')}
+            <QRLabelGenerator
+              lotId={String(scanContext.lot_id)}
+              boxNumber={String(scanContext.box_number)}
+              productType={String(scanContext.product_type)}
+              grade={String(scanContext.grade)}
+              weight={Number(scanContext.weight)}
+              rfidTagId={scanContext.rfid_tag_id ? String(scanContext.rfid_tag_id) : undefined}
+              staffId={currentStaffId}
+              onLabelGenerated={(labelData: QRLabelData) => {
+                alert(`QR Label generated for ${labelData.box_number}`)
+                handleBack()
+              }}
+              onClose={handleBack}
             />
-            
-            {/* Demo Buttons for QC Staff Switching */}
-            <div className="fixed top-6 right-6 z-50">
-              <div className="bg-white p-4 rounded-lg shadow-lg border border-gray-200 space-y-2">
-                <p className="text-sm font-medium text-gray-700 mb-2">Switch QC Staff (Demo):</p>
-                {QC_STAFF_OPTIONS.map((staff) => (
-                  <button
-                    key={staff.id}
-                    onClick={() => {
-                      // Clear cache when switching users to force reload from API
-                      clearStationAssignmentCache()
-                      setCurrentQCStaffId(staff.id)
-                      alert(`Switched to ${staff.name}. Loading station assignments from backend...`)
-                    }}
-                    className={`block w-full text-left px-3 py-2 text-sm rounded ${
-                      currentQCStaffId === staff.id 
-                        ? 'bg-green-100 text-green-800 border border-green-300' 
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300'
-                    }`}
-                  >
-                    <div className="font-medium">{staff.name}</div>
-                    <div className="text-xs text-gray-600">{staff.stations.join(", ")} (demo)</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-            
-            {/* Demo Button for Testing Supervisor Lot Creation */}
-            {workflowState.weightNoteApproved && !workflowState.supervisorHasCreatedLot && (
-              <div className="fixed bottom-6 right-6 z-50">
-                <button
-                  onClick={simulateSupervisorLotCreation}
-                  className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-lg shadow-lg"
-                >
-                  [DEMO] Simulate Supervisor Creates Lot
-                </button>
-              </div>
-            )}
-
-            {/* Demo Buttons for New Form Workflows */}
-            <div className="fixed bottom-6 left-6 z-50 space-y-2">
-              <button
-                onClick={() => setCurrentView('weight-note-new')}
-                className="block w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow-lg text-sm"
-              >
-                [DEMO] Create Weight Note
-              </button>
-              {workflowState.currentLotId && (
-                <>
-                  <button
-                    onClick={() => setCurrentView('sample-extraction')}
-                    className="block w-full bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg shadow-lg text-sm"
-                  >
-                    [DEMO] Test Depuration Workflow
-                  </button>
-                  <button
-                    onClick={() => setCurrentView('ppc-form-new')}
-                    className="block w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-lg text-sm"
-                  >
-                    [DEMO] Create PPC Form
-                  </button>
-                  <button
-                    onClick={() => setCurrentView('fp-form-new')}
-                    className="block w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg shadow-lg text-sm"
-                  >
-                    [DEMO] Create FP Form
-                  </button>
-                  <button
-                    onClick={() => setCurrentView('approval-dashboard')}
-                    className="block w-full bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg shadow-lg text-sm"
-                  >
-                    [DEMO] Approval Dashboard
-                  </button>
-                  <button
-                    onClick={() => {
-                      setSelectedFormData(createPlaceholderData('ppc'))
-                      setCurrentView('rfid-scanner')
-                    }}
-                    className="block w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-lg text-sm"
-                  >
-                    [DEMO] Test RFID Scanner
-                  </button>
-                  <button
-                    onClick={() => {
-                      setSelectedFormData(createPlaceholderData('fp'))
-                      setCurrentView('qr-generator')
-                    }}
-                    className="block w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow-lg text-sm"
-                  >
-                    [DEMO] Test QR Generator
-                  </button>
-                </>
-              )}
-            </div>
+          </>
+        ) : (
+          <div className="p-8 text-center text-gray-500">
+            No box selected for label generation.
+            <button onClick={handleBack} className="ml-2 text-teal-600 underline">Back</button>
           </div>
         )
+
+      default:
+        return null
     }
   }
 
-  return <div className="min-h-screen bg-gray-50">{renderCurrentView()}</div>
+  // ════════════════════════════════════════════════════════
+  // MAIN RENDER
+  // ════════════════════════════════════════════════════════
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {view === 'tracker' && renderLotTracker()}
+      {view === 'lot-detail' && renderLotDetail()}
+      {!['tracker', 'lot-detail'].includes(view) && renderSubView()}
+    </div>
+  )
 }
 
 export default QCFlowDashboard

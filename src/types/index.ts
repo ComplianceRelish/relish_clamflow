@@ -26,8 +26,7 @@ export {
   type WeightNoteData,
   type RFIDTagData,
   type QRLabelData,
-  WORKFLOW_STEPS,
-  QC_STAFF_OPTIONS
+  WORKFLOW_STEPS
 } from './qc-workflow';
 // Note: rfid has RFIDScanResult which may conflict - explicitly select
 export { type RFIDReaderStatus, type RFIDTag } from './rfid';

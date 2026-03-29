@@ -20,6 +20,32 @@ export type QCViewMode =
   | 'approval-dashboard'; // Multi-form approval dashboard
 
 // ============================================
+// PRODUCTION STAFF STATION VIEW MODES
+// ============================================
+
+export type ProductionStationId = 'rm-station' | 'ppc-station' | 'fp-station';
+
+export type ProductionStaffViewMode =
+  | 'station-dashboard'    // Station overview with pending/submitted forms
+  | 'weight-note-entry'    // RM Station: create weight note
+  | 'ppc-form-entry'       // PPC Station: create PPC form
+  | 'fp-form-entry'        // FP Station: create FP form
+  | 'form-history';        // View submitted form history
+
+export interface ProductionStationConfig {
+  id: ProductionStationId;
+  name: string;
+  formType: 'weight_note' | 'ppc_form' | 'fp_form';
+  description: string;
+}
+
+export const PRODUCTION_STATIONS: ProductionStationConfig[] = [
+  { id: 'rm-station', name: 'RM Station', formType: 'weight_note', description: 'Receiving Material — Weight Note Entry' },
+  { id: 'ppc-station', name: 'PPC Station', formType: 'ppc_form', description: 'Pre-Packed Clam — PPC Form Entry' },
+  { id: 'fp-station', name: 'FP Station', formType: 'fp_form', description: 'Frozen Product — FP Form Entry' },
+];
+
+// ============================================
 // WORKFLOW STATE
 // ============================================
 
@@ -40,12 +66,6 @@ export interface QCStaffOption {
   name: string;
   stations: string[];
 }
-
-export const QC_STAFF_OPTIONS: QCStaffOption[] = [
-  { id: "qc_staff_001", name: "John Doe", stations: ["RM Station", "Depuration Station"] },
-  { id: "qc_staff_002", name: "Jane Smith", stations: ["PPC Station", "Separation Station"] },
-  { id: "qc_staff_003", name: "Mike Johnson", stations: ["FP Station"] }
-];
 
 // ============================================
 // WEIGHT NOTE DATA
@@ -261,20 +281,22 @@ export interface WorkflowStep {
 }
 
 export const WORKFLOW_STEPS: WorkflowStep[] = [
-  { step: 1, name: 'Weight Note', station: 'RM Station', description: 'Create weight note for incoming raw material', status: 'available', requiresApproval: true, approvalType: 'qc_staff' },
-  { step: 2, name: 'Lot Creation', station: 'Supervisor', description: 'Supervisor creates lot after QC approval', status: 'locked', requiresApproval: false },
-  { step: 3, name: 'Sample Extraction', station: 'Depuration Station', description: 'Extract sample for depuration testing', status: 'locked', requiresApproval: true, approvalType: 'qc_lead' },
-  { step: 4, name: 'Washing', station: 'PPC - Washing', description: 'Washing process', status: 'locked', requiresApproval: false },
-  { step: 5, name: 'Depuration', station: 'PPC - Depuration', description: 'Depuration in tanks', status: 'locked', requiresApproval: true, approvalType: 'qc_lead' },
-  { step: 6, name: 'Separation', station: 'PPC - Separation', description: 'Steam cooking & meat separation', status: 'locked', requiresApproval: false },
-  { step: 7, name: 'Grading', station: 'PPC - Grading', description: 'Grade sorting', status: 'locked', requiresApproval: false },
-  { step: 8, name: 'Packing', station: 'PPC - Packing', description: 'Pack products into boxes', status: 'locked', requiresApproval: false },
-  { step: 9, name: 'PPC QC Check', station: 'PPC - QC', description: 'QC quality verification', status: 'locked', requiresApproval: true, approvalType: 'qc_staff' },
-  { step: 10, name: 'PPC Form', station: 'PPC Station', description: 'Complete PPC form for boxes', status: 'locked', requiresApproval: true, approvalType: 'production_lead' },
-  { step: 11, name: 'FP Receiving', station: 'FP - Receiving', description: 'RFID scan & verify PPC box', status: 'locked', requiresApproval: false },
-  { step: 12, name: 'FP Processing', station: 'FP - Freezing/Packing', description: 'Freezing & final packing', status: 'locked', requiresApproval: false },
-  { step: 13, name: 'FP Form', station: 'FP Station', description: 'Complete FP form with QR labels', status: 'locked', requiresApproval: true, approvalType: 'qc_lead' },
-  { step: 14, name: 'Cold Storage & Shipping', station: 'FP - Cold Storage', description: 'RFID tracking & dispatch', status: 'locked', requiresApproval: false },
+  // Production Staff enters data at RM, PPC, FP stations. QC Staff approves at station level.
+  // After QC approval, forms route to Production Lead for final action.
+  { step: 1, name: 'Weight Note', station: 'RM Station', description: 'Production Staff enters weight note for incoming raw material', status: 'available', requiresApproval: true, approvalType: 'qc_staff' },
+  { step: 2, name: 'Lot Creation', station: 'Supervisor', description: 'Production Lead creates lot after QC approval of weight note', status: 'locked', requiresApproval: false },
+  { step: 3, name: 'Sample Extraction', station: 'Depuration Station', description: 'QC Staff extracts sample for depuration testing', status: 'locked', requiresApproval: true, approvalType: 'qc_lead' },
+  { step: 4, name: 'Washing', station: 'PPC - Washing', description: 'Production Staff performs washing process', status: 'locked', requiresApproval: false },
+  { step: 5, name: 'Depuration', station: 'PPC - Depuration', description: 'QC Staff monitors depuration in tanks', status: 'locked', requiresApproval: true, approvalType: 'qc_lead' },
+  { step: 6, name: 'Separation', station: 'PPC - Separation', description: 'Production Staff performs steam cooking & meat separation', status: 'locked', requiresApproval: false },
+  { step: 7, name: 'Grading', station: 'PPC - Grading', description: 'Production Staff performs grade sorting', status: 'locked', requiresApproval: false },
+  { step: 8, name: 'Packing', station: 'PPC - Packing', description: 'Production Staff packs products into boxes', status: 'locked', requiresApproval: false },
+  { step: 9, name: 'PPC QC Check', station: 'PPC - QC', description: 'QC Staff quality verification before PPC form', status: 'locked', requiresApproval: true, approvalType: 'qc_staff' },
+  { step: 10, name: 'PPC Form', station: 'PPC Station', description: 'Production Staff completes PPC form, QC approves, then Production Lead approves & generates gate pass', status: 'locked', requiresApproval: true, approvalType: 'production_lead' },
+  { step: 11, name: 'FP Receiving', station: 'FP - Receiving', description: 'RFID scan & verify PPC box at FP intake', status: 'locked', requiresApproval: false },
+  { step: 12, name: 'FP Processing', station: 'FP - Freezing/Packing', description: 'Production Staff performs freezing & final packing', status: 'locked', requiresApproval: false },
+  { step: 13, name: 'FP Form', station: 'FP Station', description: 'Production Staff completes FP form, QC approves, Production Lead approves → inventory (pending microbiology)', status: 'locked', requiresApproval: true, approvalType: 'production_lead' },
+  { step: 14, name: 'Microbiology & Shipping', station: 'QC Lab / Cold Storage', description: 'QC Lead initiates lot-wise sample extraction & microbiology testing (EIC Norms). Tested lots marked Ready for Shipment', status: 'locked', requiresApproval: true, approvalType: 'qc_lead' },
 ];
 
 // ============================================

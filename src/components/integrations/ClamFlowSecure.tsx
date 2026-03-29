@@ -107,14 +107,23 @@ const ClamFlowSecure: React.FC<ClamFlowSecureProps> = ({
   const checkDeviceStatus = async () => {
     if (connectionStatus === 'disconnected') return;
     
-    // Simulate device status check
-    setDevices(prevDevices => 
-      prevDevices.map(device => ({
-        ...device,
-        lastSeen: Math.random() > 0.1 ? new Date().toISOString() : device.lastSeen,
-        status: Math.random() > 0.05 ? 'connected' : 'error',
-      }))
-    );
+    try {
+      // Poll actual device status from the backend
+      const response = await fetch('/api/devices/status');
+      if (response.ok) {
+        const statusData = await response.json();
+        if (Array.isArray(statusData)) {
+          setDevices(prevDevices => 
+            prevDevices.map(device => {
+              const update = statusData.find((d: any) => d.id === device.id);
+              return update ? { ...device, lastSeen: update.lastSeen, status: update.status } : device;
+            })
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Failed to check device status:', error);
+    }
   };
 
   const disconnectHardware = () => {

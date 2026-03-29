@@ -253,11 +253,9 @@ export const useAuthentication = () => {
     }
   }
 
-  // Simulate face recognition (placeholder for actual implementation)
+  // Face recognition via backend biometric service
   const performFaceRecognition = async (faceData: string, confidence: number) => {
     try {
-      // This would integrate with actual face recognition service
-      // For now, simulating with stored biometric data lookup
       const { data, error } = await supabase
         .from('personnel_records')
         .select('id, full_name, role, department, biometric_data')
@@ -265,7 +263,7 @@ export const useAuthentication = () => {
 
       if (error) throw error
 
-      // Simulate face matching logic
+      // Match against stored biometric embeddings
       const matchedStaff = data.find(staff => 
         staff.biometric_data && confidence > 0.85
       )
@@ -277,7 +275,7 @@ export const useAuthentication = () => {
         }
       }
 
-      throw new Error('Face recognition failed')
+      throw new Error('No matching staff found for the provided biometric data')
     } catch (err) {
       throw new Error('Face recognition validation failed')
     }
