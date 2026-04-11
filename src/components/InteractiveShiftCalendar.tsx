@@ -180,13 +180,14 @@ export const InteractiveShiftCalendar: React.FC<ShiftCalendarProps> = ({
         const response = await clamflowAPI.getStaffForScheduler();
         if (response.success && response.data) {
           // Map backend staff data to component format
+          // Note: API response is auto-transformed from snake_case to camelCase
           const mappedStaff: StaffMember[] = response.data.map((person: any) => ({
-            id: person.id || person.person_id || String(Math.random()),
-            name: person.full_name || `${person.first_name || ''} ${person.last_name || ''}`.trim() || 'Unknown',
+            id: person.id || person.personId || String(Math.random()),
+            name: person.fullName || person.full_name || `${person.firstName || person.first_name || ''} ${person.lastName || person.last_name || ''}`.trim() || 'Unknown',
             role: mapRoleToType(person.role || person.designation || ''),
             department: mapDepartment(person.department || person.plant),
-            avatar: person.face_image_url || undefined,
-            isAvailable: person.is_active !== false && person.status !== 'inactive',
+            avatar: person.faceImageUrl || undefined,
+            isAvailable: person.isActive !== false && person.status !== 'inactive',
             skills: person.skills || person.certifications || []
           }));
           setStaffData(mappedStaff);
@@ -195,12 +196,12 @@ export const InteractiveShiftCalendar: React.FC<ShiftCalendarProps> = ({
           const fallbackResponse = await clamflowAPI.getStaff();
           if (fallbackResponse.success && fallbackResponse.data) {
             const mappedStaff: StaffMember[] = fallbackResponse.data.map((person: any) => ({
-              id: person.id || person.person_id || String(Math.random()),
-              name: person.full_name || `${person.first_name || ''} ${person.last_name || ''}`.trim() || 'Unknown',
+              id: person.id || person.personId || String(Math.random()),
+              name: person.fullName || person.full_name || `${person.firstName || person.first_name || ''} ${person.lastName || person.last_name || ''}`.trim() || 'Unknown',
               role: mapRoleToType(person.role || person.designation || ''),
               department: mapDepartment(person.department),
-              avatar: person.face_image_url || undefined,
-              isAvailable: person.is_active !== false && person.status !== 'inactive',
+              avatar: person.faceImageUrl || undefined,
+              isAvailable: person.isActive !== false && person.status !== 'inactive',
               skills: person.skills || person.certifications || []
             }));
             setStaffData(mappedStaff);
