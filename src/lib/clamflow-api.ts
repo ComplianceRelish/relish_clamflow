@@ -464,17 +464,17 @@ class ClamFlowAPI {
     return this.delete(`/api/users/${userId}`);
   }
 
-  // FORMS - Backend: /weight-notes/
+  // FORMS - Backend: /api/weight-notes/
   async getWeightNotes(): Promise<ApiResponse<WeightNoteFormData[]>> {
-    return this.get('/weight-notes/');
+    return this.get('/api/weight-notes/');
   }
 
   async createWeightNote(formData: WeightNoteFormData): Promise<ApiResponse<WeightNoteFormData>> {
-    return this.post('/weight-notes/', formData);
+    return this.post('/api/weight-notes/', formData);
   }
 
   async approveWeightNote(noteId: string): Promise<ApiResponse<WeightNoteFormData>> {
-    return this.put(`/weight-notes/${noteId}`);
+    return this.put(`/api/weight-notes/${noteId}`);
   }
 
   // DASHBOARD - Updated to match backend

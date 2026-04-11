@@ -29,8 +29,8 @@ export interface WeightNoteFilters extends BaseFilters {
 }
 
 export class WeightNoteService {
-  // Backend: /weight-notes/ (not /api/weight-notes)
-  private baseUrl = '/weight-notes';
+  // Backend: /api/weight-notes/
+  private baseUrl = '/api/weight-notes';
 
   async create(data: Omit<WeightNote, 'id' | 'created_at' | 'updated_at'>): Promise<WeightNote> {
     try {
