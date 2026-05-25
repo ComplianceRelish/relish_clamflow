@@ -440,88 +440,26 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
     setAadharNumber(formatted);
   };
 
-  const sendAadharOtp = async () => {
+  // Admin manually confirms the Aadhar number after physically checking the document.
+  // Backend does not expose an Aadhar OTP endpoint; verification is admin-attested.
+  const confirmAadhar = () => {
     const cleaned = aadharNumber.replace(/\s/g, '');
     if (cleaned.length !== 12) {
       setOnboardingError('Please enter a valid 12-digit Aadhar number');
       return;
     }
-    
-    setAadharVerifying(true);
     setOnboardingError(null);
-    
-    try {
-      const response = await fetch(`${API_BASE_URL}/aadhar/send-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ aadhar_number: cleaned })
-      });
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        setAadharOtpSent(true);
-        setOnboardingSuccess('OTP sent to registered mobile number');
-      } else {
-        setOnboardingError(result.message || 'Failed to send OTP');
-      }
-    } catch (err: unknown) {
-      console.error('Aadhar OTP API Error:', err);
-      setOnboardingError('Aadhar verification service temporarily unavailable. Please try again.');
-    } finally {
-      setAadharVerifying(false);
+    setAadharVerified(true);
+    setOnboardingSuccess('Aadhar number confirmed.');
+    if (onboardingUser) {
+      setUsers(prev => prev.map(u =>
+        u.id === onboardingUser.id ? { ...u, aadhar_verified: true } : u
+      ));
     }
-  };
-
-  const verifyAadharOtp = async () => {
-    if (aadharOtp.length !== 6) {
-      setOnboardingError('Please enter the 6-digit OTP');
-      return;
-    }
-    
-    setAadharVerifying(true);
-    setOnboardingError(null);
-    
-    try {
-      const cleaned = aadharNumber.replace(/\s/g, '');
-      const response = await fetch(`${API_BASE_URL}/aadhar/verify-otp`, {
-        method: 'POST',
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json' 
-        },
-        body: JSON.stringify({ 
-          aadhar_number: cleaned,
-          otp: aadharOtp,
-          user_id: onboardingUser?.id
-        })
-      });
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        setAadharVerified(true);
-        setOnboardingSuccess('Aadhar verified successfully!');
-        // Update user in list
-        if (onboardingUser) {
-          setUsers(prev => prev.map(u => 
-            u.id === onboardingUser.id ? { ...u, aadhar_verified: true } : u
-          ));
-        }
-        // Move to face registration
-        setTimeout(() => {
-          setOnboardingStep('face');
-          setOnboardingSuccess(null);
-        }, 1500);
-      } else {
-        setOnboardingError(result.message || 'Invalid OTP. Please try again.');
-      }
-    } catch (err: unknown) {
-      console.error('Aadhar OTP Verification Error:', err);
-      setOnboardingError('Verification failed. Please try again.');
-    } finally {
-      setAadharVerifying(false);
-    }
+    setTimeout(() => {
+      setOnboardingStep('face');
+      setOnboardingSuccess(null);
+    }, 1200);
   };
 
   const startCamera = async () => {
@@ -1035,64 +973,28 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
                     <CreditCard className="w-5 h-5 text-blue-600" />
                     Aadhar Verification
                   </h3>
-                  
-                  {!aadharOtpSent ? (
-                    <div className="space-y-3">
-                      <div>
-                        <Label htmlFor="aadhar">Aadhar Number *</Label>
-                        <Input
-                          id="aadhar"
-                          value={aadharNumber}
-                          onChange={handleAadharChange}
-                          placeholder="XXXX XXXX XXXX"
-                          maxLength={14}
-                          className="font-mono text-lg"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">Enter 12-digit Aadhar number</p>
-                      </div>
-                      <Button
-                        onClick={sendAadharOtp}
-                        disabled={aadharVerifying || aadharNumber.replace(/\s/g, '').length !== 12}
-                        className="w-full bg-blue-600 hover:bg-blue-700"
-                      >
-                        {aadharVerifying ? 'Sending OTP...' : 'Send OTP'}
-                      </Button>
+                  <p className="text-xs text-gray-500">Enter the 12-digit Aadhar number after physically verifying the document.</p>
+                  <div className="space-y-3">
+                    <div>
+                      <Label htmlFor="aadhar">Aadhar Number *</Label>
+                      <Input
+                        id="aadhar"
+                        value={aadharNumber}
+                        onChange={handleAadharChange}
+                        placeholder="XXXX XXXX XXXX"
+                        maxLength={14}
+                        className="font-mono text-lg"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Enter 12-digit Aadhar number</p>
                     </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <div>
-                        <Label htmlFor="otp">Enter OTP *</Label>
-                        <Input
-                          id="otp"
-                          value={aadharOtp}
-                          onChange={(e) => setAadharOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                          placeholder="Enter 6-digit OTP"
-                          maxLength={6}
-                          className="font-mono text-lg text-center tracking-widest"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">OTP sent to registered mobile number</p>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          onClick={() => {
-                            setAadharOtpSent(false);
-                            setAadharOtp('');
-                          }}
-                          className="flex-1"
-                        >
-                          Back
-                        </Button>
-                        <Button
-                          onClick={verifyAadharOtp}
-                          disabled={aadharVerifying || aadharOtp.length !== 6}
-                          className="flex-1 bg-blue-600 hover:bg-blue-700"
-                        >
-                          {aadharVerifying ? 'Verifying...' : 'Verify OTP'}
-                        </Button>
-                      </div>
-                    </div>
-                  )}
+                    <Button
+                      onClick={confirmAadhar}
+                      disabled={aadharNumber.replace(/\s/g, '').length !== 12}
+                      className="w-full bg-blue-600 hover:bg-blue-700"
+                    >
+                      Confirm Aadhar
+                    </Button>
+                  </div>
                 </div>
               )}
 

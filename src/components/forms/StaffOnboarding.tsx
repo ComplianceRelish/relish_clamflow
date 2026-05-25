@@ -191,94 +191,26 @@ const StaffOnboarding: React.FC = () => {
     setAadharNumber(formatted);
   };
 
-  const sendAadharOtp = async () => {
+  // Backend does not expose an Aadhar OTP endpoint.
+  // The number is recorded as entered; verification is attestation-based.
+  const confirmAadhar = () => {
     const cleaned = aadharNumber.replace(/\s/g, '');
     if (!validateAadharNumber(cleaned)) {
       setError('Please enter a valid 12-digit Aadhar number');
       return;
     }
-    
-    setAadharVerifying(true);
     setError(null);
-    
-    try {
-      // API call to send OTP - Backend: POST /api/aadhar/send-otp
-      const response = await fetch(`${API_BASE_URL}/aadhar/send-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ aadhar_number: cleaned })
-      });
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        setAadharOtpSent(true);
-        setSuccess('OTP sent to registered mobile number');
-      } else {
-        setError(result.message || 'Failed to send OTP');
+    setAadharVerified(true);
+    setFormData(prev => ({
+      ...prev,
+      aadhar_details: {
+        aadhar_number: cleaned,
+        verified: true,
+        verified_at: new Date().toISOString(),
+        verification_method: 'manual'
       }
-    } catch (err: any) {
-      // Check if offline - need internet to reach backend API (OTP is sent via SMS)
-      if (!navigator.onLine) {
-        setError('Cannot connect to server. Please check your internet connection to initiate Aadhar verification.');
-      } else {
-        console.error('Aadhar OTP API Error:', err);
-        setError(err.message || 'Aadhar verification service temporarily unavailable. Please try again.');
-      }
-    } finally {
-      setAadharVerifying(false);
-    }
-  };
-
-  const verifyAadharOtp = async () => {
-    if (aadharOtp.length !== 6) {
-      setError('Please enter the 6-digit OTP');
-      return;
-    }
-    
-    setAadharVerifying(true);
-    setError(null);
-    
-    try {
-      // API call to verify OTP - Backend: POST /api/aadhar/verify-otp
-      const cleaned = aadharNumber.replace(/\s/g, '');
-      const response = await fetch(`${API_BASE_URL}/aadhar/verify-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          aadhar_number: cleaned,
-          otp: aadharOtp 
-        })
-      });
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        setAadharVerified(true);
-        setFormData(prev => ({
-          ...prev,
-          aadhar_details: {
-            aadhar_number: cleaned,
-            verified: true,
-            verified_at: new Date().toISOString(),
-            verification_method: 'otp'
-          }
-        }));
-        setSuccess('Aadhar verified successfully!');
-      } else {
-        setError(result.message || 'Invalid OTP. Please try again.');
-      }
-    } catch (err: any) {
-      // Need internet to verify OTP with backend
-      if (!navigator.onLine) {
-        setError('Cannot connect to server. Please check your internet connection to verify OTP.');
-      } else {
-        console.error('Aadhar OTP Verification Error:', err);
-        setError(err.message || 'Invalid OTP or verification service temporarily unavailable. Please try again.');
-      }
-    } finally {
-      setAadharVerifying(false);
-    }
+    }));
+    setSuccess('Aadhar number confirmed.');
   };
 
   // ============================================
@@ -944,48 +876,15 @@ const StaffOnboarding: React.FC = () => {
                         />
                       </div>
 
-                      {!aadharVerified && !aadharOtpSent && (
+                      {!aadharVerified && (
                         <button
                           type="button"
-                          onClick={sendAadharOtp}
-                          disabled={aadharVerifying || !validateAadharNumber(aadharNumber.replace(/\s/g, ''))}
+                          onClick={confirmAadhar}
+                          disabled={!validateAadharNumber(aadharNumber.replace(/\s/g, ''))}
                           className="w-full px-4 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          {aadharVerifying ? '⏳ Sending OTP...' : '📱 Send OTP to Registered Mobile'}
+                          ✅ Confirm Aadhar Number
                         </button>
-                      )}
-
-                      {aadharOtpSent && !aadharVerified && (
-                        <div className="space-y-3">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Enter OTP
-                            </label>
-                            <input
-                              type="text"
-                              value={aadharOtp}
-                              onChange={(e) => setAadharOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                              maxLength={6}
-                              className="w-full px-4 py-3 text-2xl tracking-[1em] text-center border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-                              placeholder="● ● ● ● ● ●"
-                            />
-                          </div>
-                          <button
-                            type="button"
-                            onClick={verifyAadharOtp}
-                            disabled={aadharVerifying || aadharOtp.length !== 6}
-                            className="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
-                          >
-                            {aadharVerifying ? '⏳ Verifying...' : '✅ Verify OTP'}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={sendAadharOtp}
-                            className="w-full text-sm text-orange-600 hover:underline"
-                          >
-                            Resend OTP
-                          </button>
-                        </div>
                       )}
 
                       {aadharVerified && (
