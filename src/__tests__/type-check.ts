@@ -21,6 +21,7 @@ const testRole: UserRole = 'QC Staff';
 const validRoles: UserRole[] = [
   'Super Admin',
   'Admin',
+  'IT Staff',
   'Staff Lead',
   'Production Lead',
   'Production Staff',

@@ -108,21 +108,27 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const roles = [
+    'IT Staff',
     'Production Lead',
     'QC Lead',
     'Staff Lead',
     'QC Staff',
     'Production Staff',
-    'Security Guard'
+    'Maintenance Staff',
+    'Security Guard',
+    'Gate Staff',
   ];
 
   const USERNAME_PREFIXES: { [key: string]: string } = {
-    'Production Lead': 'PL',
-    'QC Lead': 'QA',
-    'Staff Lead': 'SL',
-    'QC Staff': 'QC',
+    'IT Staff':         'IT',
+    'Production Lead':  'PL',
+    'QC Lead':          'QL',
+    'Staff Lead':       'SL',
+    'QC Staff':         'QA',
     'Production Staff': 'PS',
-    'Security Guard': 'SG'
+    'Maintenance Staff':'MT',
+    'Security Guard':   'SG',
+    'Gate Staff':       'GS',
   };
 
   const getRolePrefix = (role: string): string => {
@@ -621,6 +627,7 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
     switch (role) {
       case 'Super Admin': return 'destructive';
       case 'Admin': return 'default';
+      case 'IT Staff': return 'secondary';
       case 'QC Lead': return 'secondary';
       default: return 'outline';
     }

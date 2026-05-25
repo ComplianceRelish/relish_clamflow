@@ -39,7 +39,7 @@ export interface BaseEntity {
 }
 
 // User role type definition - EXACT schema values
-export type UserRole = 'Super Admin' | 'Admin' | 'Production Lead' | 'QC Lead' | 'Staff Lead' | 'QC Staff' | 'Production Staff' | 'Maintenance Staff' | 'Security Guard' | 'Gate Staff';
+export type UserRole = 'Super Admin' | 'Admin' | 'IT Staff' | 'Production Lead' | 'QC Lead' | 'Staff Lead' | 'QC Staff' | 'Production Staff' | 'Maintenance Staff' | 'Security Guard' | 'Gate Staff';
 
 export interface BiometricAuthRequest {
   type: 'fingerprint' | 'facial' | 'iris';

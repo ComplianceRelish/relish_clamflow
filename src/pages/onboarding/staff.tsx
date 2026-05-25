@@ -53,6 +53,7 @@ export default function StaffOnboardingPage() {
   const designationOptions = [
     { value: 'Super Admin', label: 'Super Admin' },
     { value: 'Admin', label: 'Admin' },
+    { value: 'IT Staff', label: 'IT Staff' },
     { value: 'Production Lead', label: 'Production Lead' },
     { value: 'Staff Lead', label: 'Staff Lead' },
     { value: 'QC Lead', label: 'QC Lead' },
