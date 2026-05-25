@@ -86,56 +86,32 @@ export const FaceCapture: React.FC<FaceCaptureProps> = ({
       const imageData = canvas.toDataURL('image/jpeg', 0.8);
 
       if (mode === 'attendance') {
-        // Send to backend for authentication
-        const response = await fetch(`${API_BASE_URL}/biometric/authenticate-face`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            face_data: imageData,
-            capture_method: `${deviceType}_camera`,
-            timestamp: new Date().toISOString()
-          })
+        // Convert canvas to Blob for multipart upload
+        const blob = await new Promise<Blob>((resolve, reject) => {
+          canvas.toBlob((b) => b ? resolve(b) : reject(new Error('Canvas toBlob failed')), 'image/jpeg', 0.8);
         });
 
-        const result = await response.json();
+        const formData = new FormData();
+        formData.append('image', blob, 'capture.jpg');
+        formData.append('location', 'main_gate');
 
-        // Handle authenticated: false (200 OK with no match)
-        if (!result.authenticated) {
-          setError(result.message || 'Face not recognized. Please try again or request an override from Production Lead.');
-          onError?.(result.message || 'Face not recognized');
-          return;
-        }
+        const token = localStorage.getItem('clamflow_token');
+        const attendanceRes = await fetch(`${API_BASE_URL}/api/attendance/log`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: formData,
+        });
 
-        if (result.authenticated) {
-          // Record attendance - Backend: /api/attendance/log (POST)
-          // Now returns 201 with { success, person, method, timestamp }
-          const token = localStorage.getItem('clamflow_token');
-          const attendanceRes = await fetch(`${API_BASE_URL}/api/attendance/log`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              person_id: result.person_id,
-              method: 'face',
-              device_type: deviceType
-            })
-          });
-
-          // Accept 201 Created (new) or 200 OK
-          if (attendanceRes.status === 201 || attendanceRes.status === 200) {
-            const attendanceData = await attendanceRes.json();
-            onCapture?.(imageData, {
-              ...result,
-              attendance: attendanceData,
-              method: attendanceData.method || 'face',
-            });
-          } else if (attendanceRes.status === 401) {
-            setError('Authentication failed via RFID and face. Request override from Production Lead or Staff Lead.');
-          } else {
-            setError('Failed to record attendance');
-          }
+        if (attendanceRes.status === 200 || attendanceRes.status === 201) {
+          const attendanceData = await attendanceRes.json();
+          onCapture?.(imageData, attendanceData);
+        } else if (attendanceRes.status === 401) {
+          setError('Authentication failed. Please request a supervisor override from Production Lead or Staff Lead.');
+          onError?.('Authentication failed — supervisor override required');
+        } else {
+          const errBody = await attendanceRes.json().catch(() => ({}));
+          setError(errBody.detail || 'Failed to record attendance');
+          onError?.(errBody.detail || 'Failed to record attendance');
         }
       } else {
         // Registration mode

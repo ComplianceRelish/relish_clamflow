@@ -58,7 +58,9 @@ export default function StaffOnboardingPage() {
     { value: 'QC Lead', label: 'QC Lead' },
     { value: 'QC Staff', label: 'QC Staff' },
     { value: 'Production Staff', label: 'Production Staff' },
+    { value: 'Maintenance Staff', label: 'Maintenance Staff' },
     { value: 'Security Guard', label: 'Security Guard' },
+    { value: 'Gate Staff', label: 'Gate Staff' },
   ];
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {

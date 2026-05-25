@@ -243,6 +243,104 @@ interface AdminFormData {
   contact_number?: string;
 }
 
+// ============================================
+// VISITOR PASS INTERFACES
+// ============================================
+
+export interface VisitorRegisterRequest {
+  name: string;
+  phone?: string;
+  purpose?: string;
+  host_staff_id?: string;
+  valid_hours?: number;
+  face_embedding?: number[]; // 512 floats, generated client-side via face-api.js ArcFace model
+}
+
+export interface VisitorPassResponse {
+  id: string;
+  name: string;
+  phone?: string;
+  purpose?: string;
+  host_staff_id?: string;
+  pass_token: string;
+  valid_from: string;
+  valid_until: string;
+  status: 'active' | 'expired' | 'revoked';
+  photo_url?: string;
+  created_at: string;
+}
+
+export interface VisitorVerifyRequest {
+  face_embedding: number[]; // 512 floats — required
+  gate?: string;
+}
+
+export interface VisitorVerifyResponse {
+  matched: boolean;
+  confidence: number | null;
+  visitor: VisitorPassResponse | null;
+  event_id: string | null;
+  message: string;
+}
+
+export interface VisitorScanResponse {
+  visitor: VisitorPassResponse;
+  is_valid: boolean;
+  events: Array<{
+    id: string;
+    event_type: string;
+    gate: string | null;
+    matched: boolean | null;
+    confidence: number | null;
+    notes: string | null;
+    created_at: string;
+  }>;
+}
+
+export interface VisitorListItem {
+  id: string;
+  name: string;
+  phone?: string;
+  purpose?: string;
+  status: 'active' | 'expired' | 'revoked';
+  valid_from: string;
+  valid_until: string;
+  pass_token: string;
+  event_count: number;
+}
+
+export interface AttendanceMonitorEntry {
+  person_id: string;
+  full_name: string;
+  role: string;
+  last_seen_method: 'face' | 'rfid' | 'override';
+  last_seen_at: string;
+  location: string;
+}
+
+// ============================================
+// WEBSOCKET EVENT TYPES
+// ============================================
+
+export interface CameraDetectionEvent {
+  detected: boolean;
+  subject_type: 'staff' | 'visitor';
+  person?: { id: string; full_name: string; role: string };
+  visitor?: { id: string; name: string; pass_token: string; valid_until: string };
+  confidence: number;
+  location: string;
+  timestamp: string;
+}
+
+export interface AttendanceWsEvent {
+  person_id: string;
+  full_name: string;
+  role: string;
+  method: 'face' | 'rfid' | 'override';
+  location: string;
+  timestamp: string;
+}
+
 class ClamFlowAPI {
   private baseURL: string;
   private token: string | null = null;
@@ -834,6 +932,18 @@ class ClamFlowAPI {
     return this.get('/api/gate/checkpoints');
   }
 
+  async recordGateEntry(rfidTags: string[], timestamp?: string): Promise<ApiResponse<unknown>> {
+    return this.post('/api/gate/vehicle-entry', { rfid_tags: rfidTags, ...(timestamp ? { timestamp } : {}) });
+  }
+
+  async recordGateExit(rfidTags: string[], timestamp?: string): Promise<ApiResponse<unknown>> {
+    return this.post('/api/gate/vehicle-exit', { rfid_tags: rfidTags, ...(timestamp ? { timestamp } : {}) });
+  }
+
+  async getBoxTally(): Promise<ApiResponse<unknown>> {
+    return this.get('/api/gate/inside-vehicles');
+  }
+
   // SECURITY & SURVEILLANCE
   async getSecurityCameras(): Promise<ApiResponse<Camera[]>> {
     return this.get('/api/security/cameras');
@@ -1107,7 +1217,61 @@ class ClamFlowAPI {
     console.warn('DEPRECATED: createQCForm() - QC forms are not created directly. Use approval endpoints.');
     return { success: false, error: 'QC forms are not created directly. Use approval endpoints.' };
   }
+
+  // ============================================
+  // VISITOR PASS API
+  // ============================================
+
+  async registerVisitor(data: VisitorRegisterRequest): Promise<ApiResponse<VisitorPassResponse>> {
+    return this.post('/api/visitors/register', data);
+  }
+
+  async verifyVisitorFace(data: VisitorVerifyRequest): Promise<ApiResponse<VisitorVerifyResponse>> {
+    return this.post('/api/visitors/verify', data);
+  }
+
+  async scanVisitorPass(passToken: string): Promise<ApiResponse<VisitorScanResponse>> {
+    return this.get(`/api/visitors/${encodeURIComponent(passToken)}`);
+  }
+
+  async listVisitors(params?: {
+    status?: 'active' | 'expired' | 'revoked';
+    limit?: number;
+    offset?: number;
+  }): Promise<ApiResponse<VisitorListItem[]>> {
+    const query = new URLSearchParams();
+    if (params?.status) query.set('status', params.status);
+    if (params?.limit !== undefined) query.set('limit', String(params.limit));
+    if (params?.offset !== undefined) query.set('offset', String(params.offset));
+    const qs = query.toString();
+    return this.get(`/api/visitors/list${qs ? `?${qs}` : ''}`);
+  }
+
+  async logVisitorExit(passToken: string, gate?: string): Promise<ApiResponse<unknown>> {
+    const qs = gate ? `?gate=${encodeURIComponent(gate)}` : '';
+    return this.post(`/api/visitors/${encodeURIComponent(passToken)}/exit${qs}`, {});
+  }
+
+  async revokeVisitorPass(passToken: string): Promise<ApiResponse<{ message: string; visitor_id: string }>> {
+    return this.post(`/api/visitors/${encodeURIComponent(passToken)}/revoke`, {});
+  }
+
+  // ============================================
+  // ATTENDANCE API
+  // ============================================
+
+  async getAttendanceMonitor(): Promise<ApiResponse<AttendanceMonitorEntry[]>> {
+    return this.get('/api/attendance/monitor');
+  }
+
+  async supervisorOverride(personId: string, reason?: string, location?: string): Promise<ApiResponse<unknown>> {
+    const params = new URLSearchParams({ person_id: personId });
+    if (reason) params.set('reason', reason);
+    if (location) params.set('location', location);
+    return this.post(`/api/attendance/override?${params.toString()}`, {});
+  }
 }
+
 
 // ============================================
 // QC WORKFLOW INTERFACES
@@ -1322,7 +1486,7 @@ export function canAccessModule(userRole: string, module: string): boolean {
     'production_forms': ["Super Admin", "Admin", "Production Lead", "Production Staff"],
     'quality_control': ["Super Admin", "Admin", "Production Lead", "QC Lead", "QC Staff"],
     'hr_management': ["Super Admin", "Admin", "Staff Lead"],
-    'gate_control': ["Super Admin", "Admin", "Production Lead", "Security Guard"],
+    'gate_control': ["Super Admin", "Admin", "Production Lead", "Security Guard", "Gate Staff"],
     'qc_workflow': ["Super Admin", "Admin", "QC Lead", "QC Staff"],
     'approval_dashboard': ["Super Admin", "Admin", "Production Lead", "QC Lead"],
     'dashboard': ["Super Admin", "Admin", "Staff Lead"],

@@ -127,7 +127,14 @@ export const ProductionAccess: React.FC<{ children: React.ReactNode; fallback?: 
 );
 
 export const SecurityAccess: React.FC<{ children: React.ReactNode; fallback?: React.ReactNode }> = ({ children, fallback }) => (
-  <RoleBasedAccess allowedRoles={['Super Admin', 'Admin', 'Staff Lead', 'Security Guard']} fallback={fallback}>
+  <RoleBasedAccess allowedRoles={['Super Admin', 'Admin', 'Staff Lead', 'Security Guard', 'Gate Staff']} fallback={fallback}>
+    {children}
+  </RoleBasedAccess>
+);
+
+// IT Staff Access — Hardware & Network Management
+export const ITStaffAccess: React.FC<{ children: React.ReactNode; fallback?: React.ReactNode }> = ({ children, fallback }) => (
+  <RoleBasedAccess allowedRoles={['Super Admin', 'Admin', 'IT Staff']} fallback={fallback}>
     {children}
   </RoleBasedAccess>
 );

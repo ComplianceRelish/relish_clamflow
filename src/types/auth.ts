@@ -4,12 +4,15 @@
 export type UserRole = 
   | 'Super Admin'
   | 'Admin'
+  | 'IT Staff'
   | 'Production Lead'
   | 'QC Lead'
   | 'Staff Lead'
   | 'QC Staff'
   | 'Production Staff'
-  | 'Security Guard';
+  | 'Maintenance Staff'
+  | 'Security Guard'
+  | 'Gate Staff';
 
 export interface User {
   id: string;
@@ -48,24 +51,30 @@ export interface AuthContextType {
 export const ROLE_DISPLAY_NAMES: Record<UserRole, string> = {
   'Super Admin': 'Super Admin',
   'Admin': 'Administrator',
+  'IT Staff': 'IT Staff',
   'Production Lead': 'Production Lead',
   'QC Lead': 'QC Lead',
   'Staff Lead': 'Staff Lead',
   'QC Staff': 'QC Staff',
   'Production Staff': 'Production Staff',
+  'Maintenance Staff': 'Maintenance Staff',
   'Security Guard': 'Security Guard',
+  'Gate Staff': 'Gate Staff',
 };
 
 // Role Hierarchy (for permission checking)
 export const ROLE_HIERARCHY: Record<UserRole, number> = {
   'Super Admin': 100,
   'Admin': 10,
+  'IT Staff': 7,
   'Production Lead': 6,
   'QC Lead': 6,
   'Staff Lead': 5,
   'QC Staff': 4,
   'Production Staff': 3,
+  'Maintenance Staff': 2,
   'Security Guard': 2,
+  'Gate Staff': 1,
 };
 
 // Helper function to check if user has required role level
@@ -100,6 +109,14 @@ export type Permission =
   | 'RFID_BATCH_SCAN'
   | 'RFID_CONTINUOUS_SCAN'
   | 'DEVICE_RFID_HANDOVER'      // Link RFID device to station staff
+
+  // Device & Network Management (IT Staff)
+  | 'DEVICE_VIEW'               // View full device registry (all 14 device types)
+  | 'DEVICE_REGISTER'           // Register a new device into the system
+  | 'DEVICE_CONFIGURE'          // Edit device settings / IP / location
+  | 'DEVICE_DEREGISTER'         // Remove / decommission a device
+  | 'NETWORK_VIEW'              // View network topology (Switch, Gateway status)
+  | 'NETWORK_CONFIGURE'         // Configure Network Switch / Gateway settings
   
   // User & Staff Management
   | 'USER_VIEW'
@@ -163,7 +180,15 @@ export type Permission =
   | 'GATE_PASS_VIEW'
   | 'GATE_PASS_GENERATE'        // Generate Gate Pass after PPC approval
   | 'GATE_PASS_VERIFY'          // Verify Gate Pass (Security)
-  
+
+  // Visitor Pass System
+  | 'VISITOR_PASS_REGISTER'     // Register visitor & issue pass
+  | 'VISITOR_PASS_VERIFY'       // Face-verify visitor at gate
+  | 'VISITOR_PASS_SCAN'         // Scan QR pass token
+  | 'VISITOR_PASS_EXIT'         // Log visitor exit
+  | 'VISITOR_PASS_REVOKE'       // Revoke a visitor pass
+  | 'VISITOR_PASS_VIEW'         // View visitor log/list
+
   // Reports & Analytics
   | 'VIEW_REPORTS'
   | 'VIEW_PRODUCTION_REPORTS'
@@ -196,6 +221,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'STATION_ASSIGN_PRODUCTION', 'STATION_ASSIGN_QC', 'STATION_ASSIGN_ALL',
     // All Lot & Inventory
     'LOT_VIEW', 'LOT_CREATE', 'INVENTORY_VIEW', 'INVENTORY_MANAGE',
+    // All Visitor Pass
+    'VISITOR_PASS_REGISTER', 'VISITOR_PASS_VERIFY', 'VISITOR_PASS_SCAN',
+    'VISITOR_PASS_EXIT', 'VISITOR_PASS_REVOKE', 'VISITOR_PASS_VIEW',
     // All Form Approvals
     'WEIGHTNOTE_VIEW', 'WEIGHTNOTE_CREATE', 'WEIGHTNOTE_APPROVE',
     'PPC_FORM_VIEW', 'PPC_FORM_CREATE', 'PPC_FORM_SUBMIT', 'PPC_FORM_APPROVE',
@@ -220,6 +248,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'STAFF_MANAGE_ABSENCE', 'STAFF_ACCESS_CONTROL',
     'SHIFT_VIEW', 'SHIFT_SCHEDULE_ALL', 'STATION_ASSIGN_ALL',
     'LOT_VIEW', 'LOT_CREATE', 'INVENTORY_VIEW', 'INVENTORY_MANAGE',
+    'VISITOR_PASS_REGISTER', 'VISITOR_PASS_VERIFY', 'VISITOR_PASS_SCAN',
+    'VISITOR_PASS_EXIT', 'VISITOR_PASS_REVOKE', 'VISITOR_PASS_VIEW',
     'WEIGHTNOTE_VIEW', 'WEIGHTNOTE_APPROVE',
     'PPC_FORM_VIEW', 'PPC_FORM_APPROVE',
     'FP_FORM_VIEW', 'FP_FORM_APPROVE',
@@ -355,6 +385,12 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'STAFF_MANAGE_ABSENCE',       // Manage absences for non-production/QC staff
     'VIEW_REPORTS',
     'GATE_PASS_VIEW',             // View gate passes for coordination
+    'VISITOR_PASS_REGISTER',
+    'VISITOR_PASS_VERIFY',
+    'VISITOR_PASS_SCAN',
+    'VISITOR_PASS_EXIT',
+    'VISITOR_PASS_REVOKE',
+    'VISITOR_PASS_VIEW',
   ],
 
   // ============================================
@@ -410,6 +446,40 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   ],
 
   // ============================================
+  // IT STAFF - Hardware & Network Management
+  // ============================================
+  // Responsibilities:
+  // 1. Register, configure, and decommission all device types
+  //    (RFID Reader, Camera, Biometric Scanner, Network Switch,
+  //     Gateway, Scale, Printer, Tablet, PLC, Barcode Scanner,
+  //     Temperature Sensor, pH Meter, Environmental Sensor)
+  // 2. RFID device handover to station staff
+  // 3. System health diagnostics & audit log review
+  // 4. Network configuration (switches, gateways)
+  // ============================================
+  'IT Staff': [
+    // RFID
+    'RFID_READ', 'RFID_SCAN', 'RFID_BATCH_SCAN', 'DEVICE_RFID_HANDOVER',
+    // Device registry — all 14 device types
+    'DEVICE_VIEW', 'DEVICE_REGISTER', 'DEVICE_CONFIGURE', 'DEVICE_DEREGISTER',
+    // Network (Switch, Gateway)
+    'NETWORK_VIEW', 'NETWORK_CONFIGURE',
+    // System & Audit (diagnostics)
+    'SYSTEM_SETTINGS', 'AUDIT_VIEW',
+    // Reports (read-only, for fault diagnosis)
+    'VIEW_REPORTS',
+  ],
+
+  // ============================================
+  // MAINTENANCE STAFF - Equipment Maintenance
+  // ============================================
+  'Maintenance Staff': [
+    'RFID_READ',
+    'SHIFT_VIEW',
+    'VIEW_REPORTS',
+  ],
+
+  // ============================================
   // SECURITY GUARD - Gate & Access Control
   // ============================================
   'Security Guard': [
@@ -417,6 +487,26 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'GATE_PASS_VIEW',
     'GATE_PASS_VERIFY',           // Verify gate passes at checkpoints
     'SHIFT_VIEW',
+    'VISITOR_PASS_REGISTER',
+    'VISITOR_PASS_VERIFY',
+    'VISITOR_PASS_SCAN',
+    'VISITOR_PASS_EXIT',
+    'VISITOR_PASS_VIEW',
+  ],
+
+  // ============================================
+  // GATE STAFF - Visitor Pass Operations (subset of Security Guard)
+  // ============================================
+  'Gate Staff': [
+    'RFID_READ',
+    'GATE_PASS_VIEW',
+    'GATE_PASS_VERIFY',
+    'SHIFT_VIEW',
+    'VISITOR_PASS_REGISTER',
+    'VISITOR_PASS_VERIFY',
+    'VISITOR_PASS_SCAN',
+    'VISITOR_PASS_EXIT',
+    'VISITOR_PASS_VIEW',
   ],
 };
 

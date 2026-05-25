@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import Header from '@/components/layout/Header';
 import SuperAdminDashboard from '@/components/dashboards/SuperAdminDashboard';
 import AdminDashboard from '@/components/dashboards/AdminDashboard';
+import ITStaffDashboard from '@/components/dashboards/ITStaffDashboard';
 import StaffLeadDashboard from '@/components/dashboards/StaffLeadDashboard';
 import ProductionLeadDashboard from '@/components/dashboards/ProductionLeadDashboard';
 import QCLeadDashboard from '@/components/dashboards/QCLeadDashboard';
@@ -15,7 +16,7 @@ import SecurityGuardDashboard from '@/components/dashboards/SecurityGuardDashboa
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 // Roles that have dashboard access
-const DASHBOARD_ROLES = ['Super Admin', 'Admin', 'Staff Lead', 'Production Lead', 'QC Lead', 'QC Staff', 'Production Staff', 'Security Guard'];
+const DASHBOARD_ROLES = ['Super Admin', 'Admin', 'IT Staff', 'Staff Lead', 'Production Lead', 'QC Lead', 'QC Staff', 'Production Staff', 'Security Guard'];
 
 const DashboardPage: React.FC = () => {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -74,6 +75,8 @@ const DashboardPage: React.FC = () => {
         return 'Super Admin Dashboard';
       case 'Admin':
         return 'Admin Dashboard';
+      case 'IT Staff':
+        return 'IT Staff Dashboard';
       case 'Staff Lead':
         return 'Staff Lead Dashboard';
       case 'Production Lead':
@@ -98,6 +101,8 @@ const DashboardPage: React.FC = () => {
         return <SuperAdminDashboard currentUser={user} />;
       case 'Admin':
         return <AdminDashboard currentUser={user} />;
+      case 'IT Staff':
+        return <ITStaffDashboard currentUser={user} />;
       case 'Staff Lead':
         return <StaffLeadDashboard currentUser={user} />;
       case 'Production Lead':

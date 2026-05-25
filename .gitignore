@@ -28,3 +28,4 @@ tsconfig.tsbuildinfo
 # Temporary files
 *.tmp
 *.temp
+openapi_temp.json

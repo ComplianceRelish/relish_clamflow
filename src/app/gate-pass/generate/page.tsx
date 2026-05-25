@@ -11,6 +11,7 @@ const AUTHORIZED_ROLES = [
   'Production Lead',
   'Staff Lead',
   'Security Guard',
+  'Gate Staff',
 ];
 
 export default function GatePassGeneratePage() {

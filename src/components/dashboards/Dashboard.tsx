@@ -199,12 +199,15 @@ const Dashboard: React.FC = () => {
     const roleMap: Record<UserRole, string> = {
       'Super Admin': 'Super Administrator',
       'Admin': 'Administrator',
+      'IT Staff': 'IT Staff',
       'Staff Lead': 'Staff Lead',
       'Production Lead': 'Production Lead',
       'QC Lead': 'QC Lead',
       'Production Staff': 'Production Staff',
       'QC Staff': 'QC Staff',
-      'Security Guard': 'Security Guard'
+      'Maintenance Staff': 'Maintenance Staff',
+      'Security Guard': 'Security Guard',
+      'Gate Staff': 'Gate Staff',
     };
     return roleMap[role] || role;
   };

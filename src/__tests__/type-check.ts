@@ -26,7 +26,9 @@ const validRoles: UserRole[] = [
   'Production Staff',
   'QC Staff',
   'QC Lead',
-  'Security Guard'
+  'Maintenance Staff',
+  'Security Guard',
+  'Gate Staff',
 ];
 
 // Test role validation function

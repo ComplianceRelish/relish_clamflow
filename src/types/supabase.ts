@@ -16,7 +16,7 @@ export interface Database {
         Row: {
           id: string;
           full_name: string;
-          role: 'Super Admin' | 'Admin' | 'Staff Lead' | 'Production Lead' | 'Production Staff' | 'QC Staff' | 'QC Lead' | 'Security Guard';
+          role: 'Super Admin' | 'Admin' | 'Staff Lead' | 'Production Lead' | 'Production Staff' | 'QC Staff' | 'QC Lead' | 'Maintenance Staff' | 'Security Guard' | 'Gate Staff';
           station?: string;
           created_at?: string;
           username?: string;
@@ -29,7 +29,7 @@ export interface Database {
         Insert: {
           id?: string;
           full_name: string;
-          role: 'Super Admin' | 'Admin' | 'Staff Lead' | 'Production Lead' | 'Production Staff' | 'QC Staff' | 'QC Lead' | 'Security Guard';
+          role: 'Super Admin' | 'Admin' | 'Staff Lead' | 'Production Lead' | 'Production Staff' | 'QC Staff' | 'QC Lead' | 'Maintenance Staff' | 'Security Guard' | 'Gate Staff';
           station?: string;
           created_at?: string;
           username?: string;
@@ -42,7 +42,7 @@ export interface Database {
         Update: {
           id?: string;
           full_name?: string;
-          role?: 'Super Admin' | 'Admin' | 'Staff Lead' | 'Production Lead' | 'Production Staff' | 'QC Staff' | 'QC Lead' | 'Security Guard';
+          role?: 'Super Admin' | 'Admin' | 'Staff Lead' | 'Production Lead' | 'Production Staff' | 'QC Staff' | 'QC Lead' | 'Maintenance Staff' | 'Security Guard' | 'Gate Staff';
           station?: string;
           created_at?: string;
           username?: string;
