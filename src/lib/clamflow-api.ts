@@ -581,7 +581,7 @@ class ClamFlowAPI {
   }
 
   async getSystemHealth(): Promise<ApiResponse<SystemHealthData>> {
-    return this.get('/health');
+    return this.get('/health/detailed');
   }
 
   async getNotifications(): Promise<ApiResponse<Notification[]>> {
@@ -589,7 +589,7 @@ class ClamFlowAPI {
   }
 
   async getAuditLogs(): Promise<ApiResponse<AuditLog[]>> {
-    return this.get('/audit/logs');
+    return this.get('/dashboard/audit/logs');
   }
 
   // APPROVAL WORKFLOW

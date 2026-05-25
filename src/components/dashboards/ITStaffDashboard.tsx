@@ -139,7 +139,7 @@ const ITStaffDashboard: React.FC<ITStaffDashboardProps> = ({ currentUser }) => {
           </div>
           {/* Services row */}
           <div className="flex flex-wrap gap-2 mt-4">
-            {Object.entries(systemHealth.services).map(([svc, ok]) => (
+            {Object.entries(systemHealth.services ?? {}).map(([svc, ok]) => (
               <span
                 key={svc}
                 className={`text-xs font-medium px-2.5 py-1 rounded-full border capitalize ${serviceStatusBadge(ok as boolean)}`}
@@ -147,9 +147,11 @@ const ITStaffDashboard: React.FC<ITStaffDashboardProps> = ({ currentUser }) => {
                 {svc}: {ok ? 'OK' : 'DOWN'}
               </span>
             ))}
-            <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${serviceStatusBadge(systemHealth.database.status === 'connected')}`}>
-              DB: {systemHealth.database.status} ({systemHealth.database.response_time}ms)
-            </span>
+            {systemHealth.database && (
+              <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${serviceStatusBadge(systemHealth.database.status === 'connected')}`}>
+                DB: {systemHealth.database.status} ({systemHealth.database.response_time}ms)
+              </span>
+            )}
           </div>
         </div>
       )}
@@ -241,7 +243,7 @@ const ITStaffDashboard: React.FC<ITStaffDashboardProps> = ({ currentUser }) => {
               <h4 className="font-semibold text-gray-800 text-sm">Services</h4>
             </div>
             <div className="divide-y divide-gray-100">
-              {Object.entries(systemHealth.services).map(([svc, ok]) => (
+              {Object.entries(systemHealth.services ?? {}).map(([svc, ok]) => (
                 <div key={svc} className="flex items-center justify-between px-4 py-3">
                   <span className="text-sm capitalize text-gray-700">{svc}</span>
                   <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${serviceStatusBadge(ok as boolean)}`}>
@@ -249,6 +251,9 @@ const ITStaffDashboard: React.FC<ITStaffDashboardProps> = ({ currentUser }) => {
                   </span>
                 </div>
               ))}
+              {!systemHealth.services && (
+                <p className="px-4 py-3 text-sm text-gray-400 italic">No service data available.</p>
+              )}
             </div>
           </div>
 
@@ -260,13 +265,13 @@ const ITStaffDashboard: React.FC<ITStaffDashboardProps> = ({ currentUser }) => {
             <div className="divide-y divide-gray-100">
               <div className="flex items-center justify-between px-4 py-3">
                 <span className="text-sm text-gray-700">Connection</span>
-                <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${serviceStatusBadge(systemHealth.database.status === 'connected')}`}>
-                  {systemHealth.database.status}
+                <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${serviceStatusBadge(systemHealth.database?.status === 'connected')}`}>
+                  {systemHealth.database?.status ?? 'unknown'}
                 </span>
               </div>
               <div className="flex items-center justify-between px-4 py-3">
                 <span className="text-sm text-gray-700">Response Time</span>
-                <span className="text-sm font-medium text-gray-900">{systemHealth.database.response_time} ms</span>
+                <span className="text-sm font-medium text-gray-900">{systemHealth.database?.response_time ?? '—'} ms</span>
               </div>
             </div>
           </div>
