@@ -13,11 +13,15 @@ import clamflowAPI, { RFIDTagResponse } from '../../lib/clamflow-api';
 type WriterTab = 'program' | 'asset' | 'employee-badge' | 'verify' | 'batch';
 type BatchType = 'product-box' | 'asset';
 
+// NB: clamflowAPI.get() runs transformKeysToCamel() on every response,
+// so all snake_case backend keys arrive as camelCase here.
 interface StaffMember {
   id: string;
-  full_name: string;
+  fullName: string;   // backend: full_name
+  username?: string;
   role: string;
-  rfid_tag?: string;
+  rfidTag?: string;   // backend: rfid_tag
+  isActive?: boolean; // backend: is_active
 }
 
 interface BoxTagRegistration {
@@ -121,6 +125,7 @@ const DeviceRFIDWriter: React.FC = () => {
   // — Employee Badge Tab —
   const [staffList, setStaffList] = useState<StaffMember[]>([]);
   const [staffLoading, setStaffLoading] = useState(false);
+  const [staffLoadError, setStaffLoadError] = useState<string | null>(null);
   const [badgeTagId, setBadgeTagId] = useState('');
   const [selectedStaffId, setSelectedStaffId] = useState('');
   const [badgeLoading, setBadgeLoading] = useState(false);
@@ -135,16 +140,28 @@ const DeviceRFIDWriter: React.FC = () => {
     if (activeTab === 'employee-badge' || activeTab === 'asset') fetchStaff();
   }, [activeTab]);
 
+  // Fetch ALL users (Management + Staff) — uses /api/users/ so no role is excluded.
+  // clamflowAPI transforms snake_case → camelCase, so full_name → fullName, rfid_tag → rfidTag.
   const fetchStaff = async () => {
     setStaffLoading(true);
+    setStaffLoadError(null);
     try {
-      const res = await clamflowAPI.get<{ items?: StaffMember[]; data?: StaffMember[] } | StaffMember[]>('/api/staff/');
+      // size=200 to get all employees in one request (default page size is 50)
+      const res = await clamflowAPI.get<StaffMember[]>('/api/users/?size=200');
+      if (!res.success) {
+        setStaffLoadError(res.error ?? 'Failed to load staff list');
+        return;
+      }
       const data = res.data;
-      if (Array.isArray(data)) setStaffList(data);
-      else if (data && 'items' in data && Array.isArray(data.items)) setStaffList(data.items);
-      else if (data && 'data' in data && Array.isArray(data.data)) setStaffList(data.data);
-    } catch {
-      // non-critical — staff list is a convenience picker
+      const list = Array.isArray(data) ? data : [];
+      // Sort by name alphabetically
+      list.sort((a, b) => (a.fullName ?? '').localeCompare(b.fullName ?? ''));
+      setStaffList(list);
+      if (list.length === 0) {
+        setStaffLoadError('No user records found. Check backend connection.');
+      }
+    } catch (err) {
+      setStaffLoadError(err instanceof Error ? err.message : 'Failed to load staff list');
     } finally {
       setStaffLoading(false);
     }
@@ -308,14 +325,13 @@ const DeviceRFIDWriter: React.FC = () => {
     setBadgeSuccess(null);
     setBadgeError(null);
     try {
-      // Backend endpoint: POST /api/staff/{id}/rfid-badge  (pending backend implementation)
-      // Using generic post until the endpoint is confirmed
+      // Backend endpoint: POST /api/staff/{id}/rfid-badge
       await clamflowAPI.post(`/api/staff/${selectedStaffId}/rfid-badge`, {
         rfid_tag: badgeTagId.trim().toUpperCase(),
         registered_by: user?.id,
       });
       const member = staffList.find(s => s.id === selectedStaffId);
-      setBadgeSuccess(`RFID badge ${badgeTagId.toUpperCase()} registered for ${member?.full_name ?? selectedStaffId}`);
+      setBadgeSuccess(`RFID badge ${badgeTagId.toUpperCase()} issued to ${member?.fullName ?? selectedStaffId}`);
       setBadgeTagId('');
       setSelectedStaffId('');
       fetchStaff();
@@ -325,6 +341,9 @@ const DeviceRFIDWriter: React.FC = () => {
       setBadgeLoading(false);
     }
   };
+
+  // Also remove the 'Backend endpoint' comment:
+  // ── Register staff RFID badge ──
 
   // ── Helpers ──
   const batchCounts = {
@@ -561,7 +580,7 @@ const DeviceRFIDWriter: React.FC = () => {
                     : <select value={assetForm.assignedTo} onChange={e => setAssetForm(f => ({ ...f, assignedTo: e.target.value }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         <option value="">— Not assigned —</option>
-                        {staffList.map(s => <option key={s.id} value={s.id}>{s.full_name} ({s.role})</option>)}
+                        {staffList.map(s => <option key={s.id} value={s.id}>{s.fullName ?? s.id} ({s.role})</option>)}
                       </select>
                   }
                 </div>
@@ -841,13 +860,22 @@ const DeviceRFIDWriter: React.FC = () => {
             <div>
               <h3 className="font-semibold text-gray-900">Issue Employee RFID ID Card</h3>
               <p className="text-xs text-gray-500 mt-0.5">
-                Link a blank RFID card to a staff member for gate attendance &amp; station check-in.
+                Link a blank RFID card to any staff or management member for gate attendance, access control &amp; station check-in.
               </p>
             </div>
-            <button onClick={() => simulateScan(badgeScanRef)} disabled={scanning}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg text-sm font-medium hover:bg-indigo-100 disabled:opacity-60 transition-colors">
-              {scanning ? <><span className="inline-block w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" /> Waiting…</> : <><span>📡</span> Scan UID</>}
-            </button>
+            <div className="flex items-center gap-2">
+              <button onClick={fetchStaff} disabled={staffLoading} title="Refresh staff list"
+                className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-600 border border-gray-200 rounded-lg text-xs font-medium hover:bg-gray-200 disabled:opacity-60 transition-colors">
+                {staffLoading
+                  ? <span className="inline-block w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                  : <span>🔄</span>}
+                Refresh
+              </button>
+              <button onClick={() => simulateScan(badgeScanRef)} disabled={scanning}
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg text-sm font-medium hover:bg-indigo-100 disabled:opacity-60 transition-colors">
+                {scanning ? <><span className="inline-block w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" /> Waiting…</> : <><span>📡</span> Scan UID</>}
+              </button>
+            </div>
           </div>
 
           <form onSubmit={handleBadgeRegister} className="p-5 space-y-5">
@@ -871,12 +899,21 @@ const DeviceRFIDWriter: React.FC = () => {
             {/* Staff selector */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Assign to Staff Member <span className="text-red-500">*</span>
+                Assign to Staff / Management Member <span className="text-red-500">*</span>
               </label>
               {staffLoading ? (
                 <div className="flex items-center gap-2 text-gray-500 text-sm py-2">
                   <span className="inline-block w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-                  Loading staff…
+                  Loading user records from Supabase…
+                </div>
+              ) : staffLoadError ? (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800 flex items-start gap-2">
+                  <span className="mt-0.5">⚠️</span>
+                  <div>
+                    <p className="font-medium">Could not load staff list</p>
+                    <p className="text-xs mt-0.5">{staffLoadError}</p>
+                    <button onClick={fetchStaff} className="mt-2 text-xs text-amber-700 underline">Retry</button>
+                  </div>
                 </div>
               ) : (
                 <select
@@ -885,15 +922,23 @@ const DeviceRFIDWriter: React.FC = () => {
                   onChange={e => setSelectedStaffId(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
-                  <option value="">— Select staff member —</option>
+                  <option value="">— Select staff / management member ({staffList.length} records) —</option>
                   {staffList.map(s => (
                     <option key={s.id} value={s.id}>
-                      {s.full_name} ({s.role}){s.rfid_tag ? ' · has badge' : ''}
+                      {s.fullName ?? s.id} — {s.role}{s.rfidTag ? ' ✓ has badge' : ''}
                     </option>
                   ))}
                 </select>
               )}
             </div>
+
+            {/* Existing badge warning */}
+            {selectedStaffId && staffList.find(s => s.id === selectedStaffId)?.rfidTag && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700 flex items-start gap-2">
+                <span>⚠️</span>
+                <span>This person already has a badge (<code className="font-mono text-xs bg-amber-100 px-1 rounded">{staffList.find(s => s.id === selectedStaffId)?.rfidTag}</code>). Submitting will <strong>replace</strong> it.</span>
+              </div>
+            )}
 
             {badgeError && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 flex items-start gap-2">
@@ -923,22 +968,26 @@ const DeviceRFIDWriter: React.FC = () => {
             </div>
           </form>
 
-          {/* Current badges list */}
-          {staffList.filter(s => s.rfid_tag).length > 0 && (
+          {/* Badge status overview */}
+          {staffList.length > 0 && (
             <div className="border-t border-gray-100">
-              <div className="px-5 py-3 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                Registered Badges
+              <div className="px-5 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Badge Status Overview</span>
+                <span className="text-xs text-gray-500">
+                  {staffList.filter(s => s.rfidTag).length} / {staffList.length} issued
+                </span>
               </div>
-              <ul className="divide-y divide-gray-100">
-                {staffList.filter(s => s.rfid_tag).map(s => (
-                  <li key={s.id} className="flex items-center justify-between px-5 py-3 text-sm">
+              <ul className="divide-y divide-gray-100 max-h-64 overflow-y-auto">
+                {staffList.map(s => (
+                  <li key={s.id} className="flex items-center justify-between px-5 py-2.5 text-sm">
                     <div>
-                      <p className="font-medium text-gray-900">{s.full_name}</p>
-                      <p className="text-xs text-gray-500">{s.role}</p>
+                      <p className="font-medium text-gray-900">{s.fullName}</p>
+                      <p className="text-xs text-gray-400">{s.role}</p>
                     </div>
-                    <span className="font-mono text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded-md border border-indigo-100">
-                      {s.rfid_tag}
-                    </span>
+                    {s.rfidTag
+                      ? <span className="font-mono text-xs bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded">✓ {s.rfidTag}</span>
+                      : <span className="text-xs text-gray-400 bg-gray-50 border border-gray-200 px-2 py-0.5 rounded">No badge</span>
+                    }
                   </li>
                 ))}
               </ul>
