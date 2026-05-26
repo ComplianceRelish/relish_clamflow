@@ -9,12 +9,16 @@ import Image from 'next/image';
 interface StaffOnboardingData {
   first_name: string;
   last_name: string;
+  email?: string;
   address: string;
   contact_number: string;
   aadhar_number: string;
   face_image?: string;
   designation: string;
+  department?: string;
   start_date?: string;
+  initial_station?: string;
+  notes?: string;
   status: string;
 }
 
@@ -35,12 +39,16 @@ export default function StaffOnboardingPage() {
   const [formData, setFormData] = useState<StaffOnboardingData>({
     first_name: '',
     last_name: '',
+    email: '',
     address: '',
     contact_number: '',
     aadhar_number: '',
     face_image: '',
     designation: '',
+    department: '',
     start_date: '',
+    initial_station: '',
+    notes: '',
     status: 'pending'
   });
 
@@ -170,12 +178,20 @@ export default function StaffOnboardingPage() {
       const submissionData = {
         first_name: formData.first_name,
         last_name: formData.last_name,
+        email: formData.email || null,
         address: formData.address,
         contact_number: formData.contact_number,
         aadhar_number: formData.aadhar_number,
         face_image: formData.face_image || null,
         designation: formData.designation,
+        department: formData.department || null,
         start_date: formData.start_date ? new Date(formData.start_date).toISOString() : null,
+        initial_station: formData.initial_station || null,
+        notes: formData.notes || null,
+        requested_by: user?.id,
+        requested_by_name: user?.full_name,
+        requested_at: new Date().toISOString(),
+        onboarding_status: 'incomplete',
         status: 'pending'
       };
 
@@ -187,12 +203,16 @@ export default function StaffOnboardingPage() {
         setFormData({
           first_name: '',
           last_name: '',
+          email: '',
           address: '',
           contact_number: '',
           aadhar_number: '',
           face_image: '',
           designation: '',
+          department: '',
           start_date: '',
+          initial_station: '',
+          notes: '',
           status: 'pending'
         });
         setSuccess(false);
@@ -341,6 +361,21 @@ export default function StaffOnboardingPage() {
                   </div>
 
                   <div>
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      id="email"
+                      name="email"
+                      value={formData.email || ''}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                      placeholder="email@example.com"
+                    />
+                  </div>
+
+                  <div>
                     <label htmlFor="aadhar_number" className="block text-sm font-medium text-gray-700 mb-2">
                       Aadhar Number *
                     </label>
@@ -389,6 +424,26 @@ export default function StaffOnboardingPage() {
                 </div>
 
                 <div>
+                  <label htmlFor="department" className="block text-sm font-medium text-gray-700 mb-2">
+                    Department
+                  </label>
+                  <select
+                    id="department"
+                    name="department"
+                    value={formData.department || ''}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                  >
+                    <option value="">Select Department</option>
+                    <option value="production">Production</option>
+                    <option value="qc">Quality Control</option>
+                    <option value="security">Security</option>
+                    <option value="it">IT</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                <div>
                   <label htmlFor="start_date" className="block text-sm font-medium text-gray-700 mb-2">
                     Start Date
                   </label>
@@ -399,6 +454,36 @@ export default function StaffOnboardingPage() {
                     value={formData.start_date}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="initial_station" className="block text-sm font-medium text-gray-700 mb-2">
+                    Initial Station
+                  </label>
+                  <input
+                    type="text"
+                    id="initial_station"
+                    name="initial_station"
+                    value={formData.initial_station || ''}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                    placeholder="e.g., Grading Station A"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-2">
+                    Notes for Admin
+                  </label>
+                  <textarea
+                    id="notes"
+                    name="notes"
+                    rows={2}
+                    value={formData.notes || ''}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                    placeholder="Any relevant context for the Admin review…"
                   />
                 </div>
               </div>
