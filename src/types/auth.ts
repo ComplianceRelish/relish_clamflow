@@ -468,6 +468,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'SYSTEM_SETTINGS', 'AUDIT_VIEW',
     // Reports (read-only, for fault diagnosis)
     'VIEW_REPORTS',
+    // Staff & Supplier Onboarding (IT Staff initiates → Admin approves)
+    'STAFF_ONBOARD',
   ],
 
   // ============================================

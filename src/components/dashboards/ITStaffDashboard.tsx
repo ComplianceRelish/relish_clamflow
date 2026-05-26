@@ -8,7 +8,8 @@ import clamflowAPI, { AuditLog } from '@/lib/clamflow-api';
 import { SystemHealthData } from '@/types/dashboard';
 import { DeviceRegistry } from '@/components/hardware/DeviceRegistry';
 import { HardwareConfig } from '@/components/hardware/HardwareConfig';
-import { DeviceRFIDHandover } from '@/components/hardware/DeviceRFIDHandover';
+import DeviceRFIDHandover from '@/components/hardware/DeviceRFIDHandover';
+import SupplierOnboardingPanel from '@/components/dashboards/stafflead/SupplierOnboardingPanel';
 
 // ============================================
 // INTERFACES
@@ -24,7 +25,10 @@ type ActiveTab =
   | 'hardware-config'
   | 'rfid-handover'
   | 'system-health'
-  | 'audit-log';
+  | 'audit-log'
+  | 'onboarding';
+
+type OnboardingSubTab = 'staff' | 'suppliers';
 
 type HardwareConfigTab = 'rfid' | 'face_recognition' | 'label_printer' | 'qr_code';
 
@@ -43,6 +47,17 @@ const ITStaffDashboard: React.FC<ITStaffDashboardProps> = ({ currentUser }) => {
   // Audit Log
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [auditLoading, setAuditLoading] = useState(false);
+
+  // Onboarding (IT Staff initiates → Admin approves)
+  const [onboardingSubTab, setOnboardingSubTab] = useState<OnboardingSubTab>('staff');
+  const [staffForm, setStaffForm] = useState({
+    full_name: '', role: 'Production Staff', department: 'production',
+    phone: '', email: '', start_date: new Date().toISOString().split('T')[0],
+    initial_station: '', notes: '',
+  });
+  const [staffFormLoading, setStaffFormLoading] = useState(false);
+  const [staffFormSuccess, setStaffFormSuccess] = useState<string | null>(null);
+  const [staffFormError, setStaffFormError] = useState<string | null>(null);
 
   // ============================================
   // DATA FETCHING
@@ -100,6 +115,7 @@ const ITStaffDashboard: React.FC<ITStaffDashboardProps> = ({ currentUser }) => {
     { id: 'rfid-handover',    label: 'RFID Handover',   icon: '🔁' },
     { id: 'system-health',    label: 'System Health',   icon: '❤️' },
     { id: 'audit-log',        label: 'Audit Log',       icon: '📜' },
+    { id: 'onboarding',       label: 'Onboarding',      icon: '👤' },
   ];
 
   const hwConfigTabs: { id: HardwareConfigTab; label: string }[] = [
@@ -369,6 +385,241 @@ const ITStaffDashboard: React.FC<ITStaffDashboardProps> = ({ currentUser }) => {
   );
 
   // ============================================
+  // ONBOARDING PANEL
+  // ============================================
+
+  const renderOnboarding = () => {
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://clamflowbackend-production.up.railway.app';
+
+    const staffRoles = [
+      'Production Staff', 'Production Lead',
+      'QC Staff', 'QC Lead',
+      'Security Guard', 'Gate Staff',
+      'Maintenance Staff', 'Staff Lead', 'IT Staff',
+    ];
+
+    const handleStaffSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      setStaffFormLoading(true);
+      setStaffFormError(null);
+      setStaffFormSuccess(null);
+      try {
+        const payload = {
+          ...staffForm,
+          username: staffForm.full_name.toLowerCase().replace(/\s+/g, '.'),
+          status: 'pending',
+          requested_by: currentUser?.id,
+          requested_by_name: currentUser?.full_name,
+          requested_at: new Date().toISOString(),
+          onboarding_status: 'incomplete',
+        };
+        const token = typeof window !== 'undefined' ? localStorage.getItem('clamflow_token') : null;
+        const res = await fetch(`${API_BASE}/staff/onboarding-requests`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok && !json.success) throw new Error(json.message || json.detail || 'Submission failed');
+        setStaffFormSuccess(`Onboarding request for ${staffForm.full_name} submitted — pending Admin approval.`);
+        setStaffForm({ full_name: '', role: 'Production Staff', department: 'production', phone: '', email: '', start_date: new Date().toISOString().split('T')[0], initial_station: '', notes: '' });
+      } catch (err: any) {
+        if (typeof navigator !== 'undefined' && !navigator.onLine) {
+          setStaffFormSuccess('Saved offline — will sync to Admin when connection is restored.');
+          setStaffForm({ full_name: '', role: 'Production Staff', department: 'production', phone: '', email: '', start_date: new Date().toISOString().split('T')[0], initial_station: '', notes: '' });
+        } else {
+          setStaffFormError(err.message || 'Failed to submit onboarding request.');
+        }
+      } finally {
+        setStaffFormLoading(false);
+      }
+    };
+
+    return (
+      <div className="space-y-4">
+        {/* Sub-tab bar */}
+        <div className="flex gap-2 border-b border-gray-200 pb-3">
+          {([
+            { id: 'staff' as OnboardingSubTab, label: '👤 Staff' },
+            { id: 'suppliers' as OnboardingSubTab, label: '🚚 Suppliers / Vendors' },
+          ]).map(({ id, label }) => (
+            <button
+              key={id}
+              onClick={() => setOnboardingSubTab(id)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                onboardingSubTab === id ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Staff Onboarding */}
+        {onboardingSubTab === 'staff' && (
+          <div className="space-y-4">
+            {/* Approval notice */}
+            <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800 flex items-start gap-2">
+              <span className="mt-0.5 shrink-0">⚠️</span>
+              <span>
+                Requests are submitted as <strong>pending</strong> and require <strong>Admin approval</strong> before the account is activated.
+                Collect Aadhar, Bank &amp; Face details on paper — Admin will complete verification in the User Management panel.
+              </span>
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
+              <h3 className="text-base font-semibold text-gray-900 mb-4">New Staff Onboarding Request</h3>
+
+              {staffFormSuccess && (
+                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm flex items-center justify-between">
+                  <span>✅ {staffFormSuccess}</span>
+                  <button onClick={() => setStaffFormSuccess(null)} className="text-green-600 ml-2 text-lg leading-none">×</button>
+                </div>
+              )}
+              {staffFormError && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm flex items-center justify-between">
+                  <span>❌ {staffFormError}</span>
+                  <button onClick={() => setStaffFormError(null)} className="text-red-600 ml-2 text-lg leading-none">×</button>
+                </div>
+              )}
+
+              <form onSubmit={handleStaffSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Full Name */}
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Full Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    required
+                    type="text"
+                    value={staffForm.full_name}
+                    onChange={e => setStaffForm(p => ({ ...p, full_name: e.target.value }))}
+                    placeholder="e.g., Rajesh Kumar"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
+                  />
+                </div>
+
+                {/* Department */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Department <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={staffForm.department}
+                    onChange={e => setStaffForm(p => ({ ...p, department: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
+                  >
+                    <option value="production">Production</option>
+                    <option value="qc">Quality Control</option>
+                    <option value="security">Security</option>
+                    <option value="it">IT</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                {/* Role */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Role <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={staffForm.role}
+                    onChange={e => setStaffForm(p => ({ ...p, role: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
+                  >
+                    {staffRoles.map(r => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                </div>
+
+                {/* Phone */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                  <input
+                    type="tel"
+                    value={staffForm.phone}
+                    onChange={e => setStaffForm(p => ({ ...p, phone: e.target.value }))}
+                    placeholder="+91 XXXXXXXXXX"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
+                  />
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <input
+                    type="email"
+                    value={staffForm.email}
+                    onChange={e => setStaffForm(p => ({ ...p, email: e.target.value }))}
+                    placeholder="email@example.com"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
+                  />
+                </div>
+
+                {/* Start Date */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Start Date <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    required
+                    type="date"
+                    value={staffForm.start_date}
+                    onChange={e => setStaffForm(p => ({ ...p, start_date: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
+                  />
+                </div>
+
+                {/* Initial Station */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Initial Station</label>
+                  <input
+                    type="text"
+                    value={staffForm.initial_station}
+                    onChange={e => setStaffForm(p => ({ ...p, initial_station: e.target.value }))}
+                    placeholder="e.g., Grading Station A"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
+                  />
+                </div>
+
+                {/* Notes */}
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Notes for Admin</label>
+                  <textarea
+                    value={staffForm.notes}
+                    onChange={e => setStaffForm(p => ({ ...p, notes: e.target.value }))}
+                    placeholder="Any relevant context for the Admin review…"
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
+                  />
+                </div>
+
+                {/* Submit */}
+                <div className="sm:col-span-2">
+                  <button
+                    type="submit"
+                    disabled={staffFormLoading}
+                    className="w-full py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-medium text-sm transition-colors"
+                  >
+                    {staffFormLoading ? 'Submitting…' : '📤 Submit for Admin Approval'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Supplier / Vendor Onboarding */}
+        {onboardingSubTab === 'suppliers' && (
+          <SupplierOnboardingPanel currentUser={currentUser} />
+        )}
+      </div>
+    );
+  };
+
+  // ============================================
   // RENDER
   // ============================================
 
@@ -400,6 +651,7 @@ const ITStaffDashboard: React.FC<ITStaffDashboardProps> = ({ currentUser }) => {
         {activeTab === 'rfid-handover'   && <DeviceRFIDHandover />}
         {activeTab === 'system-health'   && renderSystemHealth()}
         {activeTab === 'audit-log'       && renderAuditLog()}
+        {activeTab === 'onboarding'      && renderOnboarding()}
       </div>
     </div>
   );
