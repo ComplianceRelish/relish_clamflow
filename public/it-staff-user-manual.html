@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ClamFlow – IT Staff User Manual</title>
+  <style>
+    /* ========== RESET & BASE ========== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 14px; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      color: #1e293b;
+      background: #f8fafc;
+      line-height: 1.65;
+    }
+
+    /* ========== PRINT SETUP ========== */
+    @media print {
+      body { background: #fff; font-size: 11pt; }
+      .no-print { display: none !important; }
+      .page-break { page-break-before: always; }
+      .section { page-break-inside: avoid; }
+      a { text-decoration: none; color: inherit; }
+      .cover { page-break-after: always; }
+      h2 { page-break-after: avoid; }
+    }
+
+    /* ========== LAYOUT ========== */
+    .wrapper { max-width: 860px; margin: 0 auto; padding: 0 24px 60px; }
+
+    /* ========== COVER PAGE ========== */
+    .cover {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #312e81 0%, #4338ca 45%, #2563eb 100%);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 60px 40px;
+    }
+    .cover .brand { font-size: 13px; letter-spacing: 3px; text-transform: uppercase; opacity: 0.75; margin-bottom: 12px; }
+    .cover h1 { font-size: 42px; font-weight: 800; line-height: 1.15; margin-bottom: 10px; }
+    .cover .sub { font-size: 18px; opacity: 0.85; margin-bottom: 32px; }
+    .cover .badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 24px;
+      padding: 6px 20px;
+      font-size: 12px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin: 4px;
+    }
+    .cover .meta { margin-top: 48px; font-size: 12px; opacity: 0.6; }
+    .cover .logo-area { margin-bottom: 32px; }
+    .cover .logo-circle {
+      width: 80px; height: 80px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 36px;
+      margin: 0 auto;
+    }
+
+    /* ========== TABLE OF CONTENTS ========== */
+    .toc-page { background: #fff; padding: 48px 40px; border-radius: 12px; margin: 32px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .toc-page h2 { font-size: 22px; font-weight: 700; color: #312e81; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 2px solid #e0e7ff; }
+    .toc-list { list-style: none; }
+    .toc-list li { display: flex; align-items: baseline; gap: 0; margin: 3px 0; }
+    .toc-list a { color: #3730a3; text-decoration: none; font-weight: 500; flex-shrink: 0; }
+    .toc-list a:hover { text-decoration: underline; }
+    .toc-dots { flex: 1; border-bottom: 1px dotted #cbd5e1; margin: 0 6px 3px; }
+    .toc-page-num { color: #64748b; font-size: 12px; flex-shrink: 0; }
+    .toc-section { margin-top: 16px; padding-left: 16px; }
+    .toc-section li a { font-size: 13px; font-weight: 400; color: #4338ca; }
+    .toc-chapter { margin-top: 8px; }
+    .toc-chapter a { font-size: 15px; font-weight: 600; color: #1e1b4b; }
+
+    /* ========== CHAPTER HEADERS ========== */
+    .chapter-header {
+      background: linear-gradient(135deg, #312e81, #4338ca);
+      color: #fff;
+      border-radius: 12px;
+      padding: 28px 32px;
+      margin: 48px 0 28px;
+    }
+    .chapter-header .ch-num { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; opacity: 0.7; margin-bottom: 4px; }
+    .chapter-header h2 { font-size: 26px; font-weight: 800; }
+    .chapter-header p { margin-top: 6px; opacity: 0.85; font-size: 14px; }
+
+    /* ========== SECTION ========== */
+    .section {
+      background: #fff;
+      border-radius: 10px;
+      padding: 28px 32px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      border-left: 4px solid #4338ca;
+    }
+    .section h3 {
+      font-size: 17px;
+      font-weight: 700;
+      color: #312e81;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section h4 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #1e293b;
+      margin: 18px 0 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* ========== STEPS ========== */
+    .steps { list-style: none; counter-reset: step-counter; margin: 0; padding: 0; }
+    .steps li {
+      counter-increment: step-counter;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      margin-bottom: 12px;
+      padding: 10px 14px;
+      background: #f8fafc;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+    }
+    .steps li::before {
+      content: counter(step-counter);
+      background: #4338ca;
+      color: #fff;
+      width: 24px; height: 24px;
+      min-width: 24px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700;
+      margin-top: 1px;
+    }
+    .steps li .step-text { flex: 1; }
+    .steps li .step-text strong { color: #312e81; }
+
+    /* ========== TROUBLESHOOT ========== */
+    .troubleshoot {
+      background: #fff7ed;
+      border-left: 4px solid #f97316;
+      border-radius: 0 8px 8px 0;
+      padding: 18px 20px;
+      margin-top: 20px;
+    }
+    .troubleshoot .ts-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #c2410c;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .ts-items { list-style: none; padding: 0; }
+    .ts-items li {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      margin-bottom: 10px;
+      padding: 8px 10px;
+      background: #fff;
+      border-radius: 6px;
+      border: 1px solid #fed7aa;
+    }
+    .ts-error {
+      font-weight: 600;
+      color: #c2410c;
+      font-size: 12.5px;
+      min-width: 180px;
+      max-width: 200px;
+    }
+    .ts-fix { color: #431407; font-size: 13px; }
+
+    /* ========== TIP / NOTE BOX ========== */
+    .tip {
+      background: #eff6ff;
+      border-left: 4px solid #3b82f6;
+      border-radius: 0 8px 8px 0;
+      padding: 12px 16px;
+      margin: 14px 0;
+      font-size: 13px;
+      color: #1e3a8a;
+    }
+    .tip strong { color: #1d4ed8; }
+    .warn {
+      background: #fefce8;
+      border-left: 4px solid #eab308;
+      border-radius: 0 8px 8px 0;
+      padding: 12px 16px;
+      margin: 14px 0;
+      font-size: 13px;
+      color: #713f12;
+    }
+
+    /* ========== FIELD TABLE ========== */
+    .field-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+    .field-table th { background: #e0e7ff; color: #312e81; text-align: left; padding: 8px 12px; font-weight: 700; }
+    .field-table td { padding: 7px 12px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+    .field-table tr:last-child td { border-bottom: none; }
+    .field-table .req { color: #dc2626; font-weight: 700; }
+    .field-table tr:nth-child(even) td { background: #f8fafc; }
+
+    /* ========== STATUS BADGES ========== */
+    .badge-ok { background:#dcfce7; color:#15803d; border-radius:4px; padding:1px 7px; font-size:11px; font-weight:700; }
+    .badge-warn { background:#fef9c3; color:#a16207; border-radius:4px; padding:1px 7px; font-size:11px; font-weight:700; }
+    .badge-err { background:#fee2e2; color:#b91c1c; border-radius:4px; padding:1px 7px; font-size:11px; font-weight:700; }
+    .badge-pend { background:#e0e7ff; color:#3730a3; border-radius:4px; padding:1px 7px; font-size:11px; font-weight:700; }
+
+    /* ========== KEYBOARD SHORTCUTS ========== */
+    kbd {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-family: monospace;
+      font-size: 12px;
+      color: #334155;
+    }
+
+    /* ========== QUICK REF BOX ========== */
+    .quick-ref {
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin: 14px 0;
+    }
+    .quick-ref h4 { color: #15803d; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+
+    /* ========== CONTACT / ESCALATION ========== */
+    .escalation {
+      background: #fdf4ff;
+      border: 1px solid #d8b4fe;
+      border-radius: 8px;
+      padding: 20px 24px;
+      margin: 14px 0;
+    }
+    .escalation h4 { color: #7e22ce; font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+    .escalation ul { padding-left: 18px; }
+    .escalation li { margin-bottom: 6px; font-size: 13px; }
+
+    /* ========== PRINT BUTTON ========== */
+    .print-btn {
+      position: fixed;
+      bottom: 32px;
+      right: 32px;
+      background: #4338ca;
+      color: #fff;
+      border: none;
+      border-radius: 50px;
+      padding: 12px 24px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(67,56,202,0.4);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 999;
+    }
+    .print-btn:hover { background: #3730a3; }
+
+    ul.plain { padding-left: 18px; }
+    ul.plain li { margin-bottom: 4px; font-size: 13px; }
+    p { margin: 8px 0; font-size: 13.5px; }
+    .divider { height: 1px; background: #e2e8f0; margin: 24px 0; }
+
+    /* ========== FOOTER ========== */
+    .manual-footer {
+      text-align: center;
+      color: #94a3b8;
+      font-size: 11px;
+      margin-top: 60px;
+      padding-top: 20px;
+      border-top: 1px solid #e2e8f0;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ============================================================
+     COVER PAGE
+     ============================================================ -->
+<div class="cover">
+  <div class="logo-area">
+    <div class="logo-circle">🦪</div>
+  </div>
+  <div class="brand">Relish · ClamFlow Cloud</div>
+  <h1>IT Staff<br>User Manual</h1>
+  <div class="sub">Complete Reference Guide — All Dashboard Features</div>
+  <div>
+    <span class="badge">Procedures</span>
+    <span class="badge">Troubleshooting</span>
+    <span class="badge">Escalation Paths</span>
+  </div>
+  <div class="meta">
+    Role: IT Staff &nbsp;·&nbsp; System: ClamFlow Cloud v2.x &nbsp;·&nbsp; Issued: May 2026<br>
+    Powered by Relish &nbsp;·&nbsp; clamflowcloud.vercel.app
+  </div>
+</div>
+
+<div class="wrapper">
+
+<!-- ============================================================
+     TABLE OF CONTENTS
+     ============================================================ -->
+<div class="toc-page" id="toc">
+  <h2>📋 Table of Contents</h2>
+
+  <ul class="toc-list">
+    <li class="toc-chapter">
+      <a href="#ch0">1. Getting Started — Login &amp; Account Setup</a>
+      <span class="toc-dots"></span><span class="toc-page-num">§1</span>
+    </li>
+    <ul class="toc-list toc-section">
+      <li><a href="#login-how">Logging In</a><span class="toc-dots"></span><span class="toc-page-num">§1.1</span></li>
+      <li><a href="#login-fail">Login Failures &amp; Troubleshooting</a><span class="toc-dots"></span><span class="toc-page-num">§1.2</span></li>
+    </ul>
+
+    <li class="toc-chapter" style="margin-top:8px">
+      <a href="#ch1">2. Overview Tab</a>
+      <span class="toc-dots"></span><span class="toc-page-num">§2</span>
+    </li>
+    <ul class="toc-list toc-section">
+      <li><a href="#overview-how">Reading the Overview</a><span class="toc-dots"></span><span class="toc-page-num">§2.1</span></li>
+      <li><a href="#overview-fail">Troubleshooting the Overview</a><span class="toc-dots"></span><span class="toc-page-num">§2.2</span></li>
+    </ul>
+
+    <li class="toc-chapter" style="margin-top:8px">
+      <a href="#ch2">3. Device Registry</a>
+      <span class="toc-dots"></span><span class="toc-page-num">§3</span>
+    </li>
+    <ul class="toc-list toc-section">
+      <li><a href="#devreg-how">Viewing, Registering &amp; Deregistering Devices</a><span class="toc-dots"></span><span class="toc-page-num">§3.1</span></li>
+      <li><a href="#devreg-fail">Device Registry Failures</a><span class="toc-dots"></span><span class="toc-page-num">§3.2</span></li>
+    </ul>
+
+    <li class="toc-chapter" style="margin-top:8px">
+      <a href="#ch3">4. Hardware Configuration</a>
+      <span class="toc-dots"></span><span class="toc-page-num">§4</span>
+    </li>
+    <ul class="toc-list toc-section">
+      <li><a href="#hwcfg-rfid">RFID Reader Configuration</a><span class="toc-dots"></span><span class="toc-page-num">§4.1</span></li>
+      <li><a href="#hwcfg-face">Face Recognition Configuration</a><span class="toc-dots"></span><span class="toc-page-num">§4.2</span></li>
+      <li><a href="#hwcfg-printer">Label Printer Configuration</a><span class="toc-dots"></span><span class="toc-page-num">§4.3</span></li>
+      <li><a href="#hwcfg-qr">QR Code Configuration</a><span class="toc-dots"></span><span class="toc-page-num">§4.4</span></li>
+      <li><a href="#hwcfg-fail">Hardware Config Failures</a><span class="toc-dots"></span><span class="toc-page-num">§4.5</span></li>
+    </ul>
+
+    <li class="toc-chapter" style="margin-top:8px">
+      <a href="#ch4">5. RFID Device Handover</a>
+      <span class="toc-dots"></span><span class="toc-page-num">§5</span>
+    </li>
+    <ul class="toc-list toc-section">
+      <li><a href="#rfid-handover-how">Issuing a Device to Staff</a><span class="toc-dots"></span><span class="toc-page-num">§5.1</span></li>
+      <li><a href="#rfid-return-how">Returning a Device</a><span class="toc-dots"></span><span class="toc-page-num">§5.2</span></li>
+      <li><a href="#rfid-history">Viewing Assignment History</a><span class="toc-dots"></span><span class="toc-page-num">§5.3</span></li>
+      <li><a href="#rfid-fail">Handover Failures</a><span class="toc-dots"></span><span class="toc-page-num">§5.4</span></li>
+    </ul>
+
+    <li class="toc-chapter" style="margin-top:8px">
+      <a href="#ch5">6. System Health Monitor</a>
+      <span class="toc-dots"></span><span class="toc-page-num">§6</span>
+    </li>
+    <ul class="toc-list toc-section">
+      <li><a href="#health-how">Reading Health Status</a><span class="toc-dots"></span><span class="toc-page-num">§6.1</span></li>
+      <li><a href="#health-fail">Responding to Health Alerts</a><span class="toc-dots"></span><span class="toc-page-num">§6.2</span></li>
+    </ul>
+
+    <li class="toc-chapter" style="margin-top:8px">
+      <a href="#ch6">7. Audit Log</a>
+      <span class="toc-dots"></span><span class="toc-page-num">§7</span>
+    </li>
+    <ul class="toc-list toc-section">
+      <li><a href="#audit-how">Reading &amp; Filtering the Audit Log</a><span class="toc-dots"></span><span class="toc-page-num">§7.1</span></li>
+      <li><a href="#audit-fail">Audit Log Failures</a><span class="toc-dots"></span><span class="toc-page-num">§7.2</span></li>
+    </ul>
+
+    <li class="toc-chapter" style="margin-top:8px">
+      <a href="#ch7">8. Onboarding — Staff</a>
+      <span class="toc-dots"></span><span class="toc-page-num">§8</span>
+    </li>
+    <ul class="toc-list toc-section">
+      <li><a href="#onb-staff-how">Submitting a Staff Onboarding Request</a><span class="toc-dots"></span><span class="toc-page-num">§8.1</span></li>
+      <li><a href="#onb-staff-fail">Staff Onboarding Failures</a><span class="toc-dots"></span><span class="toc-page-num">§8.2</span></li>
+    </ul>
+
+    <li class="toc-chapter" style="margin-top:8px">
+      <a href="#ch8">9. Onboarding — Suppliers &amp; Vendors</a>
+      <span class="toc-dots"></span><span class="toc-page-num">§9</span>
+    </li>
+    <ul class="toc-list toc-section">
+      <li><a href="#onb-sup-how">Registering a Supplier / Vendor</a><span class="toc-dots"></span><span class="toc-page-num">§9.1</span></li>
+      <li><a href="#onb-sup-fail">Supplier Onboarding Failures</a><span class="toc-dots"></span><span class="toc-page-num">§9.2</span></li>
+    </ul>
+
+    <li class="toc-chapter" style="margin-top:8px">
+      <a href="#ch9">10. Escalation &amp; Support Reference</a>
+      <span class="toc-dots"></span><span class="toc-page-num">§10</span>
+    </li>
+  </ul>
+</div>
+
+
+<!-- ============================================================
+     CH 0 — GETTING STARTED / LOGIN
+     ============================================================ -->
+<div class="page-break" id="ch0">
+<div class="chapter-header">
+  <div class="ch-num">Chapter 1</div>
+  <h2>Getting Started — Login &amp; Account Setup</h2>
+  <p>How to access ClamFlow Cloud as IT Staff and what to do when login fails.</p>
+</div>
+
+<div class="section" id="login-how">
+  <h3>🔐 1.1 &nbsp; How to Log In</h3>
+  <div class="tip"><strong>URL:</strong> <code>https://clamflowcloud.vercel.app</code> — open in any modern browser (Chrome recommended). Bookmark this address.</div>
+
+  <h4>Procedure</h4>
+  <ol class="steps">
+    <li><div class="step-text">Open your browser and navigate to <strong>https://clamflowcloud.vercel.app</strong>.</div></li>
+    <li><div class="step-text">On the login screen, enter your <strong>Username</strong> (assigned by Admin, e.g. <code>it_antony</code>).</div></li>
+    <li><div class="step-text">Enter your <strong>Password</strong> (case-sensitive). Contact Admin if you have never received credentials.</div></li>
+    <li><div class="step-text">Click <strong>"Sign In"</strong>. The system validates your credentials against the backend.</div></li>
+    <li><div class="step-text">On success, you are redirected to the <strong>IT Staff Dashboard</strong> automatically. Your name appears in the welcome banner.</div></li>
+    <li><div class="step-text">Your session is persisted in the browser. Closing the tab will NOT log you out — click your profile / logout button when done for the day.</div></li>
+  </ol>
+
+  <div class="warn">⚠️ <strong>Shared computers:</strong> Always click <em>Logout</em> before leaving the workstation. Do not tick "Remember me" on shared devices.</div>
+
+  <h4>First-Time Login</h4>
+  <ol class="steps">
+    <li><div class="step-text">Use the temporary credentials provided by Admin.</div></li>
+    <li><div class="step-text">If prompted to change your password, choose a strong password (minimum 8 characters, at least one number and one special character).</div></li>
+    <li><div class="step-text">Verify that your role shown in the dashboard header reads <strong>"IT Staff"</strong>. If it shows a different role, contact Admin.</div></li>
+  </ol>
+</div>
+
+<div class="section" id="login-fail">
+  <h3>🔧 1.2 &nbsp; What To Do When Login Fails</h3>
+  <div class="troubleshoot">
+    <div class="ts-title">⚠️ Troubleshooting — Login Issues</div>
+    <ul class="ts-items">
+      <li>
+        <span class="ts-error">"Invalid credentials"</span>
+        <span class="ts-fix">Re-check username and password (caps-lock off). Try copy-pasting the password from the welcome e-mail. If still failing, ask Admin to reset your password in the User Management panel.</span>
+      </li>
+      <li>
+        <span class="ts-error">Page shows blank / loading spinner forever</span>
+        <span class="ts-fix">Clear browser cache (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Del</kbd>), hard-refresh (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd>), or try a private/incognito window. Check your internet connection.</span>
+      </li>
+      <li>
+        <span class="ts-error">"Something went wrong!" after login</span>
+        <span class="ts-fix">This is a dashboard crash. Open browser DevTools (<kbd>F12</kbd> → Console) and screenshot the error. Share the screenshot with Admin. Usually caused by a backend deployment in progress — wait 2 minutes and retry.</span>
+      </li>
+      <li>
+        <span class="ts-error">Redirected back to login immediately</span>
+        <span class="ts-fix">Your session token may have expired. Log in again. If this happens every few minutes, check that your system clock is correct (token validation is time-sensitive).</span>
+      </li>
+      <li>
+        <span class="ts-error">Account locked / "User is not active"</span>
+        <span class="ts-fix">Contact Admin — your account's <em>is_active</em> flag may be set to false. Admin must reactivate it in the User Management panel.</span>
+      </li>
+      <li>
+        <span class="ts-error">Wrong dashboard shown (not IT Staff)</span>
+        <span class="ts-fix">Your role in the database does not match "IT Staff". Ask Admin to update your role via User Management → Edit User.</span>
+      </li>
+    </ul>
+  </div>
+</div>
+</div><!-- end ch0 -->
+
+
+<!-- ============================================================
+     CH 1 — OVERVIEW
+     ============================================================ -->
+<div class="page-break" id="ch1">
+<div class="chapter-header">
+  <div class="ch-num">Chapter 2</div>
+  <h2>Overview Tab 🖥️</h2>
+  <p>Your at-a-glance system status, quick actions, and recent activity feed.</p>
+</div>
+
+<div class="section" id="overview-how">
+  <h3>📊 2.1 &nbsp; How to Use the Overview</h3>
+  <p>The Overview is the default tab when you log in. It gives you an instant snapshot of system status without navigating to other tabs.</p>
+
+  <h4>System Health Banner</h4>
+  <ul class="plain">
+    <li>A colour-coded card shows overall backend status: <span class="badge-ok">Healthy</span>, <span class="badge-warn">Warning</span>, or <span class="badge-err">Degraded</span>.</li>
+    <li>Individual service badges (e.g. <em>api</em>, <em>db</em>, <em>cache</em>) show <span class="badge-ok">OK</span> or <span class="badge-err">DOWN</span>.</li>
+    <li>The <strong>DB</strong> badge shows database connection state and response time in milliseconds.</li>
+    <li>If the banner is absent, the backend health check could not be reached — see §6.2.</li>
+  </ul>
+
+  <h4>Quick Actions Grid</h4>
+  <ol class="steps">
+    <li><div class="step-text">Four shortcut buttons are shown: <em>View Devices</em>, <em>Hardware Config</em>, <em>RFID Handover</em>, <em>Audit Log</em>.</div></li>
+    <li><div class="step-text">Click any button to jump directly to that tab — identical to clicking the tab at the top.</div></li>
+  </ol>
+
+  <h4>Recent Audit Events</h4>
+  <ol class="steps">
+    <li><div class="step-text">The last 5 system events are listed with: action name, user, role, time, and status badge.</div></li>
+    <li><div class="step-text">A <span class="badge-ok">success</span> badge means the action completed normally. A <span class="badge-err">failure</span> badge means an action was attempted but rejected.</div></li>
+    <li><div class="step-text">To see the full log, click the <strong>Audit Log</strong> tab or use the Quick Action button.</div></li>
+  </ol>
+</div>
+
+<div class="section" id="overview-fail">
+  <h3>🔧 2.2 &nbsp; What To Do When the Overview Fails</h3>
+  <div class="troubleshoot">
+    <div class="ts-title">⚠️ Troubleshooting — Overview</div>
+    <ul class="ts-items">
+      <li>
+        <span class="ts-error">Health banner missing entirely</span>
+        <span class="ts-fix">Backend health endpoint is unreachable. Click the <strong>System Health</strong> tab and hit <em>Refresh</em>. If still blank, backend may be starting up — wait 60 seconds. Escalate to Super Admin if the issue persists more than 5 minutes.</span>
+      </li>
+      <li>
+        <span class="ts-error">All services show DOWN</span>
+        <span class="ts-fix">Major backend outage. Do NOT attempt any write operations (handovers, onboarding). Document the time and notify Admin/Super Admin immediately.</span>
+      </li>
+      <li>
+        <span class="ts-error">"No audit events available"</span>
+        <span class="ts-fix">The audit log endpoint may be slow. Click the <strong>Audit Log</strong> tab and use its Refresh button. If still empty after refresh, this is a backend issue — note and escalate.</span>
+      </li>
+      <li>
+        <span class="ts-error">Quick Action buttons do nothing</span>
+        <span class="ts-fix">Hard-refresh the page (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd>). If JavaScript is blocked in your browser settings, enable it for this domain.</span>
+      </li>
+    </ul>
+  </div>
+</div>
+</div><!-- end ch1 -->
+
+
+<!-- ============================================================
+     CH 2 — DEVICE REGISTRY
+     ============================================================ -->
+<div class="page-break" id="ch2">
+<div class="chapter-header">
+  <div class="ch-num">Chapter 3</div>
+  <h2>Device Registry 📋</h2>
+  <p>View, register, configure, and deregister all hardware devices in the facility.</p>
+</div>
+
+<div class="section" id="devreg-how">
+  <h3>🗂️ 3.1 &nbsp; How to Use Device Registry</h3>
+
+  <h4>Viewing All Devices</h4>
+  <ol class="steps">
+    <li><div class="step-text">Click the <strong>Device Registry</strong> tab in the navigation bar.</div></li>
+    <li><div class="step-text">The device list loads automatically. Each row shows: Device Tag, Type, Model, Serial Number, Status, and last assignment details.</div></li>
+    <li><div class="step-text">Device statuses:
+      <br><span class="badge-ok">Available</span> — Device is in stock, not assigned.
+      <br><span class="badge-warn">Assigned</span> — Device is currently with a staff member.
+      <br><span class="badge-err">Maintenance</span> — Device is under repair and cannot be assigned.
+    </div></li>
+    <li><div class="step-text">Use the <strong>search or filter</strong> controls (if present) to narrow by device type or status.</div></li>
+  </ol>
+
+  <h4>Registering a New Device</h4>
+  <div class="tip"><strong>Supported types:</strong> RFID Reader, Camera, Biometric Scanner, Network Switch, Gateway, Scale, Printer, Tablet, PLC, Barcode Scanner, Temperature Sensor, pH Meter, Environmental Sensor.</div>
+  <ol class="steps">
+    <li><div class="step-text">In the Device Registry tab, click <strong>"Register New Device"</strong> (or the + button).</div></li>
+    <li><div class="step-text">Fill in the registration form. Required fields are marked with <span style="color:red">*</span>:</div></li>
+  </ol>
+
+  <table class="field-table">
+    <tr><th>Field</th><th>Description</th><th>Required</th></tr>
+    <tr><td>Device Tag</td><td>Unique identifier (e.g. <code>DEV-001</code>). Scan RFID or enter manually.</td><td class="req">✓</td></tr>
+    <tr><td>Device Type</td><td>Select from the supported device type list.</td><td class="req">✓</td></tr>
+    <tr><td>Model</td><td>Manufacturer model name (e.g. <em>Zebra ZD410</em>).</td><td class="req">✓</td></tr>
+    <tr><td>Serial Number</td><td>Physical serial number printed on the device.</td><td class="req">✓</td></tr>
+    <tr><td>Location</td><td>Current physical location in the facility.</td><td></td></tr>
+    <tr><td>Notes</td><td>Any special configuration notes or warranty info.</td><td></td></tr>
+  </table>
+
+  <ol class="steps" start="3">
+    <li><div class="step-text">Click <strong>"Register"</strong>. A success message confirms the device is now in the system.</div></li>
+    <li><div class="step-text">The device will appear with status <span class="badge-ok">Available</span> in the list.</div></li>
+  </ol>
+
+  <h4>Configuring an Existing Device</h4>
+  <ol class="steps">
+    <li><div class="step-text">Find the device in the list. Click its row or the <strong>"Configure"</strong> / edit icon on the right.</div></li>
+    <li><div class="step-text">Update the settings as needed (e.g. change location, update notes, toggle maintenance mode).</div></li>
+    <li><div class="step-text">Click <strong>"Save"</strong>. A confirmation message appears.</div></li>
+  </ol>
+
+  <h4>Deregistering (Removing) a Device</h4>
+  <div class="warn">⚠️ Deregistration is irreversible from the UI. Ensure the device is in <span class="badge-ok">Available</span> status (not currently assigned) before proceeding.</div>
+  <ol class="steps">
+    <li><div class="step-text">Confirm the device is not currently assigned to any staff member (check Handover tab → Active Assignments).</div></li>
+    <li><div class="step-text">Click the device row → select <strong>"Deregister"</strong> or the trash icon.</div></li>
+    <li><div class="step-text">Confirm the prompt. The device is removed from active inventory.</div></li>
+  </ol>
+</div>
+
+<div class="section" id="devreg-fail">
+  <h3>🔧 3.2 &nbsp; What To Do When Device Registry Fails</h3>
+  <div class="troubleshoot">
+    <div class="ts-title">⚠️ Troubleshooting — Device Registry</div>
+    <ul class="ts-items">
+      <li>
+        <span class="ts-error">Device list is empty on load</span>
+        <span class="ts-fix">Refresh the tab (navigate away and back). Check System Health — if the API service is DOWN, the list cannot load. Wait for backend recovery.</span>
+      </li>
+      <li>
+        <span class="ts-error">"Registration failed" / form submission error</span>
+        <span class="ts-fix">Ensure all required fields are filled. Check that the Device Tag is unique (duplicates are rejected). If the backend is returning 500 errors, escalate to Admin.</span>
+      </li>
+      <li>
+        <span class="ts-error">Device tag already exists error</span>
+        <span class="ts-fix">Search the existing list for that tag. If it's an old decommissioned device, ask Admin to permanently delete it from the database before re-using the tag.</span>
+      </li>
+      <li>
+        <span class="ts-error">Cannot deregister — assigned device</span>
+        <span class="ts-fix">Go to RFID Handover → Active Assignments, find and return the device first, then retry deregistration.</span>
+      </li>
+      <li>
+        <span class="ts-error">Changes saved but don't appear after refresh</span>
+        <span class="ts-fix">Browser cache issue — hard-refresh (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd>). If the data still reverts, this is a backend persistence issue — escalate with a screenshot.</span>
+      </li>
+    </ul>
+  </div>
+</div>
+</div><!-- end ch2 -->
+
+
+<!-- ============================================================
+     CH 3 — HARDWARE CONFIG
+     ============================================================ -->
+<div class="page-break" id="ch3">
+<div class="chapter-header">
+  <div class="ch-num">Chapter 4</div>
+  <h2>Hardware Configuration ⚙️</h2>
+  <p>Configure RFID readers, face recognition cameras, label printers, and QR code generators.</p>
+</div>
+
+<div class="section" id="hwcfg-rfid">
+  <h3>📡 4.1 &nbsp; RFID Reader Configuration</h3>
+  <ol class="steps">
+    <li><div class="step-text">Click the <strong>Hardware Config</strong> tab, then select the <strong>"RFID Reader"</strong> sub-tab.</div></li>
+    <li><div class="step-text">Current settings load automatically. Key fields:</div></li>
+  </ol>
+  <table class="field-table">
+    <tr><th>Setting</th><th>Description</th><th>Recommended</th></tr>
+    <tr><td>Connection Type</td><td>USB / Serial / TCP/IP / Bluetooth</td><td>USB (most reliable)</td></tr>
+    <tr><td>Model</td><td>Select from supported models list</td><td>Match your hardware exactly</td></tr>
+    <tr><td>Read Timeout (ms)</td><td>How long to wait for a tag read</td><td>500–2000 ms</td></tr>
+    <tr><td>Power Level</td><td>Antenna TX power (dBm)</td><td>20–30 dBm typical</td></tr>
+    <tr><td>Antenna Configuration</td><td>Port(s) used (1–4)</td><td>Port 1 for single antenna</td></tr>
+  </table>
+  <ol class="steps" start="3">
+    <li><div class="step-text">Adjust settings as needed for your hardware model.</div></li>
+    <li><div class="step-text">Click <strong>"Save Configuration"</strong>. A success alert confirms the save.</div></li>
+    <li><div class="step-text">Physically reconnect the reader if you changed the connection type, then test via RFID Handover → Scan Device.</div></li>
+  </ol>
+  <div class="tip"><strong>Tip:</strong> If you are unsure of the correct power level, start at 20 dBm and increase by 5 until reliable reads are achieved. Higher is not always better (can cause multi-read errors).</div>
+</div>
+
+<div class="section" id="hwcfg-face">
+  <h3>📷 4.2 &nbsp; Face Recognition Configuration</h3>
+  <ol class="steps">
+    <li><div class="step-text">Select the <strong>"Face Recognition"</strong> sub-tab under Hardware Config.</div></li>
+    <li><div class="step-text">Key settings:</div></li>
+  </ol>
+  <table class="field-table">
+    <tr><th>Setting</th><th>Description</th><th>Recommended</th></tr>
+    <tr><td>Connection Type</td><td>USB Camera / Network Camera / Built-in</td><td>USB Camera (low latency)</td></tr>
+    <tr><td>Detection Method</td><td>Algorithm used for face detection</td><td>Default (leave unless advised by vendor)</td></tr>
+    <tr><td>Confidence Threshold</td><td>Min score to accept a face detection (0–1)</td><td>0.6</td></tr>
+    <tr><td>Recognition Threshold</td><td>Min score to match a registered face (0–1)</td><td>0.5</td></tr>
+  </table>
+  <ol class="steps" start="3">
+    <li><div class="step-text">Click <strong>"Save Configuration"</strong>.</div></li>
+    <li><div class="step-text">Test by having a registered staff member attempt face check-in at the station.</div></li>
+  </ol>
+  <div class="warn">⚠️ <strong>Privacy note:</strong> Do not adjust recognition thresholds below 0.4 — this increases false-positive matches and creates a security risk.</div>
+</div>
+
+<div class="section" id="hwcfg-printer">
+  <h3>🖨️ 4.3 &nbsp; Label Printer Configuration</h3>
+  <ol class="steps">
+    <li><div class="step-text">Select the <strong>"Label Printer"</strong> sub-tab.</div></li>
+    <li><div class="step-text">Key settings:</div></li>
+  </ol>
+  <table class="field-table">
+    <tr><th>Setting</th><th>Description</th><th>Notes</th></tr>
+    <tr><td>Connection Type</td><td>USB / Network / Bluetooth / Serial</td><td>Network for shared printers</td></tr>
+    <tr><td>Model</td><td>Zebra ZD Series / DYMO / Brother QL / Generic ESC/POS</td><td>Must match physical printer</td></tr>
+    <tr><td>Paper Width (mm)</td><td>Width of the label stock in mm</td><td>62mm standard, 40mm narrow</td></tr>
+    <tr><td>Print Density</td><td>Darkness / DPI setting</td><td>8 (medium) default</td></tr>
+    <tr><td>Speed (mm/s)</td><td>Print head speed</td><td>50–100 mm/s standard</td></tr>
+    <tr><td>Label Format</td><td>ZPL / EPL / Generic template name</td><td>Must match label design file</td></tr>
+  </table>
+  <ol class="steps" start="3">
+    <li><div class="step-text">Click <strong>"Save Configuration"</strong>.</div></li>
+    <li><div class="step-text">Print a test label from the Weight Notes or Inventory module to verify the output.</div></li>
+  </ol>
+</div>
+
+<div class="section" id="hwcfg-qr">
+  <h3>🔲 4.4 &nbsp; QR Code Configuration</h3>
+  <p>QR Code is software-only — no physical hardware connection required.</p>
+  <ol class="steps">
+    <li><div class="step-text">Select the <strong>"QR Code"</strong> sub-tab.</div></li>
+    <li><div class="step-text">Key settings:</div></li>
+  </ol>
+  <table class="field-table">
+    <tr><th>Setting</th><th>Description</th><th>Recommended</th></tr>
+    <tr><td>QR Version</td><td>Data capacity (1–40). Higher = more data but larger code.</td><td>1 (auto-select)</td></tr>
+    <tr><td>Error Correction</td><td>L / M / Q / H. H = highest redundancy.</td><td>M for most uses</td></tr>
+    <tr><td>Box Size</td><td>Pixel size of each QR module</td><td>10</td></tr>
+    <tr><td>Border</td><td>Quiet zone size in modules</td><td>4 (minimum recommended)</td></tr>
+  </table>
+  <ol class="steps" start="3">
+    <li><div class="step-text">Click <strong>"Save Configuration"</strong>. QR generation across the system will use these settings immediately.</div></li>
+  </ol>
+</div>
+
+<div class="section" id="hwcfg-fail">
+  <h3>🔧 4.5 &nbsp; What To Do When Hardware Config Fails</h3>
+  <div class="troubleshoot">
+    <div class="ts-title">⚠️ Troubleshooting — Hardware Config</div>
+    <ul class="ts-items">
+      <li>
+        <span class="ts-error">Settings don't load (404 in console)</span>
+        <span class="ts-fix">The backend configuration endpoint for this device type may not yet exist. Settings may only be saveable (first-time save creates the record). Try saving a default configuration to initialise it.</span>
+      </li>
+      <li>
+        <span class="ts-error">"Failed to save configuration" alert</span>
+        <span class="ts-fix">Check that all required fields are filled. Confirm your session hasn't expired (logout and login again). If the 500 error persists, escalate to Admin with the device type and field values you tried to save.</span>
+      </li>
+      <li>
+        <span class="ts-error">RFID reader not responding after config change</span>
+        <span class="ts-fix">1) Disconnect and reconnect the reader's USB cable. 2) Verify the Connection Type matches the physical connection. 3) Check Device Manager (Windows) or <code>lsusb</code> (Linux) to confirm the OS sees the device. 4) Try the Generic USB HID model if the exact model isn't listed.</span>
+      </li>
+      <li>
+        <span class="ts-error">Face camera not detected</span>
+        <span class="ts-fix">Verify the camera is plugged in and has browser permission (<em>chrome://settings/content/camera</em>). Ensure no other application is using the camera. Reload the page.</span>
+      </li>
+      <li>
+        <span class="ts-error">Label printer prints garbage / incorrect format</span>
+        <span class="ts-fix">Verify the Model setting matches your exact printer. Check that the Label Format (ZPL/EPL) matches what the printer firmware expects. Confirm Paper Width matches loaded stock. Run a self-test print on the printer (hold feed button on power-up).</span>
+      </li>
+    </ul>
+  </div>
+</div>
+</div><!-- end ch3 -->
+
+
+<!-- ============================================================
+     CH 4 — RFID HANDOVER
+     ============================================================ -->
+<div class="page-break" id="ch4">
+<div class="chapter-header">
+  <div class="ch-num">Chapter 5</div>
+  <h2>RFID Device Handover 🔁</h2>
+  <p>Issue RFID devices to station staff, process returns, and view assignment history.</p>
+</div>
+
+<div class="section" id="rfid-handover-how">
+  <h3>📲 5.1 &nbsp; How to Issue a Device to Staff</h3>
+  <div class="tip"><strong>Before you start:</strong> The device must be registered in Device Registry with status <span class="badge-ok">Available</span>. The staff member receiving the device must have an active account in the system.</div>
+
+  <ol class="steps">
+    <li><div class="step-text">Click the <strong>RFID Handover</strong> tab. The <strong>"New Handover"</strong> view loads by default.</div></li>
+    <li><div class="step-text"><strong>Step 1 — Identify the Device.</strong> You have two options:<br>
+      <em>a) Scan:</em> Click <strong>"Scan Device RFID Tag"</strong>. The RFID reader must be connected and the device tag in range. The system will fill in the device details automatically.<br>
+      <em>b) Manual:</em> Type the Device Tag (e.g. <code>DEV-001</code>) into the "Enter Device Tag Manually" field. The device details appear below if found.</div></li>
+    <li><div class="step-text">Confirm the device card shows <span class="badge-ok">AVAILABLE</span>. If it shows <span class="badge-warn">ASSIGNED</span>, the device is already with someone — process a return first (§5.2).</div></li>
+    <li><div class="step-text"><strong>Step 2 — Select Staff Member.</strong> The right panel lists all active staff without a currently assigned device. Click the name of the staff member who will receive the device. Their details are highlighted.</div></li>
+    <li><div class="step-text">Review the <strong>Summary</strong> box at the bottom right — verify device tag, staff name, and station are correct.</div></li>
+    <li><div class="step-text">Click <strong>"✅ Complete Handover"</strong>. A green success banner confirms: <em>"Device DEV-XXX successfully handed over to [Name] at [Station]"</em>.</div></li>
+    <li><div class="step-text">The device status changes to <span class="badge-warn">Assigned</span> and it moves to the Active Assignments tab.</div></li>
+  </ol>
+
+  <div class="warn">⚠️ <strong>Physical handover:</strong> Ensure you physically hand the device to the staff member at the same time as completing the digital handover. Both records must match.</div>
+</div>
+
+<div class="section" id="rfid-return-how">
+  <h3>🔄 5.2 &nbsp; How to Process a Device Return</h3>
+  <ol class="steps">
+    <li><div class="step-text">In the RFID Handover tab, click <strong>"✅ Active Assignments"</strong> sub-tab.</div></li>
+    <li><div class="step-text">Find the device being returned (by device tag or staff name).</div></li>
+    <li><div class="step-text">Click the orange <strong>"🔄 Return Device"</strong> button on that row.</div></li>
+    <li><div class="step-text">Confirm the return in the prompt. The device status reverts to <span class="badge-ok">Available</span> and it disappears from Active Assignments.</div></li>
+    <li><div class="step-text">Physically receive the device from the staff member and store it in the device cabinet.</div></li>
+    <li><div class="step-text">If the device is damaged, proceed to Device Registry → find the device → set status to <span class="badge-err">Maintenance</span>.</div></li>
+  </ol>
+</div>
+
+<div class="section" id="rfid-history">
+  <h3>📋 5.3 &nbsp; Viewing Handover History</h3>
+  <ol class="steps">
+    <li><div class="step-text">In the RFID Handover tab, click <strong>"📋 History"</strong> sub-tab.</div></li>
+    <li><div class="step-text">Past handovers and returns are listed with: device tag → staff name, station, and return timestamp.</div></li>
+    <li><div class="step-text">If the history is empty, no devices have been returned yet (all currently active, or no handovers recorded).</div></li>
+  </ol>
+  <div class="tip"><strong>Audit trail:</strong> All handover events are also logged in the Audit Log tab for compliance purposes.</div>
+</div>
+
+<div class="section" id="rfid-fail">
+  <h3>🔧 5.4 &nbsp; What To Do When Handover Fails</h3>
+  <div class="troubleshoot">
+    <div class="ts-title">⚠️ Troubleshooting — RFID Handover</div>
+    <ul class="ts-items">
+      <li>
+        <span class="ts-error">Scan button doesn't read the tag</span>
+        <span class="ts-fix">1) Ensure the RFID reader is physically connected and powered. 2) Check Hardware Config → RFID Reader settings are correct. 3) Hold the device tag within 5 cm of the reader antenna. 4) Try "Enter Device Tag Manually" as a fallback — scanning is optional.</span>
+      </li>
+      <li>
+        <span class="ts-error">"Device not found in system"</span>
+        <span class="ts-fix">The device tag scanned/entered does not exist in Device Registry. Register it first via the Device Registry tab, then retry the handover.</span>
+      </li>
+      <li>
+        <span class="ts-error">Device shows as ASSIGNED (can't hand over)</span>
+        <span class="ts-fix">Someone previously checked it out. Go to Active Assignments and process the return first, then do the new handover.</span>
+      </li>
+      <li>
+        <span class="ts-error">Staff member not appearing in the list</span>
+        <span class="ts-fix">The staff member may already have a device assigned, may be inactive, or may not be in the system. Check: 1) Active Assignments — if they already have a device. 2) Onboarding tab — if their account is pending Admin approval. 3) Ask Admin to verify the account is active.</span>
+      </li>
+      <li>
+        <span class="ts-error">"Handover failed" error on submit</span>
+        <span class="ts-fix">Backend handover endpoint is unavailable. Note the time and device/staff details. Complete the handover on paper (use the physical logbook) and record the details digitally once the system recovers. Escalate to Admin.</span>
+      </li>
+      <li>
+        <span class="ts-error">Handover recorded but Active Assignments doesn't update</span>
+        <span class="ts-fix">Navigate away and back to the RFID Handover tab to force a data reload. If still not showing, hard-refresh the page.</span>
+      </li>
+    </ul>
+  </div>
+</div>
+</div><!-- end ch4 -->
+
+
+<!-- ============================================================
+     CH 5 — SYSTEM HEALTH
+     ============================================================ -->
+<div class="page-break" id="ch5">
+<div class="chapter-header">
+  <div class="ch-num">Chapter 6</div>
+  <h2>System Health Monitor ❤️</h2>
+  <p>Real-time backend service status and database health diagnostics.</p>
+</div>
+
+<div class="section" id="health-how">
+  <h3>🩺 6.1 &nbsp; How to Read the System Health Panel</h3>
+  <ol class="steps">
+    <li><div class="step-text">Click the <strong>System Health</strong> tab. Health data loads automatically on page open.</div></li>
+    <li><div class="step-text">The <strong>Overall Status card</strong> shows one of three states:</div></li>
+  </ol>
+
+  <table class="field-table">
+    <tr><th>Status</th><th>Meaning</th><th>Action Required</th></tr>
+    <tr><td><span class="badge-ok">Healthy ✅</span></td><td>All systems operational</td><td>None</td></tr>
+    <tr><td><span class="badge-warn">Warning ⚠️</span></td><td>One or more services degraded but system functional</td><td>Monitor closely; notify Admin if persists > 10 min</td></tr>
+    <tr><td><span class="badge-err">Degraded 🔴</span></td><td>Critical service(s) offline</td><td>Immediate escalation to Admin/Super Admin required</td></tr>
+  </table>
+
+  <ol class="steps" start="3">
+    <li><div class="step-text"><strong>Services panel:</strong> Lists each backend service (api, cache, queue, etc.) as <span class="badge-ok">Operational</span> or <span class="badge-err">Down</span>.</div></li>
+    <li><div class="step-text"><strong>Database panel:</strong> Shows connection status (<em>connected</em> / <em>disconnected</em>) and response time in milliseconds. Response time &gt; 500ms is slow; &gt; 2000ms is critical.</div></li>
+    <li><div class="step-text">Click <strong>"↻ Refresh"</strong> at any time to get the latest data.</div></li>
+  </ol>
+
+  <div class="quick-ref">
+    <h4>✅ Healthy Response Time Guide</h4>
+    <ul class="plain">
+      <li><strong>&lt; 100 ms</strong> — Excellent</li>
+      <li><strong>100–300 ms</strong> — Good</li>
+      <li><strong>300–500 ms</strong> — Acceptable</li>
+      <li><strong>500–2000 ms</strong> — Slow — investigate network or DB load</li>
+      <li><strong>&gt; 2000 ms</strong> — Critical — escalate immediately</li>
+    </ul>
+  </div>
+
+  <h4>Uptime Display</h4>
+  <p>The uptime value (e.g. <em>"3 days 4 hours"</em>) shows how long the backend has been running without a restart. Unexpectedly low uptime (minutes) may indicate a recent crash or deployment.</p>
+</div>
+
+<div class="section" id="health-fail">
+  <h3>🔧 6.2 &nbsp; Responding to Health Alerts</h3>
+  <div class="troubleshoot">
+    <div class="ts-title">⚠️ Troubleshooting — System Health</div>
+    <ul class="ts-items">
+      <li>
+        <span class="ts-error">"System health data unavailable"</span>
+        <span class="ts-fix">The health check endpoint cannot be reached. Check your internet connection first. Then wait 2–3 minutes — the backend may be restarting (Railway cold start). Click Refresh. If still unavailable after 5 minutes, escalate to Super Admin with current time.</span>
+      </li>
+      <li>
+        <span class="ts-error">One service shows DOWN</span>
+        <span class="ts-fix">Identify which service. If it is <em>cache</em> or <em>queue</em>, the system may still function — notify Admin but continue operations cautiously. If it is <em>api</em> or <em>database</em>, halt all write operations and escalate immediately.</span>
+      </li>
+      <li>
+        <span class="ts-error">Database response time > 2000 ms</span>
+        <span class="ts-fix">Heavy load or a slow query is blocking the database. Do not run large reports or batch imports. Notify Admin. If the response time doesn't improve within 10 minutes, escalate to Super Admin.</span>
+      </li>
+      <li>
+        <span class="ts-error">Services panel shows "No service data available"</span>
+        <span class="ts-fix">The backend's detailed health endpoint returned incomplete data. Click Refresh once more. This is usually transient (health endpoint returning before all services have initialized). If it persists after 3 refreshes, escalate to Admin.</span>
+      </li>
+      <li>
+        <span class="ts-error">Status shows Healthy but app features are broken</span>
+        <span class="ts-fix">The health check may be a "false positive" (backend is up but a specific feature endpoint is down). Check the Audit Log for recent errors. Open DevTools → Network tab and look for red (4xx/5xx) requests. Document and escalate with the specific endpoint that is failing.</span>
+      </li>
+    </ul>
+  </div>
+</div>
+</div><!-- end ch5 -->
+
+
+<!-- ============================================================
+     CH 6 — AUDIT LOG
+     ============================================================ -->
+<div class="page-break" id="ch6">
+<div class="chapter-header">
+  <div class="ch-num">Chapter 7</div>
+  <h2>Audit Log 📜</h2>
+  <p>Full trail of all system events — who did what, when, from which IP, and whether it succeeded.</p>
+</div>
+
+<div class="section" id="audit-how">
+  <h3>🔍 7.1 &nbsp; How to Read the Audit Log</h3>
+  <ol class="steps">
+    <li><div class="step-text">Click the <strong>Audit Log</strong> tab. The most recent events load first.</div></li>
+    <li><div class="step-text">Each row contains:
+      <br>• <strong>Timestamp</strong> — Date and time of the event.
+      <br>• <strong>User</strong> — Full name of the person who performed the action.
+      <br>• <strong>Role</strong> — Their system role at the time.
+      <br>• <strong>Action</strong> — What was done (e.g. <em>LOGIN</em>, <em>DEVICE_HANDOVER</em>, <em>WEIGHT_NOTE_CREATED</em>).
+      <br>• <strong>IP Address</strong> — The source IP address.
+      <br>• <strong>Status</strong> — <span class="badge-ok">success</span> or <span class="badge-err">failure</span>.
+    </div></li>
+    <li><div class="step-text">Click <strong>"↻ Refresh"</strong> to pull the latest entries.</div></li>
+    <li><div class="step-text">For compliance investigations, note the Timestamp, User, Action, and IP Address — these are the key fields for a report.</div></li>
+  </ol>
+
+  <h4>Common Audit Actions to Monitor as IT Staff</h4>
+  <table class="field-table">
+    <tr><th>Action Code</th><th>What it means</th><th>Alert if…</th></tr>
+    <tr><td>LOGIN_FAILED</td><td>Someone failed to log in</td><td>Multiple failures from same IP in short time (brute force attempt)</td></tr>
+    <tr><td>DEVICE_DEREGISTER</td><td>A device was removed from registry</td><td>Unexpected deregistration — verify with the person listed</td></tr>
+    <tr><td>CONFIG_CHANGE</td><td>Hardware config was updated</td><td>Change made by a non-IT Staff user</td></tr>
+    <tr><td>UNAUTHORIZED_ACCESS</td><td>Someone tried to access a restricted feature</td><td>Any occurrence — escalate immediately</td></tr>
+  </table>
+
+  <div class="tip"><strong>Tip:</strong> The audit log is read-only. You cannot delete or modify entries. This protects the integrity of the compliance record.</div>
+</div>
+
+<div class="section" id="audit-fail">
+  <h3>🔧 7.2 &nbsp; What To Do When the Audit Log Fails</h3>
+  <div class="troubleshoot">
+    <div class="ts-title">⚠️ Troubleshooting — Audit Log</div>
+    <ul class="ts-items">
+      <li>
+        <span class="ts-error">"No audit log entries available"</span>
+        <span class="ts-fix">Click the Refresh button. If still empty, check System Health — the audit endpoint may be down. This is an escalation item if it remains empty for more than 15 minutes during active use (the log should always have entries).</span>
+      </li>
+      <li>
+        <span class="ts-error">404 error in browser console for /dashboard/audit/logs</span>
+        <span class="ts-fix">Backend routing issue. Do not attempt to fix from the frontend. Escalate to Admin/Super Admin with the exact error from browser DevTools → Network tab.</span>
+      </li>
+      <li>
+        <span class="ts-error">Log shows suspicious entries (unfamiliar users, odd IPs)</span>
+        <span class="ts-fix">Do not dismiss. Screenshot the suspicious rows. Report to Admin immediately with: Username, Timestamp, Action, IP Address. This may indicate an unauthorized access attempt.</span>
+      </li>
+      <li>
+        <span class="ts-error">Log only shows old entries (not refreshing)</span>
+        <span class="ts-fix">Click Refresh. If the timestamp of the latest entry doesn't update, the backend may be caching responses. Hard-refresh the browser page. Escalate if the issue persists — live audit data must be available for compliance.</span>
+      </li>
+    </ul>
+  </div>
+</div>
+</div><!-- end ch6 -->
+
+
+<!-- ============================================================
+     CH 7 — ONBOARDING: STAFF
+     ============================================================ -->
+<div class="page-break" id="ch7">
+<div class="chapter-header">
+  <div class="ch-num">Chapter 8</div>
+  <h2>Onboarding — Staff 👤</h2>
+  <p>Submit new staff onboarding requests to Admin for approval and account activation.</p>
+</div>
+
+<div class="section" id="onb-staff-how">
+  <h3>👤 8.1 &nbsp; How to Submit a Staff Onboarding Request</h3>
+
+  <div class="warn">⚠️ <strong>Approval flow:</strong> IT Staff can <em>initiate</em> onboarding but cannot <em>activate</em> accounts. All submissions are sent to Admin as <span class="badge-pend">Pending</span>. Admin approves and activates the account, then completes Aadhar, Bank, and Face verification via the User Management panel.</div>
+
+  <ol class="steps">
+    <li><div class="step-text">Click the <strong>Onboarding</strong> tab (last tab, 👤 icon). The <strong>"👤 Staff"</strong> sub-tab is shown by default.</div></li>
+    <li><div class="step-text">Read the amber approval notice banner to confirm you understand the flow.</div></li>
+    <li><div class="step-text">Fill in the <strong>New Staff Onboarding Request</strong> form:</div></li>
+  </ol>
+
+  <table class="field-table">
+    <tr><th>Field</th><th>Description</th><th>Required</th></tr>
+    <tr><td>Full Name</td><td>Staff member's full legal name (as per ID)</td><td class="req">✓</td></tr>
+    <tr><td>Department</td><td>Production / Quality Control / Security / IT / Other</td><td class="req">✓</td></tr>
+    <tr><td>Role</td><td>Their job designation in the system (see role list below)</td><td class="req">✓</td></tr>
+    <tr><td>Phone</td><td>Mobile number in +91 XXXXXXXXXX format</td><td></td></tr>
+    <tr><td>Email</td><td>Work or personal email for account credentials delivery</td><td></td></tr>
+    <tr><td>Start Date</td><td>Date the person begins work</td><td class="req">✓</td></tr>
+    <tr><td>Initial Station</td><td>Which station / work area they are assigned to</td><td></td></tr>
+    <tr><td>Notes for Admin</td><td>Any context useful for the Admin during verification (e.g. "joining as replacement for X", "urgent — starting tomorrow")</td><td></td></tr>
+  </table>
+
+  <div class="quick-ref">
+    <h4>Available Roles for New Staff</h4>
+    <ul class="plain">
+      <li>Production Staff · Production Lead</li>
+      <li>QC Staff · QC Lead</li>
+      <li>Security Guard · Gate Staff</li>
+      <li>Maintenance Staff · Staff Lead</li>
+      <li>IT Staff</li>
+    </ul>
+  </div>
+
+  <ol class="steps" start="4">
+    <li><div class="step-text">Click <strong>"📤 Submit for Admin Approval"</strong>. A green success banner confirms: <em>"Onboarding request for [Name] submitted — pending Admin approval."</em></div></li>
+    <li><div class="step-text">The form resets automatically, ready for the next entry.</div></li>
+    <li><div class="step-text">Notify the staff member that their login credentials will be sent by Admin once the account is activated (typically within 1 business day).</div></li>
+  </ol>
+
+  <h4>What Happens Next (Approval Flow)</h4>
+  <ol class="steps">
+    <li><div class="step-text">Admin sees the new <span class="badge-pend">Pending</span> request in User Management → Pending Onboarding.</div></li>
+    <li><div class="step-text">Admin reviews, verifies physical documents (Aadhar, bank details, face photo), and approves.</div></li>
+    <li><div class="step-text">Upon approval, a user account is created and login credentials are sent to the staff member.</div></li>
+    <li><div class="step-text">Admin completes the Aadhar and face verification steps via the "Complete Onboarding" modal in User Management.</div></li>
+  </ol>
+</div>
+
+<div class="section" id="onb-staff-fail">
+  <h3>🔧 8.2 &nbsp; What To Do When Staff Onboarding Fails</h3>
+  <div class="troubleshoot">
+    <div class="ts-title">⚠️ Troubleshooting — Staff Onboarding</div>
+    <ul class="ts-items">
+      <li>
+        <span class="ts-error">"Submission failed" error on submit</span>
+        <span class="ts-fix">Check all required fields (Full Name, Department, Role, Start Date) are filled. Verify you have an active internet connection. If the backend rejects the request, note the error message and escalate to Admin. As an offline fallback, record the details in the physical onboarding logbook.</span>
+      </li>
+      <li>
+        <span class="ts-error">"Saved offline" message appears</span>
+        <span class="ts-fix">This is expected if your device has no internet. The submission is queued locally and will sync automatically when the connection is restored. Do not submit again — this will create duplicates. Verify later that the entry appears in Admin's pending list.</span>
+      </li>
+      <li>
+        <span class="ts-error">Submission says success but Admin can't find it</span>
+        <span class="ts-fix">The online submission was accepted but the backend's pending list endpoint may be stale. Ask Admin to refresh/reload the User Management panel. If still not found after 10 minutes, re-submit and note it as a possible duplicate in the Notes field.</span>
+      </li>
+      <li>
+        <span class="ts-error">Wrong role accidentally selected and submitted</span>
+        <span class="ts-fix">You cannot edit a submitted request from the IT Staff dashboard. Contact Admin immediately and ask them to correct the role in the pending request before approving it.</span>
+      </li>
+      <li>
+        <span class="ts-error">"Access denied" / Onboarding tab not visible</span>
+        <span class="ts-fix">Your account's STAFF_ONBOARD permission may not be set. Ask Admin to verify your role is "IT Staff" (exactly, with capital I and capital S) in the user profile.</span>
+      </li>
+    </ul>
+  </div>
+</div>
+</div><!-- end ch7 -->
+
+
+<!-- ============================================================
+     CH 8 — ONBOARDING: SUPPLIERS
+     ============================================================ -->
+<div class="page-break" id="ch8">
+<div class="chapter-header">
+  <div class="ch-num">Chapter 9</div>
+  <h2>Onboarding — Suppliers &amp; Vendors 🚚</h2>
+  <p>Register new boat owners and agents with Aadhar, bank details, and face recognition.</p>
+</div>
+
+<div class="section" id="onb-sup-how">
+  <h3>🚢 9.1 &nbsp; How to Register a Supplier / Vendor</h3>
+
+  <p>The Suppliers / Vendors panel mirrors the Staff Lead's full onboarding workflow. All new registrations are submitted with <span class="badge-pend">Pending</span> status and require Admin approval before the supplier can transact.</p>
+
+  <ol class="steps">
+    <li><div class="step-text">In the <strong>Onboarding</strong> tab, click the <strong>"🚚 Suppliers / Vendors"</strong> sub-tab.</div></li>
+    <li><div class="step-text">The Supplier Onboarding panel loads with four sub-tabs: <em>New Registration</em>, <em>Pending</em>, <em>Incomplete</em>, <em>Approved</em>.</div></li>
+  </ol>
+
+  <h4>Creating a New Registration</h4>
+  <ol class="steps">
+    <li><div class="step-text">Click <strong>"➕ New Registration"</strong> tab.</div></li>
+    <li><div class="step-text">Select the supplier type: <strong>Boat Owner</strong> (primary supplier) or <strong>Agent</strong> (representative acting on behalf of a boat owner).</div></li>
+    <li><div class="step-text">Fill in the multi-step form. The form has these key steps:<br>
+      <strong>Step 1 — Basic Details:</strong> First name, last name, address, contact number, email, boat registration number (for boat owners), GST number.
+    </div></li>
+    <li><div class="step-text"><strong>Step 2 — Aadhar Verification:</strong> Enter the 12-digit Aadhar number. Click <strong>"Confirm Aadhar"</strong>. The system validates the format and marks it as attested (no OTP — verification is admin-attested).</div></li>
+    <li><div class="step-text"><strong>Step 3 — Bank Details:</strong> Bank name, account number, IFSC code, account holder name, and optional UPI ID.</div></li>
+    <li><div class="step-text"><strong>Step 4 — Face Registration:</strong> Click <strong>"Start Camera"</strong>. Position the supplier's face in the video frame and click <strong>"Capture"</strong>. Verify the captured image and accept it.</div></li>
+    <li><div class="step-text"><strong>Step 5 — Review &amp; Submit:</strong> Confirm all details are correct. Click <strong>"Submit Registration"</strong>. The record is saved as <span class="badge-pend">Pending</span>.</div></li>
+    <li><div class="step-text">Admin will review and either approve or reject the registration. You can monitor status in the <em>Pending</em> tab.</div></li>
+  </ol>
+
+  <h4>Registering an Agent</h4>
+  <ol class="steps">
+    <li><div class="step-text">Select type <strong>Agent</strong> in the New Registration form.</div></li>
+    <li><div class="step-text">In addition to personal details, link the agent to an existing <strong>Boat Owner</strong> by selecting from the dropdown.</div></li>
+    <li><div class="step-text">Complete the <strong>Agent Declaration</strong>: agent name, phone, relationship to boat owner, authorized activities, and mark consent given.</div></li>
+    <li><div class="step-text">Submit — follows same Aadhar + Bank + Face flow.</div></li>
+  </ol>
+
+  <h4>Checking Pending &amp; Incomplete Records</h4>
+  <ol class="steps">
+    <li><div class="step-text"><span class="badge-pend">Pending</span> tab — submitted registrations awaiting Admin approval. Share the registration ID with Admin if they can't find it.</div></li>
+    <li><div class="step-text"><span class="badge-warn">Incomplete</span> tab — registrations where one or more verification steps (Aadhar / Bank / Face) are missing. Return to these records to complete them before Admin can approve.</div></li>
+  </ol>
+</div>
+
+<div class="section" id="onb-sup-fail">
+  <h3>🔧 9.2 &nbsp; What To Do When Supplier Onboarding Fails</h3>
+  <div class="troubleshoot">
+    <div class="ts-title">⚠️ Troubleshooting — Supplier Onboarding</div>
+    <ul class="ts-items">
+      <li>
+        <span class="ts-error">Aadhar "invalid format" error</span>
+        <span class="ts-fix">The Aadhar number must be exactly 12 digits (no letters, no spaces, no dashes). Re-enter carefully. If the physical card has spaces, remove them before typing. Example: 1234 5678 9012 → enter as 123456789012.</span>
+      </li>
+      <li>
+        <span class="ts-error">Camera doesn't start for face registration</span>
+        <span class="ts-fix">1) Allow camera permissions in the browser popup. 2) Check chrome://settings/content/camera and ensure this site is allowed. 3) Close other applications using the camera (e.g. Teams, Zoom). 4) Try a different browser. If no camera is available, note in the record and ask Admin to complete face registration at the admin workstation.</span>
+      </li>
+      <li>
+        <span class="ts-error">Face capture is blurry or rejected</span>
+        <span class="ts-fix">Ensure good lighting (face should be evenly lit, not backlit). Ask the person to remove glasses if the system cannot detect the face. Position them 40–60 cm from the camera. Try multiple captures and select the best.</span>
+      </li>
+      <li>
+        <span class="ts-error">Bank IFSC code validation error</span>
+        <span class="ts-fix">IFSC codes are exactly 11 characters (4 letters + 0 + 6 digits, e.g. SBIN0001234). Verify against the passbook or a bank IFSC lookup site. Ensure there are no spaces.</span>
+      </li>
+      <li>
+        <span class="ts-error">Duplicate registration warning</span>
+        <span class="ts-fix">The supplier may already exist. Check the Approved tab by name or boat registration number. If it's truly a new person (same name, different person), add a distinguishing note in the record (e.g. different contact number) and proceed.</span>
+      </li>
+      <li>
+        <span class="ts-error">Submission stuck on loading</span>
+        <span class="ts-fix">Wait up to 30 seconds. If still loading, check your internet connection. Do NOT click submit again (creates duplicates). Refresh the page — if the record appears in Pending, the submission succeeded. If not in Pending, try submitting again.</span>
+      </li>
+      <li>
+        <span class="ts-error">Record stays in Incomplete tab</span>
+        <span class="ts-fix">Click the record → complete the missing step(s) shown in red. Aadhar, Bank Details, and Face Registration are all required for Admin to be able to approve. Complete all three before informing Admin the record is ready for review.</span>
+      </li>
+    </ul>
+  </div>
+</div>
+</div><!-- end ch8 -->
+
+
+<!-- ============================================================
+     CH 9 — ESCALATION & SUPPORT
+     ============================================================ -->
+<div class="page-break" id="ch9">
+<div class="chapter-header">
+  <div class="ch-num">Chapter 10</div>
+  <h2>Escalation &amp; Support Reference</h2>
+  <p>When to escalate, what information to collect, and who to contact.</p>
+</div>
+
+<div class="section">
+  <h3>📞 10.1 &nbsp; Escalation Decision Tree</h3>
+  <table class="field-table">
+    <tr><th>Situation</th><th>First Step</th><th>Escalate To</th><th>Urgency</th></tr>
+    <tr><td>Feature shows error message</td><td>Refresh / retry once</td><td>Admin</td><td>Medium</td></tr>
+    <tr><td>Backend returns 404 / 500 errors</td><td>Check System Health tab</td><td>Admin / Super Admin</td><td>High</td></tr>
+    <tr><td>All services show DOWN</td><td>Do not perform write operations</td><td>Super Admin immediately</td><td>Critical</td></tr>
+    <tr><td>Suspicious audit log entries</td><td>Screenshot the rows</td><td>Admin immediately</td><td>Critical</td></tr>
+    <tr><td>Device physically lost/stolen</td><td>Process return + set Maintenance</td><td>Admin + Supervisor</td><td>Urgent</td></tr>
+    <tr><td>Staff account locked</td><td>Verify username is correct</td><td>Admin</td><td>Medium</td></tr>
+    <tr><td>Camera/printer hardware fault</td><td>Power cycle the device</td><td>Maintenance Staff</td><td>Low</td></tr>
+    <tr><td>Onboarding request lost</td><td>Check Admin's User Management</td><td>Admin</td><td>Low</td></tr>
+  </table>
+</div>
+
+<div class="section">
+  <h3>🗂️ 10.2 &nbsp; Information to Collect Before Escalating</h3>
+  <p>When reporting an issue to Admin or Super Admin, always provide:</p>
+  <ul class="plain">
+    <li>✅ <strong>Date and time</strong> the issue occurred</li>
+    <li>✅ <strong>Your username</strong> and role</li>
+    <li>✅ <strong>Which tab / feature</strong> was in use (e.g. "RFID Handover → New Handover")</li>
+    <li>✅ <strong>Exact error message</strong> shown on screen (screenshot preferred)</li>
+    <li>✅ <strong>Browser console errors</strong>: Press <kbd>F12</kbd> → <em>Console</em> tab → screenshot any red errors</li>
+    <li>✅ <strong>Network requests</strong>: Press <kbd>F12</kbd> → <em>Network</em> tab → screenshot any red (4xx/5xx) requests</li>
+    <li>✅ <strong>Steps to reproduce</strong> — exactly what you clicked before the error appeared</li>
+    <li>✅ <strong>Browser and version</strong> (type <code>chrome://version</code> in Chrome)</li>
+  </ul>
+</div>
+
+<div class="section">
+  <h3>⚡ 10.3 &nbsp; Quick Troubleshooting Checklist</h3>
+  <p>Before escalating any issue, run through this checklist:</p>
+  <ol class="steps">
+    <li><div class="step-text"><strong>Refresh the page</strong> — <kbd>Ctrl</kbd>+<kbd>R</kbd> or <kbd>F5</kbd></div></li>
+    <li><div class="step-text"><strong>Hard-refresh</strong> (clears cache) — <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd></div></li>
+    <li><div class="step-text"><strong>Try a private/incognito window</strong> — rules out extensions/cache issues</div></li>
+    <li><div class="step-text"><strong>Check internet connection</strong> — open a different site (e.g. google.com)</div></li>
+    <li><div class="step-text"><strong>Check System Health tab</strong> — is the backend up?</div></li>
+    <li><div class="step-text"><strong>Log out and log back in</strong> — refreshes the session token</div></li>
+    <li><div class="step-text"><strong>Try a different browser</strong> — rules out browser-specific bugs</div></li>
+    <li><div class="step-text">If all above fail, <strong>escalate with screenshots</strong></div></li>
+  </ol>
+</div>
+
+<div class="section">
+  <h3>🔒 10.4 &nbsp; Security Reminders for IT Staff</h3>
+  <div class="warn">These rules apply at all times. Violations must be reported to Admin.</div>
+  <ul class="plain">
+    <li>🔑 Never share your login credentials with anyone, including Admin.</li>
+    <li>🚪 Always log out of ClamFlow before leaving your workstation unattended.</li>
+    <li>📵 Do not attempt to access other roles' dashboards using test accounts.</li>
+    <li>🛑 If you see "Access Denied" on a feature you should have access to, report it to Admin — do not attempt workarounds.</li>
+    <li>🖥️ Do not install browser extensions that intercept network traffic on the ClamFlow workstation.</li>
+    <li>📋 The Audit Log records ALL your actions. Every device handover, configuration change, and login is logged with your username and IP.</li>
+    <li>🔐 If you suspect your account has been compromised (someone else logged in as you), change your password immediately and notify Admin.</li>
+  </ul>
+</div>
+
+<div class="escalation">
+  <h4>📬 Contact Points (fill in for your facility)</h4>
+  <ul>
+    <li><strong>System Admin:</strong> _______________________________ (ext. _______)</li>
+    <li><strong>Super Admin / IT Lead:</strong> _______________________________ (ext. _______)</li>
+    <li><strong>Maintenance (hardware faults):</strong> _______________________________ (ext. _______)</li>
+    <li><strong>ClamFlow Support URL:</strong> <code>https://clamflowcloud.vercel.app</code></li>
+    <li><strong>Backend Status:</strong> <code>https://clamflowbackend-production.up.railway.app/health</code></li>
+  </ul>
+</div>
+</div><!-- end ch9 -->
+
+<div class="manual-footer">
+  ClamFlow Cloud — IT Staff User Manual &nbsp;·&nbsp; Powered by Relish &nbsp;·&nbsp; Version 2.x &nbsp;·&nbsp; May 2026<br>
+  This document is for internal use only. Print using browser Print → Save as PDF.<br>
+  <strong>clamflowcloud.vercel.app</strong>
+</div>
+
+</div><!-- end wrapper -->
+
+<!-- Print Button -->
+<button class="print-btn no-print" onclick="window.print()">
+  🖨️ Save as PDF
+</button>
+
+</body>
+</html>
