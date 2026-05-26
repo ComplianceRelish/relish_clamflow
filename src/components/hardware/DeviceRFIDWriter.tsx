@@ -7,11 +7,11 @@ import { useAuth } from '../../context/AuthContext';
 import clamflowAPI, { RFIDLinkRequest, RFIDTagResponse } from '../../lib/clamflow-api';
 
 // ============================================
-// TYPES
+// TYPES & CONSTANTS
 // ============================================
 
-type WriterTab = 'program' | 'verify' | 'batch' | 'staff-badge';
-type TagPurpose = 'product-box' | 'staff-badge' | 'device';
+type WriterTab = 'program' | 'asset' | 'employee-badge' | 'verify' | 'batch';
+type BatchType = 'product-box' | 'asset';
 
 interface StaffMember {
   id: string;
@@ -23,11 +23,19 @@ interface StaffMember {
 interface BatchEntry {
   id: string;
   tagId: string;
-  boxNumber: string;
-  lotId: string;
-  productType: string;
-  grade: string;
-  weight: number;
+  // product-box fields
+  boxNumber?: string;
+  lotId?: string;
+  productType?: string;
+  grade?: string;
+  weight?: number;
+  // asset fields
+  assetName?: string;
+  assetId?: string;
+  assetCategory?: string;
+  department?: string;
+  condition?: string;
+  type: BatchType;
   status: 'pending' | 'success' | 'error';
   error?: string;
   result?: RFIDTagResponse;
@@ -42,8 +50,37 @@ interface ProgramForm {
   weight: string;
 }
 
+interface AssetForm {
+  tagId: string;
+  assetCategory: string;
+  assetName: string;
+  assetId: string;
+  manufacturer: string;
+  model: string;
+  department: string;
+  location: string;
+  assignedTo: string;
+  purchaseDate: string;
+  condition: string;
+  notes: string;
+}
+
 const PRODUCT_TYPES = ['Clam', 'Oyster', 'Mussel', 'Scallop', 'Other'];
-const GRADES = ['A', 'B', 'C', 'Premium', 'Standard', 'Export'];
+const GRADES        = ['A', 'B', 'C', 'Premium', 'Standard', 'Export'];
+
+const ASSET_CATEGORIES = [
+  'Computer (Desktop)', 'Laptop', 'Tablet', 'Monitor / Display',
+  'RFID Reader', 'RFID Writer', 'Label Printer', 'Barcode Scanner',
+  'Processing Equipment', 'Quality Instrument', 'Weighing Scale',
+  'Network Equipment (Router/Switch)', 'UPS / Power Supply',
+  'Camera / CCTV', 'Forklift / Vehicle', 'Hand Tool', 'Furniture', 'Other',
+];
+
+const CONDITIONS  = ['New', 'Good', 'Fair', 'Poor', 'Needs Repair'];
+const DEPARTMENTS = [
+  'IT', 'Production', 'Quality Control', 'Administration',
+  'Security', 'Maintenance', 'Logistics', 'Management',
+];
 
 // ============================================
 // MAIN COMPONENT
@@ -62,6 +99,16 @@ const DeviceRFIDWriter: React.FC = () => {
   const [programResult, setProgramResult] = useState<RFIDTagResponse | null>(null);
   const [programError, setProgramError] = useState<string | null>(null);
 
+  // — Asset Tab —
+  const [assetForm, setAssetForm] = useState<AssetForm>({
+    tagId: '', assetCategory: '', assetName: '', assetId: '',
+    manufacturer: '', model: '', department: '', location: '',
+    assignedTo: '', purchaseDate: '', condition: '', notes: '',
+  });
+  const [assetLoading, setAssetLoading] = useState(false);
+  const [assetSuccess, setAssetSuccess] = useState<string | null>(null);
+  const [assetError, setAssetError] = useState<string | null>(null);
+
   // — Verify Tab —
   const [verifyTagId, setVerifyTagId] = useState('');
   const [verifyLoading, setVerifyLoading] = useState(false);
@@ -69,14 +116,18 @@ const DeviceRFIDWriter: React.FC = () => {
   const [verifyError, setVerifyError] = useState<string | null>(null);
 
   // — Batch Tab —
+  const [batchType, setBatchType] = useState<BatchType>('product-box');
   const [batchEntries, setBatchEntries] = useState<BatchEntry[]>([]);
   const [batchRunning, setBatchRunning] = useState(false);
   const [batchLotId, setBatchLotId] = useState('');
   const [batchProductType, setBatchProductType] = useState('');
   const [batchGrade, setBatchGrade] = useState('');
+  const [batchAssetCategory, setBatchAssetCategory] = useState('');
+  const [batchDepartment, setBatchDepartment] = useState('');
+  const [batchCondition, setBatchCondition] = useState('Good');
   const [batchInput, setBatchInput] = useState('');
 
-  // — Staff Badge Tab —
+  // — Employee Badge Tab —
   const [staffList, setStaffList] = useState<StaffMember[]>([]);
   const [staffLoading, setStaffLoading] = useState(false);
   const [badgeTagId, setBadgeTagId] = useState('');
@@ -85,10 +136,12 @@ const DeviceRFIDWriter: React.FC = () => {
   const [badgeSuccess, setBadgeSuccess] = useState<string | null>(null);
   const [badgeError, setBadgeError] = useState<string | null>(null);
 
-  const scanInputRef = useRef<HTMLInputElement>(null);
+  const scanInputRef  = useRef<HTMLInputElement>(null);
+  const assetScanRef  = useRef<HTMLInputElement>(null);
+  const badgeScanRef  = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (activeTab === 'staff-badge') fetchStaff();
+    if (activeTab === 'employee-badge' || activeTab === 'asset') fetchStaff();
   }, [activeTab]);
 
   const fetchStaff = async () => {
@@ -106,12 +159,10 @@ const DeviceRFIDWriter: React.FC = () => {
     }
   };
 
-  // ── Simulate RFID hardware scan (web serial / USB HID returns tag UID as keyboard string) ──
-  const simulateScan = () => {
+  // ── Simulate RFID hardware scan (USB HID reader injects UID as keystrokes) ──
+  const simulateScan = (ref: React.RefObject<HTMLInputElement>) => {
     setScanning(true);
-    // In production the physical RFID writer/reader sends keystrokes into the focused input.
-    // Here we focus the tag input so a connected USB HID reader can inject the UID.
-    scanInputRef.current?.focus();
+    ref.current?.focus();
     setTimeout(() => setScanning(false), 3000);
   };
 
@@ -148,6 +199,39 @@ const DeviceRFIDWriter: React.FC = () => {
     }
   };
 
+  // ── Register asset RFID tag ──
+  const handleAssetRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAssetLoading(true); setAssetSuccess(null); setAssetError(null);
+    try {
+      await clamflowAPI.post('/api/assets/rfid-register', {
+        rfid_tag:       assetForm.tagId.trim().toUpperCase(),
+        asset_category: assetForm.assetCategory,
+        asset_name:     assetForm.assetName.trim(),
+        asset_id:       assetForm.assetId.trim(),
+        manufacturer:   assetForm.manufacturer.trim(),
+        model:          assetForm.model.trim(),
+        department:     assetForm.department,
+        location:       assetForm.location.trim(),
+        assigned_to:    assetForm.assignedTo || null,
+        purchase_date:  assetForm.purchaseDate || null,
+        condition:      assetForm.condition,
+        notes:          assetForm.notes.trim(),
+        registered_by:  user?.id,
+      });
+      setAssetSuccess(`Asset "${assetForm.assetName}" tagged: ${assetForm.tagId.toUpperCase()}`);
+      setAssetForm({
+        tagId: '', assetCategory: '', assetName: '', assetId: '',
+        manufacturer: '', model: '', department: '', location: '',
+        assignedTo: '', purchaseDate: '', condition: '', notes: '',
+      });
+    } catch (err) {
+      setAssetError(err instanceof Error ? err.message : 'Failed to register asset');
+    } finally {
+      setAssetLoading(false);
+    }
+  };
+
   // ── Verify / read a tag ──
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -168,24 +252,40 @@ const DeviceRFIDWriter: React.FC = () => {
 
   // ── Parse batch CSV / newline input ──
   const parseBatch = () => {
-    if (!batchLotId.trim() || !batchProductType || !batchGrade) {
-      alert('Set Lot ID, Product Type, and Grade before adding batch entries.');
-      return;
-    }
     const lines = batchInput.split(/[\n,;]+/).map(l => l.trim()).filter(Boolean);
-    const newEntries: BatchEntry[] = lines.map((line, i) => {
-      const parts = line.split(/\s+/);
-      const tagId = parts[0]?.toUpperCase() ?? '';
-      const boxNumber = parts[1] ?? `BOX-${String(i + 1).padStart(3, '0')}`;
-      const weight = parseFloat(parts[2] ?? '') || 0;
-      return {
-        id: `${Date.now()}-${i}`,
-        tagId, boxNumber, lotId: batchLotId.trim(),
-        productType: batchProductType, grade: batchGrade, weight,
-        status: 'pending',
-      };
-    });
-    setBatchEntries(prev => [...prev, ...newEntries]);
+    if (batchType === 'product-box') {
+      if (!batchLotId.trim() || !batchProductType || !batchGrade) {
+        alert('Set Lot ID, Product Type, and Grade before adding batch entries.');
+        return;
+      }
+      const newEntries: BatchEntry[] = lines.map((line, i) => {
+        const parts = line.split(/\s+/);
+        return {
+          id: `${Date.now()}-${i}`, type: 'product-box', status: 'pending',
+          tagId: parts[0]?.toUpperCase() ?? '',
+          boxNumber: parts[1] ?? `BOX-${String(i + 1).padStart(3, '0')}`,
+          lotId: batchLotId.trim(), productType: batchProductType, grade: batchGrade,
+          weight: parseFloat(parts[2] ?? '') || 0,
+        };
+      });
+      setBatchEntries(prev => [...prev, ...newEntries]);
+    } else {
+      if (!batchAssetCategory || !batchDepartment) {
+        alert('Set Asset Category and Department before adding batch entries.');
+        return;
+      }
+      const newEntries: BatchEntry[] = lines.map((line, i) => {
+        const parts = line.split(/\t|\s{2,}/);
+        return {
+          id: `${Date.now()}-${i}`, type: 'asset', status: 'pending',
+          tagId: parts[0]?.toUpperCase() ?? '',
+          assetName: parts[1] ?? `Asset-${i + 1}`,
+          assetId: parts[2] ?? '',
+          assetCategory: batchAssetCategory, department: batchDepartment, condition: batchCondition,
+        };
+      });
+      setBatchEntries(prev => [...prev, ...newEntries]);
+    }
     setBatchInput('');
   };
 
@@ -197,34 +297,29 @@ const DeviceRFIDWriter: React.FC = () => {
     setBatchRunning(true);
     for (const entry of batchEntries) {
       if (entry.status !== 'pending') continue;
-      setBatchEntries(prev =>
-        prev.map(e => e.id === entry.id ? { ...e, status: 'pending' } : e)
-      );
       try {
-        const res = await clamflowAPI.linkRFIDTag({
-          tagId: entry.tagId,
-          boxNumber: entry.boxNumber,
-          lotId: entry.lotId,
-          productType: entry.productType,
-          grade: entry.grade,
-          weight: entry.weight,
-          staffId: user.id,
-        });
-        setBatchEntries(prev =>
-          prev.map(e => e.id === entry.id
+        if (entry.type === 'product-box') {
+          const res = await clamflowAPI.linkRFIDTag({
+            tagId: entry.tagId, boxNumber: entry.boxNumber!, lotId: entry.lotId!,
+            productType: entry.productType!, grade: entry.grade!,
+            weight: entry.weight ?? 0, staffId: user.id,
+          });
+          setBatchEntries(prev => prev.map(e => e.id === entry.id
             ? { ...e, status: res.data ? 'success' : 'error', result: res.data ?? undefined, error: res.error ?? 'Failed' }
-            : e
-          )
-        );
+            : e));
+        } else {
+          await clamflowAPI.post('/api/assets/rfid-register', {
+            rfid_tag: entry.tagId, asset_name: entry.assetName, asset_id: entry.assetId ?? '',
+            asset_category: entry.assetCategory, department: entry.department,
+            condition: entry.condition, registered_by: user.id,
+          });
+          setBatchEntries(prev => prev.map(e => e.id === entry.id ? { ...e, status: 'success' } : e));
+        }
       } catch (err) {
-        setBatchEntries(prev =>
-          prev.map(e => e.id === entry.id
-            ? { ...e, status: 'error', error: err instanceof Error ? err.message : 'Failed' }
-            : e
-          )
-        );
+        setBatchEntries(prev => prev.map(e => e.id === entry.id
+          ? { ...e, status: 'error', error: err instanceof Error ? err.message : 'Failed' }
+          : e));
       }
-      // small delay to avoid flooding
       await new Promise(r => setTimeout(r, 250));
     }
     setBatchRunning(false);
@@ -267,9 +362,6 @@ const DeviceRFIDWriter: React.FC = () => {
     `flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
       activeTab === id ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'
     }`;
-
-  // ============================================
-  // RENDER
   // ============================================
 
   return (
@@ -283,7 +375,7 @@ const DeviceRFIDWriter: React.FC = () => {
         <div>
           <p className="text-violet-200 text-xs font-semibold uppercase tracking-widest">IT Staff · Hardware</p>
           <h2 className="text-xl font-bold">RFID Tag Writer</h2>
-          <p className="text-violet-200 text-sm">Program, verify, and batch-write RFID tags &amp; staff badges</p>
+          <p className="text-violet-200 text-sm">Program tags for product boxes, assets &amp; employee ID cards</p>
         </div>
         {/* Writer hardware status pill */}
         <div className="ml-auto flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-full text-sm">
@@ -294,10 +386,11 @@ const DeviceRFIDWriter: React.FC = () => {
 
       {/* Tab bar */}
       <div className="flex gap-1 overflow-x-auto bg-white border border-gray-200 rounded-xl p-1.5 shadow-sm">
-        <button className={tabClass('program')} onClick={() => setActiveTab('program')}>✍️ Program Tag</button>
-        <button className={tabClass('verify')}  onClick={() => setActiveTab('verify')}>🔍 Verify / Read</button>
-        <button className={tabClass('batch')}   onClick={() => setActiveTab('batch')}>📦 Batch Write</button>
-        <button className={tabClass('staff-badge')} onClick={() => setActiveTab('staff-badge')}>🪪 Staff Badge</button>
+        <button className={tabClass('program')}        onClick={() => setActiveTab('program')}>📦 Product Box</button>
+        <button className={tabClass('asset')}          onClick={() => setActiveTab('asset')}>🖥️ Asset Tag</button>
+        <button className={tabClass('employee-badge')} onClick={() => setActiveTab('employee-badge')}>🪪 Employee ID</button>
+        <button className={tabClass('verify')}         onClick={() => setActiveTab('verify')}>🔍 Verify / Read</button>
+        <button className={tabClass('batch')}          onClick={() => setActiveTab('batch')}>⚡ Batch Write</button>
       </div>
 
       {/* ─── PROGRAM TAB ─── */}
@@ -311,7 +404,7 @@ const DeviceRFIDWriter: React.FC = () => {
               </p>
             </div>
             <button
-              onClick={simulateScan}
+              onClick={() => simulateScan(scanInputRef)}
               disabled={scanning}
               className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg text-sm font-medium hover:bg-indigo-100 disabled:opacity-60 transition-colors"
             >
@@ -450,6 +543,141 @@ const DeviceRFIDWriter: React.FC = () => {
         </div>
       )}
 
+      {/* ─── ASSET TAG TAB ─── */}
+      {activeTab === 'asset' && (
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-gray-900">Register Asset RFID Tag</h3>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Tag computers, laptops, tablets, equipment, instruments &amp; any physical asset for inventory tracking.
+              </p>
+            </div>
+            <button onClick={() => simulateScan(assetScanRef)} disabled={scanning}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg text-sm font-medium hover:bg-indigo-100 disabled:opacity-60 transition-colors">
+              {scanning ? <><span className="inline-block w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" /> Waiting…</> : <><span>📡</span> Scan UID</>}
+            </button>
+          </div>
+          <form onSubmit={handleAssetRegister} className="p-5 space-y-6">
+            {/* Tag UID */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Tag UID <span className="text-red-500">*</span>
+                <span className="ml-2 text-xs text-gray-400 font-normal">(scan blank tag or type manually)</span>
+              </label>
+              <input ref={assetScanRef} type="text" required value={assetForm.tagId}
+                onChange={e => setAssetForm(f => ({ ...f, tagId: e.target.value.toUpperCase() }))}
+                placeholder="e.g. FF00AA11BB22"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            </div>
+            {/* Asset Identification */}
+            <fieldset className="border border-gray-200 rounded-lg p-4 space-y-4">
+              <legend className="px-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">Asset Identification</legend>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Asset Category <span className="text-red-500">*</span></label>
+                  <select required value={assetForm.assetCategory} onChange={e => setAssetForm(f => ({ ...f, assetCategory: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="">— Select —</option>
+                    {ASSET_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Asset Name <span className="text-red-500">*</span></label>
+                  <input type="text" required value={assetForm.assetName} onChange={e => setAssetForm(f => ({ ...f, assetName: e.target.value }))}
+                    placeholder="e.g. HP EliteBook 840 G9"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Asset ID / Serial No. <span className="text-red-500">*</span></label>
+                  <input type="text" required value={assetForm.assetId} onChange={e => setAssetForm(f => ({ ...f, assetId: e.target.value }))}
+                    placeholder="SN-2024-00123"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Manufacturer</label>
+                  <input type="text" value={assetForm.manufacturer} onChange={e => setAssetForm(f => ({ ...f, manufacturer: e.target.value }))}
+                    placeholder="e.g. HP, Dell, Zebra"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Model</label>
+                  <input type="text" value={assetForm.model} onChange={e => setAssetForm(f => ({ ...f, model: e.target.value }))}
+                    placeholder="e.g. EliteBook 840 G9"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                </div>
+              </div>
+            </fieldset>
+            {/* Location & Assignment */}
+            <fieldset className="border border-gray-200 rounded-lg p-4 space-y-4">
+              <legend className="px-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">Location &amp; Assignment</legend>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Department <span className="text-red-500">*</span></label>
+                  <select required value={assetForm.department} onChange={e => setAssetForm(f => ({ ...f, department: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="">— Select —</option>
+                    {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Location (Building / Room)</label>
+                  <input type="text" value={assetForm.location} onChange={e => setAssetForm(f => ({ ...f, location: e.target.value }))}
+                    placeholder="e.g. Main Plant, Floor 2, Room 12"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Assigned To <span className="text-xs text-gray-400 font-normal">(optional)</span></label>
+                  {staffLoading
+                    ? <div className="flex items-center gap-2 text-gray-500 text-sm py-2"><span className="inline-block w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" /> Loading staff…</div>
+                    : <select value={assetForm.assignedTo} onChange={e => setAssetForm(f => ({ ...f, assignedTo: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="">— Not assigned —</option>
+                        {staffList.map(s => <option key={s.id} value={s.id}>{s.full_name} ({s.role})</option>)}
+                      </select>
+                  }
+                </div>
+              </div>
+            </fieldset>
+            {/* Condition & History */}
+            <fieldset className="border border-gray-200 rounded-lg p-4 space-y-4">
+              <legend className="px-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">Condition &amp; History</legend>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Condition <span className="text-red-500">*</span></label>
+                  <select required value={assetForm.condition} onChange={e => setAssetForm(f => ({ ...f, condition: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="">— Select —</option>
+                    {CONDITIONS.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Purchase Date</label>
+                  <input type="date" value={assetForm.purchaseDate} onChange={e => setAssetForm(f => ({ ...f, purchaseDate: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                  <textarea rows={2} value={assetForm.notes} onChange={e => setAssetForm(f => ({ ...f, notes: e.target.value }))}
+                    placeholder="Warranty info, accessories, known issues…"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
+                </div>
+              </div>
+            </fieldset>
+            {assetError   && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 flex gap-2"><span>⚠️</span>{assetError}</div>}
+            {assetSuccess && <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700 flex gap-2"><span>✅</span>{assetSuccess}</div>}
+            <div className="flex justify-end">
+              <button type="submit" disabled={assetLoading}
+                className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 disabled:opacity-60 transition-colors shadow-sm">
+                {assetLoading
+                  ? <><span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Registering…</>
+                  : <><span>🖥️</span> Register Asset Tag</>}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
       {/* ─── VERIFY TAB ─── */}
       {activeTab === 'verify' && (
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -521,68 +749,98 @@ const DeviceRFIDWriter: React.FC = () => {
       {/* ─── BATCH WRITE TAB ─── */}
       {activeTab === 'batch' && (
         <div className="space-y-4">
+          {/* Batch type selector */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+            <h3 className="font-semibold text-gray-900 mb-3">Batch Tag Type</h3>
+            <div className="flex gap-3">
+              {(['product-box', 'asset'] as BatchType[]).map(t => (
+                <button key={t} type="button"
+                  onClick={() => { setBatchType(t); setBatchEntries([]); }}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${batchType === t ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
+                  {t === 'product-box' ? '📦 Product Boxes' : '🖥️ Assets'}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Batch defaults */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
             <h3 className="font-semibold text-gray-900 mb-4">Batch Defaults <span className="text-xs text-gray-500 font-normal">(applied to all entries)</span></h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Lot ID <span className="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  value={batchLotId}
-                  onChange={e => setBatchLotId(e.target.value)}
-                  placeholder="LOT-2026-001"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
+            {batchType === 'product-box' ? (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Lot ID <span className="text-red-500">*</span></label>
+                  <input type="text" value={batchLotId} onChange={e => setBatchLotId(e.target.value)} placeholder="LOT-2026-001"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Product Type</label>
+                  <select value={batchProductType} onChange={e => setBatchProductType(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="">— Select —</option>
+                    {PRODUCT_TYPES.map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Grade</label>
+                  <select value={batchGrade} onChange={e => setBatchGrade(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="">— Select —</option>
+                    {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
+                  </select>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Product Type</label>
-                <select
-                  value={batchProductType}
-                  onChange={e => setBatchProductType(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  <option value="">— Select —</option>
-                  {PRODUCT_TYPES.map(p => <option key={p} value={p}>{p}</option>)}
-                </select>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Asset Category <span className="text-red-500">*</span></label>
+                  <select value={batchAssetCategory} onChange={e => setBatchAssetCategory(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="">— Select —</option>
+                    {ASSET_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Department <span className="text-red-500">*</span></label>
+                  <select value={batchDepartment} onChange={e => setBatchDepartment(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="">— Select —</option>
+                    {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Condition</label>
+                  <select value={batchCondition} onChange={e => setBatchCondition(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    {CONDITIONS.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Grade</label>
-                <select
-                  value={batchGrade}
-                  onChange={e => setBatchGrade(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  <option value="">— Select —</option>
-                  {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
-                </select>
-              </div>
-            </div>
+            )}
 
             {/* Batch input */}
             <div className="mt-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tag UIDs <span className="text-xs text-gray-400 font-normal">(one per line or comma-separated — format: UID BoxNumber Weight)</span>
+                Tag UIDs{' '}
+                <span className="text-xs text-gray-400 font-normal">
+                  {batchType === 'product-box'
+                    ? '(one per line — format: UID  BoxNumber  Weight)'
+                    : '(one per line — format: UID  AssetName  SerialNo)'}
+                </span>
               </label>
-              <textarea
-                rows={4}
-                value={batchInput}
-                onChange={e => setBatchInput(e.target.value)}
-                placeholder={'A1B2C3D4  BOX-001  12.5\nE5F6G7H8  BOX-002  11.0\nI9J0K1L2  BOX-003  13.2'}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-              />
+              <textarea rows={4} value={batchInput} onChange={e => setBatchInput(e.target.value)}
+                placeholder={batchType === 'product-box'
+                  ? 'A1B2C3D4  BOX-001  12.5\nE5F6G7H8  BOX-002  11.0'
+                  : 'FF00AA11  HP EliteBook 840  SN-001\nBB22CC33  Dell OptiPlex  SN-002'}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
             </div>
             <div className="mt-3 flex gap-3">
-              <button
-                onClick={parseBatch}
-                className="px-4 py-2 bg-gray-100 text-gray-700 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
-              >
+              <button onClick={parseBatch}
+                className="px-4 py-2 bg-gray-100 text-gray-700 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
                 ➕ Add to Queue
               </button>
-              <button
-                onClick={() => setBatchEntries([])}
-                className="px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors"
-              >
+              <button onClick={() => setBatchEntries([])}
+                className="px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors">
                 🗑 Clear All
               </button>
             </div>
@@ -614,8 +872,9 @@ const DeviceRFIDWriter: React.FC = () => {
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
                       <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">Tag UID</th>
-                      <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">Box</th>
-                      <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">Weight</th>
+                      <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                        {batchType === 'product-box' ? 'Box / Weight' : 'Asset Name / Serial'}
+                      </th>
                       <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
                       <th className="px-4 py-2.5" />
                     </tr>
@@ -624,8 +883,12 @@ const DeviceRFIDWriter: React.FC = () => {
                     {batchEntries.map(entry => (
                       <tr key={entry.id} className={entry.status === 'error' ? 'bg-red-50' : entry.status === 'success' ? 'bg-green-50' : ''}>
                         <td className="px-4 py-2.5 font-mono font-medium text-gray-900">{entry.tagId || <span className="text-red-400 italic">missing</span>}</td>
-                        <td className="px-4 py-2.5 text-gray-700">{entry.boxNumber}</td>
-                        <td className="px-4 py-2.5 text-gray-700">{entry.weight > 0 ? `${entry.weight} kg` : '—'}</td>
+                        <td className="px-4 py-2.5 text-gray-700">
+                          {entry.type === 'product-box'
+                            ? <>{entry.boxNumber}{entry.weight ? <span className="ml-2 text-gray-400">{entry.weight} kg</span> : null}</>
+                            : <>{entry.assetName}{entry.assetId ? <span className="ml-2 text-gray-400 font-mono text-xs">{entry.assetId}</span> : null}</>
+                          }
+                        </td>
                         <td className="px-4 py-2.5">
                           {entry.status === 'pending' && <span className="inline-flex items-center gap-1 text-gray-500">⏳ Pending</span>}
                           {entry.status === 'success' && <span className="inline-flex items-center gap-1 text-green-700 font-medium">✅ Written</span>}
@@ -648,21 +911,27 @@ const DeviceRFIDWriter: React.FC = () => {
 
           {batchEntries.length === 0 && (
             <div className="text-center py-12 text-gray-400">
-              <p className="text-4xl mb-2">📦</p>
-              <p className="text-sm">No tags in queue. Add UIDs above and click "Add to Queue".</p>
+              <p className="text-4xl mb-2">{batchType === 'product-box' ? '📦' : '🖥️'}</p>
+              <p className="text-sm">No tags in queue. Add UIDs above and click &ldquo;Add to Queue&rdquo;.</p>
             </div>
           )}
         </div>
       )}
 
-      {/* ─── STAFF BADGE TAB ─── */}
-      {activeTab === 'staff-badge' && (
+      {/* ─── EMPLOYEE ID TAB ─── */}
+      {activeTab === 'employee-badge' && (
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-100 bg-gray-50">
-            <h3 className="font-semibold text-gray-900">Register Staff RFID Badge</h3>
-            <p className="text-xs text-gray-500 mt-0.5">
-              Link a blank RFID card to a staff member profile for gate attendance &amp; station check-in.
-            </p>
+          <div className="px-5 py-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-gray-900">Issue Employee RFID ID Card</h3>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Link a blank RFID card to a staff member for gate attendance &amp; station check-in.
+              </p>
+            </div>
+            <button onClick={() => simulateScan(badgeScanRef)} disabled={scanning}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg text-sm font-medium hover:bg-indigo-100 disabled:opacity-60 transition-colors">
+              {scanning ? <><span className="inline-block w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" /> Waiting…</> : <><span>📡</span> Scan UID</>}
+            </button>
           </div>
 
           <form onSubmit={handleBadgeRegister} className="p-5 space-y-5">
@@ -673,6 +942,7 @@ const DeviceRFIDWriter: React.FC = () => {
                 <span className="ml-2 text-xs text-gray-400 font-normal">(scan new blank card on USB reader)</span>
               </label>
               <input
+                ref={badgeScanRef}
                 type="text"
                 required
                 value={badgeTagId}
