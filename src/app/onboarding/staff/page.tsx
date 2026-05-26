@@ -133,6 +133,7 @@ export default function StaffOnboardingPage() {
         return [{ value: 'Security Guard', label: 'Security Guard' }];
       case 'IT Staff':
         return [
+          { value: 'IT Staff', label: 'IT Staff' },
           { value: 'Production Staff', label: 'Production Staff' },
           { value: 'QC Staff', label: 'QC Staff' },
           { value: 'Security Guard', label: 'Security Guard' },
@@ -163,10 +164,19 @@ export default function StaffOnboardingPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => {
+      const updated = { ...prev, [name]: value };
+      // Auto-fill station for roles whose primary location is fixed
+      if (name === 'designation') {
+        if (value === 'IT Staff') {
+          updated.initial_station = 'Main Office';
+        } else if (prev.initial_station === 'Main Office' && value !== 'IT Staff') {
+          // Clear the auto-filled value if designation changes away from IT Staff
+          updated.initial_station = '';
+        }
+      }
+      return updated;
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
