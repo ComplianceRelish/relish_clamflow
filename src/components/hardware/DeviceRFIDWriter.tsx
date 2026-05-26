@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import clamflowAPI, { RFIDLinkRequest, RFIDTagResponse } from '../../lib/clamflow-api';
+import clamflowAPI, { RFIDTagResponse } from '../../lib/clamflow-api';
 
 // ============================================
 // TYPES & CONSTANTS
@@ -20,15 +20,18 @@ interface StaffMember {
   rfid_tag?: string;
 }
 
+interface BoxTagRegistration {
+  tagId: string;
+  boxNumber: string;
+  programmedBy: string;
+  programmedAt: string;
+}
+
 interface BatchEntry {
   id: string;
   tagId: string;
-  // product-box fields
+  // product-box fields (only UID + box number — content filled later at PPC)
   boxNumber?: string;
-  lotId?: string;
-  productType?: string;
-  grade?: string;
-  weight?: number;
   // asset fields
   assetName?: string;
   assetId?: string;
@@ -38,16 +41,11 @@ interface BatchEntry {
   type: BatchType;
   status: 'pending' | 'success' | 'error';
   error?: string;
-  result?: RFIDTagResponse;
 }
 
 interface ProgramForm {
   tagId: string;
   boxNumber: string;
-  lotId: string;
-  productType: string;
-  grade: string;
-  weight: string;
 }
 
 interface AssetForm {
@@ -64,9 +62,6 @@ interface AssetForm {
   condition: string;
   notes: string;
 }
-
-const PRODUCT_TYPES = ['Clam', 'Oyster', 'Mussel', 'Scallop', 'Other'];
-const GRADES        = ['A', 'B', 'C', 'Premium', 'Standard', 'Export'];
 
 const ASSET_CATEGORIES = [
   'Computer (Desktop)', 'Laptop', 'Tablet', 'Monitor / Display',
@@ -90,13 +85,11 @@ const DeviceRFIDWriter: React.FC = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<WriterTab>('program');
 
-  // — Program Tab —
-  const [form, setForm] = useState<ProgramForm>({
-    tagId: '', boxNumber: '', lotId: '', productType: '', grade: '', weight: '',
-  });
+  // — Program Tab (Tag UID + Box Number only — contents filled at PPC Form) —
+  const [form, setForm] = useState<ProgramForm>({ tagId: '', boxNumber: '' });
   const [scanning, setScanning] = useState(false);
   const [programLoading, setProgramLoading] = useState(false);
-  const [programResult, setProgramResult] = useState<RFIDTagResponse | null>(null);
+  const [programResult, setProgramResult] = useState<BoxTagRegistration | null>(null);
   const [programError, setProgramError] = useState<string | null>(null);
 
   // — Asset Tab —
@@ -119,9 +112,7 @@ const DeviceRFIDWriter: React.FC = () => {
   const [batchType, setBatchType] = useState<BatchType>('product-box');
   const [batchEntries, setBatchEntries] = useState<BatchEntry[]>([]);
   const [batchRunning, setBatchRunning] = useState(false);
-  const [batchLotId, setBatchLotId] = useState('');
-  const [batchProductType, setBatchProductType] = useState('');
-  const [batchGrade, setBatchGrade] = useState('');
+  const [batchBoxPrefix, setBatchBoxPrefix] = useState('');
   const [batchAssetCategory, setBatchAssetCategory] = useState('');
   const [batchDepartment, setBatchDepartment] = useState('');
   const [batchCondition, setBatchCondition] = useState('Good');
@@ -166,34 +157,28 @@ const DeviceRFIDWriter: React.FC = () => {
     setTimeout(() => setScanning(false), 3000);
   };
 
-  // ── Program a product-box RFID tag ──
+  // ── Pre-register box RFID tag (UID → Box Number only; product data entered at PPC) ──
   const handleProgram = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user?.id) return;
     setProgramLoading(true);
     setProgramResult(null);
     setProgramError(null);
-
-    const payload: RFIDLinkRequest = {
-      tagId: form.tagId.trim().toUpperCase(),
-      boxNumber: form.boxNumber.trim(),
-      lotId: form.lotId.trim(),
-      productType: form.productType,
-      grade: form.grade,
-      weight: parseFloat(form.weight) || 0,
-      staffId: user.id,
-    };
-
     try {
-      const res = await clamflowAPI.linkRFIDTag(payload);
-      if (res.data) {
-        setProgramResult(res.data);
-        setForm({ tagId: '', boxNumber: '', lotId: '', productType: '', grade: '', weight: '' });
-      } else {
-        setProgramError(res.error ?? 'Unexpected response from server');
-      }
+      await clamflowAPI.post('/api/rfid/pre-register', {
+        tag_id:        form.tagId.trim().toUpperCase(),
+        box_number:    form.boxNumber.trim(),
+        programmed_by: user.id,
+      });
+      setProgramResult({
+        tagId:        form.tagId.trim().toUpperCase(),
+        boxNumber:    form.boxNumber.trim(),
+        programmedBy: user.id,
+        programmedAt: new Date().toLocaleString(),
+      });
+      setForm({ tagId: '', boxNumber: '' });
     } catch (err) {
-      setProgramError(err instanceof Error ? err.message : 'Failed to program RFID tag');
+      setProgramError(err instanceof Error ? err.message : 'Failed to register box tag');
     } finally {
       setProgramLoading(false);
     }
@@ -254,19 +239,12 @@ const DeviceRFIDWriter: React.FC = () => {
   const parseBatch = () => {
     const lines = batchInput.split(/[\n,;]+/).map(l => l.trim()).filter(Boolean);
     if (batchType === 'product-box') {
-      if (!batchLotId.trim() || !batchProductType || !batchGrade) {
-        alert('Set Lot ID, Product Type, and Grade before adding batch entries.');
-        return;
-      }
       const newEntries: BatchEntry[] = lines.map((line, i) => {
         const parts = line.split(/\s+/);
-        return {
-          id: `${Date.now()}-${i}`, type: 'product-box', status: 'pending',
-          tagId: parts[0]?.toUpperCase() ?? '',
-          boxNumber: parts[1] ?? `BOX-${String(i + 1).padStart(3, '0')}`,
-          lotId: batchLotId.trim(), productType: batchProductType, grade: batchGrade,
-          weight: parseFloat(parts[2] ?? '') || 0,
-        };
+        const tagId     = parts[0]?.toUpperCase() ?? '';
+        const boxSuffix = String(i + 1).padStart(3, '0');
+        const boxNumber = parts[1] ?? (batchBoxPrefix ? `${batchBoxPrefix}-${boxSuffix}` : `BOX-${boxSuffix}`);
+        return { id: `${Date.now()}-${i}`, type: 'product-box', status: 'pending', tagId, boxNumber };
       });
       setBatchEntries(prev => [...prev, ...newEntries]);
     } else {
@@ -299,14 +277,12 @@ const DeviceRFIDWriter: React.FC = () => {
       if (entry.status !== 'pending') continue;
       try {
         if (entry.type === 'product-box') {
-          const res = await clamflowAPI.linkRFIDTag({
-            tagId: entry.tagId, boxNumber: entry.boxNumber!, lotId: entry.lotId!,
-            productType: entry.productType!, grade: entry.grade!,
-            weight: entry.weight ?? 0, staffId: user.id,
+          await clamflowAPI.post('/api/rfid/pre-register', {
+            tag_id:        entry.tagId,
+            box_number:    entry.boxNumber!,
+            programmed_by: user.id,
           });
-          setBatchEntries(prev => prev.map(e => e.id === entry.id
-            ? { ...e, status: res.data ? 'success' : 'error', result: res.data ?? undefined, error: res.error ?? 'Failed' }
-            : e));
+          setBatchEntries(prev => prev.map(e => e.id === entry.id ? { ...e, status: 'success' } : e));
         } else {
           await clamflowAPI.post('/api/assets/rfid-register', {
             rfid_tag: entry.tagId, asset_name: entry.assetName, asset_id: entry.assetId ?? '',
@@ -398,9 +374,9 @@ const DeviceRFIDWriter: React.FC = () => {
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
             <div>
-              <h3 className="font-semibold text-gray-900">Program Product-Box RFID Tag</h3>
+              <h3 className="font-semibold text-gray-900">Pre-Register Product-Box RFID Tag</h3>
               <p className="text-xs text-gray-500 mt-0.5">
-                Place the blank tag on the USB RFID writer, scan or enter the UID, fill in product details, then submit.
+                Assign a Tag UID to a Box Number. Product content is recorded later at the PPC station when the box is filled.
               </p>
             </div>
             <button
@@ -416,7 +392,17 @@ const DeviceRFIDWriter: React.FC = () => {
             </button>
           </div>
 
-          <form onSubmit={handleProgram} className="p-5 space-y-5">
+          {/* Workflow info banner */}
+          <div className="mx-5 mt-5 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2.5 text-sm text-blue-800">
+            <span className="text-base mt-0.5">📋</span>
+            <div>
+              <span className="font-semibold">Step 1 of 2 — Tag the empty box.</span>
+              {' '}Scan this RFID tag to a box number now.
+              When the box is filled during production, the operator scans it at the <span className="font-semibold">PPC station</span> to record the Lot, Product Type, Grade &amp; Weight.
+            </div>
+          </div>
+
+          <form onSubmit={handleProgram} className="p-5 space-y-4">
             {/* Tag UID */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -434,75 +420,19 @@ const DeviceRFIDWriter: React.FC = () => {
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Lot ID */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Lot ID <span className="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  required
-                  value={form.lotId}
-                  onChange={e => setForm(f => ({ ...f, lotId: e.target.value }))}
-                  placeholder="e.g. LOT-2026-001"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              {/* Box Number */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Box Number <span className="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  required
-                  value={form.boxNumber}
-                  onChange={e => setForm(f => ({ ...f, boxNumber: e.target.value }))}
-                  placeholder="e.g. BOX-001"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              {/* Product Type */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Product Type <span className="text-red-500">*</span></label>
-                <select
-                  required
-                  value={form.productType}
-                  onChange={e => setForm(f => ({ ...f, productType: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                >
-                  <option value="">— Select —</option>
-                  {PRODUCT_TYPES.map(p => <option key={p} value={p}>{p}</option>)}
-                </select>
-              </div>
-
-              {/* Grade */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Grade <span className="text-red-500">*</span></label>
-                <select
-                  required
-                  value={form.grade}
-                  onChange={e => setForm(f => ({ ...f, grade: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                >
-                  <option value="">— Select —</option>
-                  {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
-                </select>
-              </div>
-
-              {/* Weight */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Weight (kg) <span className="text-red-500">*</span></label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  required
-                  value={form.weight}
-                  onChange={e => setForm(f => ({ ...f, weight: e.target.value }))}
-                  placeholder="0.00"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
+            {/* Box Number */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Box Number <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                value={form.boxNumber}
+                onChange={e => setForm(f => ({ ...f, boxNumber: e.target.value }))}
+                placeholder="e.g. BOX-001"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
             </div>
 
             {/* Error / Success */}
@@ -515,28 +445,26 @@ const DeviceRFIDWriter: React.FC = () => {
             {programResult && (
               <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
                 <div className="flex items-center gap-2 text-green-800 font-semibold mb-2">
-                  <span>✅</span> Tag programmed successfully
+                  <span>✅</span> Box tag pre-registered
                 </div>
                 <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-green-700">
-                  <dt className="font-medium">Tag ID</dt>    <dd className="font-mono">{programResult.tagId}</dd>
-                  <dt className="font-medium">Box</dt>        <dd>{programResult.boxNumber}</dd>
-                  <dt className="font-medium">Lot</dt>        <dd>{programResult.lotId}</dd>
-                  <dt className="font-medium">Grade</dt>      <dd>{programResult.grade}</dd>
-                  <dt className="font-medium">Weight</dt>     <dd>{programResult.weight} kg</dd>
-                  <dt className="font-medium">Status</dt>     <dd className="capitalize">{programResult.status}</dd>
+                  <dt className="font-medium">Tag UID</dt>   <dd className="font-mono">{programResult.tagId}</dd>
+                  <dt className="font-medium">Box Number</dt> <dd>{programResult.boxNumber}</dd>
+                  <dt className="font-medium">Registered</dt> <dd>{programResult.programmedAt}</dd>
                 </dl>
+                <p className="mt-2 text-xs text-green-600">Scan this tag at the PPC station when filling the box to assign Lot, Product Type, Grade &amp; Weight.</p>
               </div>
             )}
 
-            <div className="flex justify-end pt-2">
+            <div className="flex justify-end pt-1">
               <button
                 type="submit"
                 disabled={programLoading}
                 className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 disabled:opacity-60 transition-colors shadow-sm"
               >
                 {programLoading
-                  ? <><span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Programming…</>
-                  : <><span>✍️</span> Program Tag</>}
+                  ? <><span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Registering…</>
+                  : <><span>📦</span> Register Box Tag</>}
               </button>
             </div>
           </form>
@@ -767,27 +695,15 @@ const DeviceRFIDWriter: React.FC = () => {
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
             <h3 className="font-semibold text-gray-900 mb-4">Batch Defaults <span className="text-xs text-gray-500 font-normal">(applied to all entries)</span></h3>
             {batchType === 'product-box' ? (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Lot ID <span className="text-red-500">*</span></label>
-                  <input type="text" value={batchLotId} onChange={e => setBatchLotId(e.target.value)} placeholder="LOT-2026-001"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              <div>
+                <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2 text-sm text-blue-800">
+                  <span>📋</span>
+                  <span>Batch box tagging pre-registers Tag UID → Box Number only. Product content (Lot, Type, Grade, Weight) is entered later at the PPC station when each box is filled.</span>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Product Type</label>
-                  <select value={batchProductType} onChange={e => setBatchProductType(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    <option value="">— Select —</option>
-                    {PRODUCT_TYPES.map(p => <option key={p} value={p}>{p}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Grade</label>
-                  <select value={batchGrade} onChange={e => setBatchGrade(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    <option value="">— Select —</option>
-                    {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
-                  </select>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Box Number Prefix <span className="text-xs text-gray-400 font-normal">(optional — auto-appended with sequence)</span></label>
+                  <input type="text" value={batchBoxPrefix} onChange={e => setBatchBoxPrefix(e.target.value)} placeholder="e.g. BOX-2026-A"
+                    className="w-full sm:w-64 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                 </div>
               </div>
             ) : (
@@ -824,13 +740,13 @@ const DeviceRFIDWriter: React.FC = () => {
                 Tag UIDs{' '}
                 <span className="text-xs text-gray-400 font-normal">
                   {batchType === 'product-box'
-                    ? '(one per line — format: UID  BoxNumber  Weight)'
+                    ? '(one per line — format: UID  BoxNumber)'
                     : '(one per line — format: UID  AssetName  SerialNo)'}
                 </span>
               </label>
               <textarea rows={4} value={batchInput} onChange={e => setBatchInput(e.target.value)}
                 placeholder={batchType === 'product-box'
-                  ? 'A1B2C3D4  BOX-001  12.5\nE5F6G7H8  BOX-002  11.0'
+                  ? 'A1B2C3D4  BOX-001\nE5F6G7H8  BOX-002'
                   : 'FF00AA11  HP EliteBook 840  SN-001\nBB22CC33  Dell OptiPlex  SN-002'}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
             </div>
@@ -873,7 +789,7 @@ const DeviceRFIDWriter: React.FC = () => {
                     <tr>
                       <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">Tag UID</th>
                       <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                        {batchType === 'product-box' ? 'Box / Weight' : 'Asset Name / Serial'}
+                        {batchType === 'product-box' ? 'Box Number' : 'Asset Name / Serial'}
                       </th>
                       <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
                       <th className="px-4 py-2.5" />
@@ -885,7 +801,7 @@ const DeviceRFIDWriter: React.FC = () => {
                         <td className="px-4 py-2.5 font-mono font-medium text-gray-900">{entry.tagId || <span className="text-red-400 italic">missing</span>}</td>
                         <td className="px-4 py-2.5 text-gray-700">
                           {entry.type === 'product-box'
-                            ? <>{entry.boxNumber}{entry.weight ? <span className="ml-2 text-gray-400">{entry.weight} kg</span> : null}</>
+                            ? <>{entry.boxNumber}</>
                             : <>{entry.assetName}{entry.assetId ? <span className="ml-2 text-gray-400 font-mono text-xs">{entry.assetId}</span> : null}</>
                           }
                         </td>
