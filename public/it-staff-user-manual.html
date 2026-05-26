@@ -374,44 +374,57 @@
     </ul>
 
     <li class="toc-chapter" style="margin-top:8px">
-      <a href="#ch5">6. System Health Monitor</a>
+      <a href="#ch5">6. RFID Tag Writer</a>
       <span class="toc-dots"></span><span class="toc-page-num">§6</span>
     </li>
     <ul class="toc-list toc-section">
-      <li><a href="#health-how">Reading Health Status</a><span class="toc-dots"></span><span class="toc-page-num">§6.1</span></li>
-      <li><a href="#health-fail">Responding to Health Alerts</a><span class="toc-dots"></span><span class="toc-page-num">§6.2</span></li>
+      <li><a href="#rfid-writer-product-box">Pre-Registering Product-Box Tags</a><span class="toc-dots"></span><span class="toc-page-num">§6.1</span></li>
+      <li><a href="#rfid-writer-asset">Registering Asset Tags</a><span class="toc-dots"></span><span class="toc-page-num">§6.2</span></li>
+      <li><a href="#rfid-writer-badge">Issuing Employee ID Cards</a><span class="toc-dots"></span><span class="toc-page-num">§6.3</span></li>
+      <li><a href="#rfid-writer-verify">Verifying / Reading Any Tag</a><span class="toc-dots"></span><span class="toc-page-num">§6.4</span></li>
+      <li><a href="#rfid-writer-batch">Batch Write Operations</a><span class="toc-dots"></span><span class="toc-page-num">§6.5</span></li>
+      <li><a href="#rfid-writer-fail">RFID Tag Writer Failures</a><span class="toc-dots"></span><span class="toc-page-num">§6.6</span></li>
     </ul>
 
     <li class="toc-chapter" style="margin-top:8px">
-      <a href="#ch6">7. Audit Log</a>
+      <a href="#ch6">7. System Health Monitor</a>
       <span class="toc-dots"></span><span class="toc-page-num">§7</span>
     </li>
     <ul class="toc-list toc-section">
-      <li><a href="#audit-how">Reading &amp; Filtering the Audit Log</a><span class="toc-dots"></span><span class="toc-page-num">§7.1</span></li>
-      <li><a href="#audit-fail">Audit Log Failures</a><span class="toc-dots"></span><span class="toc-page-num">§7.2</span></li>
+      <li><a href="#health-how">Reading Health Status</a><span class="toc-dots"></span><span class="toc-page-num">§7.1</span></li>
+      <li><a href="#health-fail">Responding to Health Alerts</a><span class="toc-dots"></span><span class="toc-page-num">§7.2</span></li>
     </ul>
 
     <li class="toc-chapter" style="margin-top:8px">
-      <a href="#ch7">8. Onboarding — Staff</a>
+      <a href="#ch7">8. Audit Log</a>
       <span class="toc-dots"></span><span class="toc-page-num">§8</span>
     </li>
     <ul class="toc-list toc-section">
-      <li><a href="#onb-staff-how">Submitting a Staff Onboarding Request</a><span class="toc-dots"></span><span class="toc-page-num">§8.1</span></li>
-      <li><a href="#onb-staff-fail">Staff Onboarding Failures</a><span class="toc-dots"></span><span class="toc-page-num">§8.2</span></li>
+      <li><a href="#audit-how">Reading &amp; Filtering the Audit Log</a><span class="toc-dots"></span><span class="toc-page-num">§8.1</span></li>
+      <li><a href="#audit-fail">Audit Log Failures</a><span class="toc-dots"></span><span class="toc-page-num">§8.2</span></li>
     </ul>
 
     <li class="toc-chapter" style="margin-top:8px">
-      <a href="#ch8">9. Onboarding — Suppliers &amp; Vendors</a>
+      <a href="#ch8">9. Onboarding — Staff</a>
       <span class="toc-dots"></span><span class="toc-page-num">§9</span>
     </li>
     <ul class="toc-list toc-section">
-      <li><a href="#onb-sup-how">Registering a Supplier / Vendor</a><span class="toc-dots"></span><span class="toc-page-num">§9.1</span></li>
-      <li><a href="#onb-sup-fail">Supplier Onboarding Failures</a><span class="toc-dots"></span><span class="toc-page-num">§9.2</span></li>
+      <li><a href="#onb-staff-how">Submitting a Staff Onboarding Request</a><span class="toc-dots"></span><span class="toc-page-num">§9.1</span></li>
+      <li><a href="#onb-staff-fail">Staff Onboarding Failures</a><span class="toc-dots"></span><span class="toc-page-num">§9.2</span></li>
     </ul>
 
     <li class="toc-chapter" style="margin-top:8px">
-      <a href="#ch9">10. Escalation &amp; Support Reference</a>
+      <a href="#ch9">10. Onboarding — Suppliers &amp; Vendors</a>
       <span class="toc-dots"></span><span class="toc-page-num">§10</span>
+    </li>
+    <ul class="toc-list toc-section">
+      <li><a href="#onb-sup-how">Registering a Supplier / Vendor</a><span class="toc-dots"></span><span class="toc-page-num">§10.1</span></li>
+      <li><a href="#onb-sup-fail">Supplier Onboarding Failures</a><span class="toc-dots"></span><span class="toc-page-num">§10.2</span></li>
+    </ul>
+
+    <li class="toc-chapter" style="margin-top:8px">
+      <a href="#ch10">11. Escalation &amp; Support Reference</a>
+      <span class="toc-dots"></span><span class="toc-page-num">§11</span>
     </li>
   </ul>
 </div>
@@ -853,11 +866,194 @@
 
 
 <!-- ============================================================
-     CH 5 — SYSTEM HEALTH
+     CH 5 — RFID TAG WRITER
      ============================================================ -->
 <div class="page-break" id="ch5">
 <div class="chapter-header">
   <div class="ch-num">Chapter 6</div>
+  <h2>RFID Tag Writer ✍️</h2>
+  <p>Program blank RFID tags for product boxes, assets, and employee ID cards using the USB writer device.</p>
+</div>
+
+<div class="section">
+  <h3>🔌 6.0 &nbsp; Overview</h3>
+  <p>The <strong>RFID Tag Writer</strong> is accessed from the <strong>RFID Writer</strong> tab in the IT Staff Dashboard. It programs blank RFID tags before they are attached to boxes, assets, or issued as employee ID cards.</p>
+  <div class="tip"><strong>Hardware Required:</strong> Connect a USB RFID Writer to your computer. When a blank tag is placed on the writer, the UID is injected as keystrokes into the focused input field (USB HID mode) — no driver software needed.</div>
+
+  <table class="field-table">
+    <tr><th>Tab</th><th>Purpose</th><th>Who / What is tagged</th></tr>
+    <tr><td>📦 Product Box</td><td>Pre-register blank box tags (UID + Box Number only)</td><td>Empty product boxes — content recorded later at the PPC station</td></tr>
+    <tr><td>🖥️ Asset Tag</td><td>Register asset tags with full inventory details</td><td>IT equipment, instruments, scales, furniture, vehicles</td></tr>
+    <tr><td>🪪 Employee ID</td><td>Issue RFID ID cards to all company members</td><td>All staff, leads, management, and admins — every company member</td></tr>
+    <tr><td>🔍 Verify / Read</td><td>Look up any tag UID in the system</td><td>Any registered tag (product box, asset, or badge)</td></tr>
+    <tr><td>⚡ Batch Write</td><td>Program multiple tags in sequence</td><td>Product boxes or assets in bulk</td></tr>
+  </table>
+</div>
+
+<div class="section" id="rfid-writer-product-box">
+  <h3>📦 6.1 &nbsp; Pre-Registering Product-Box Tags</h3>
+  <div class="tip"><strong>Workflow:</strong> Box tags are registered <em>blank</em> — only the Tag UID and Box Number are recorded at this stage. Product content (Lot ID, Product Type, Grade, Weight) is entered later by the Production team at the PPC station when the box is actually filled.</div>
+
+  <h4>Procedure</h4>
+  <ol class="steps">
+    <li><div class="step-text">Connect the USB RFID Writer to the computer. In the IT Staff Dashboard, click the <strong>RFID Writer</strong> tab — the <strong>📦 Product Box</strong> sub-tab is selected by default.</div></li>
+    <li><div class="step-text">Place a <strong>blank RFID tag</strong> on the USB writer and click <strong>"📡 Scan UID"</strong>. The cursor moves to the Tag UID field and the writer injects the UID as keystrokes automatically. Alternatively, type the UID manually.</div></li>
+    <li><div class="step-text">Enter the <strong>Box Number</strong> (e.g. <code>BOX-001</code>). This must match the physical label on the box.</div></li>
+    <li><div class="step-text">Click <strong>"Pre-Register Tag"</strong>. A green confirmation card appears showing Tag UID, Box Number, programmed-by name, and timestamp.</div></li>
+    <li><div class="step-text">Attach the programmed tag to the physical box. Repeat for each box in the batch.</div></li>
+  </ol>
+
+  <table class="field-table">
+    <tr><th>Field</th><th>Description</th><th>Required</th></tr>
+    <tr><td>Tag UID</td><td>Unique hardware ID of the RFID tag (hex string, e.g. <code>A1B2C3D4E5F6</code>). Auto-filled by the USB writer, or enter manually.</td><td class="req">✓</td></tr>
+    <tr><td>Box Number</td><td>Physical box identifier (e.g. <code>BOX-001</code>). Must match the label affixed to the box.</td><td class="req">✓</td></tr>
+  </table>
+
+  <div class="warn">⚠️ Do <strong>not</strong> enter Lot ID, Product Type, Grade, or Weight at this stage. The box is empty at tag time. Those fields are recorded by the Production team at the PPC station when the box is filled.</div>
+</div>
+
+<div class="section" id="rfid-writer-asset">
+  <h3>🖥️ 6.2 &nbsp; Registering Asset RFID Tags</h3>
+  <p>Use this tab to register any physical company asset — computers, tablets, weighing scales, cameras, instruments, furniture, vehicles — with an RFID tag for inventory tracking.</p>
+
+  <h4>Procedure</h4>
+  <ol class="steps">
+    <li><div class="step-text">Click the <strong>🖥️ Asset Tag</strong> tab.</div></li>
+    <li><div class="step-text">Place a blank tag on the USB writer and click <strong>"📡 Scan UID"</strong>, or type the UID manually.</div></li>
+    <li><div class="step-text">Fill in the <strong>Asset Identification</strong> fieldset, then <strong>Location &amp; Assignment</strong>, then <strong>Condition &amp; History</strong>.</div></li>
+  </ol>
+
+  <table class="field-table">
+    <tr><th>Field</th><th>Description</th><th>Required</th></tr>
+    <tr><td>Tag UID</td><td>RFID tag hardware ID. Auto-filled by USB writer.</td><td class="req">✓</td></tr>
+    <tr><td>Asset Category</td><td>Select from list: Laptop, RFID Reader, Weighing Scale, Camera / CCTV, etc.</td><td class="req">✓</td></tr>
+    <tr><td>Asset Name</td><td>Descriptive name (e.g. <em>HP EliteBook 840 G9</em>)</td><td class="req">✓</td></tr>
+    <tr><td>Asset ID / Serial No.</td><td>Manufacturer serial number or internal asset code</td><td class="req">✓</td></tr>
+    <tr><td>Manufacturer</td><td>Brand name (e.g. HP, Dell, Zebra)</td><td></td></tr>
+    <tr><td>Model</td><td>Exact model name/number</td><td></td></tr>
+    <tr><td>Department</td><td>Owning department (IT, Production, QC, Security, Maintenance, etc.)</td><td class="req">✓</td></tr>
+    <tr><td>Location</td><td>Physical location — building / floor / room</td><td></td></tr>
+    <tr><td>Assigned To</td><td>Staff member currently using the asset (optional — select from dropdown)</td><td></td></tr>
+    <tr><td>Condition</td><td>New / Good / Fair / Poor / Needs Repair</td><td class="req">✓</td></tr>
+    <tr><td>Purchase Date</td><td>Date the asset was acquired (for warranty tracking)</td><td></td></tr>
+    <tr><td>Notes</td><td>Warranty info, accessories included, known issues</td><td></td></tr>
+  </table>
+
+  <ol class="steps" start="4">
+    <li><div class="step-text">Click <strong>"🖥️ Register Asset Tag"</strong>. A green success message confirms the asset is registered. Affix the programmed tag to the physical asset in a clearly visible location.</div></li>
+  </ol>
+
+  <div class="tip"><strong>Assigned To dropdown:</strong> Loads all company users automatically when you open this tab. If the list fails to load, a <em>"Load Staff List"</em> button appears at the bottom of the form — click it to retry.</div>
+</div>
+
+<div class="section" id="rfid-writer-badge">
+  <h3>🪪 6.3 &nbsp; Issuing Employee RFID ID Cards</h3>
+  <div class="tip"><strong>Who gets an RFID ID card?</strong> <em>All company members</em> — Production Staff, QC Staff, Security Guards, Gate Staff, Maintenance Staff, IT Staff, all Leads (Production Lead, QC Lead, Staff Lead), Admins, and Super Admins. Every person employed by the company is issued an RFID badge for gate attendance, station check-in, and device handovers.</div>
+
+  <h4>Procedure</h4>
+  <ol class="steps">
+    <li><div class="step-text">Click the <strong>🪪 Employee ID</strong> tab. The system automatically loads the full company member list from the database (sorted alphabetically).</div></li>
+    <li><div class="step-text">Place a blank RFID card on the USB writer and click <strong>"📡 Scan UID"</strong>, or type the card UID manually. The <strong>Card / Badge UID</strong> field is filled.</div></li>
+    <li><div class="step-text">In the <strong>Assign to Staff Member</strong> dropdown, select the person who will receive the card. Options show: <em>Full Name — Role (✓ has badge / no badge)</em>. The placeholder also shows the total loaded record count.</div></li>
+    <li><div class="step-text">If the selected person already has a badge, an amber warning appears: <em>"This member already has a badge. Submitting will replace it."</em> — confirm this is intentional (e.g. a lost card replacement).</div></li>
+    <li><div class="step-text">Click <strong>"🪪 Issue ID Card"</strong>. A green confirmation message appears: <em>"RFID badge [UID] issued to [Name]"</em>.</div></li>
+    <li><div class="step-text">Physically hand the programmed card to the staff member. Ensure they sign the card-issuance logbook.</div></li>
+  </ol>
+
+  <h4>Badge Status Overview Panel</h4>
+  <p>Below the issue form, the <strong>Staff Badge Status</strong> panel lists all company members with their badge status:</p>
+  <ul class="plain">
+    <li><span class="badge-ok">✓ TAG-UID</span> — Badge issued; the tag UID is shown in the green chip.</li>
+    <li><span class="badge-pend">No badge</span> — Person has not yet been issued a badge.</li>
+  </ul>
+  <p>The panel header shows a count: <em>"X / Y issued"</em> — useful for confirming all onboarded staff have cards during a batch issuing session.</p>
+
+  <h4>Refreshing the User List</h4>
+  <p>If the dropdown shows an error message or if new users were recently added, click the <strong>🔄 Refresh</strong> button in the tab header to reload the full user list from the server.</p>
+
+  <div class="warn">⚠️ If an amber error banner appears ("Failed to load staff list"), the backend <code>/api/users/</code> endpoint may be temporarily unavailable. Click <strong>Retry</strong>. If the error persists, check System Health (Chapter 7) and escalate to Admin.</div>
+</div>
+
+<div class="section" id="rfid-writer-verify">
+  <h3>🔍 6.4 &nbsp; Verifying / Reading Any Tag</h3>
+  <p>Use this tab to look up any RFID tag in the system by UID — works for product box tags, asset tags, and employee badges.</p>
+
+  <ol class="steps">
+    <li><div class="step-text">Click the <strong>🔍 Verify / Read</strong> tab.</div></li>
+    <li><div class="step-text">Scan or type the Tag UID into the input field and click <strong>"🔍 Verify"</strong>.</div></li>
+    <li><div class="step-text">If found, a details card appears showing the registered information for that tag.</div></li>
+    <li><div class="step-text">If not found, the message <em>"Tag not found in system"</em> appears — the tag is unregistered or the UID was entered incorrectly.</div></li>
+  </ol>
+
+  <div class="tip"><strong>Use case:</strong> If you find a tag on a box or piece of equipment and need to identify what it is registered to, scan it here to get the answer instantly without searching through lists.</div>
+</div>
+
+<div class="section" id="rfid-writer-batch">
+  <h3>⚡ 6.5 &nbsp; Batch Write Operations</h3>
+  <p>Batch mode lets you queue multiple tag registrations and write them all in sequence — ideal for preparing a large consignment of boxes or tagging a new batch of equipment.</p>
+
+  <h4>Batch Product-Box Mode</h4>
+  <ol class="steps">
+    <li><div class="step-text">Click the <strong>⚡ Batch Write</strong> tab. Ensure <strong>📦 Product Boxes</strong> is selected as the batch type.</div></li>
+    <li><div class="step-text">Optionally enter a <strong>Box Number Prefix</strong> (e.g. <code>BOX</code>). The system auto-generates sequential numbers: BOX-001, BOX-002, etc. when box numbers are not explicitly provided.</div></li>
+    <li><div class="step-text">In the text area, paste or type one tag per line: <code>UID &nbsp;&nbsp; BoxNumber</code>. If only UIDs are pasted, box numbers are generated from the prefix.</div></li>
+    <li><div class="step-text">Click <strong>"➕ Add to Queue"</strong>. Entries appear in the queue table as <span class="badge-pend">Pending</span>.</div></li>
+    <li><div class="step-text">Review the queue. To remove an entry, click its <strong>✕</strong> button on that row.</div></li>
+    <li><div class="step-text">Click <strong>"▶ Run Batch Write"</strong>. Each entry is processed in sequence (250 ms apart). Status updates to <span class="badge-ok">✅ Written</span> or <span class="badge-err">⚠️ Error</span> for each row.</div></li>
+  </ol>
+
+  <h4>Batch Asset Mode</h4>
+  <ol class="steps">
+    <li><div class="step-text">Select <strong>🖥️ Assets</strong> as the batch type (this clears the current queue).</div></li>
+    <li><div class="step-text">Set the <strong>Asset Category</strong>, <strong>Department</strong>, and <strong>Condition</strong> defaults — these are applied to all entries in this batch.</div></li>
+    <li><div class="step-text">Paste entries one per line, tab or double-space separated: <code>UID &nbsp;&nbsp; Asset Name &nbsp;&nbsp; Serial No.</code></div></li>
+    <li><div class="step-text">Click <strong>"➕ Add to Queue"</strong>, review, then <strong>"▶ Run Batch Write"</strong>.</div></li>
+  </ol>
+
+  <div class="tip"><strong>Tip:</strong> Individual entry failures do not stop the batch — the system continues to the next entry. After the batch completes, review for any ⚠️ Error rows and retry or fix them individually.</div>
+</div>
+
+<div class="section" id="rfid-writer-fail">
+  <h3>🔧 6.6 &nbsp; What To Do When the RFID Tag Writer Fails</h3>
+  <div class="troubleshoot">
+    <div class="ts-title">⚠️ Troubleshooting — RFID Tag Writer</div>
+    <ul class="ts-items">
+      <li>
+        <span class="ts-error">Scan UID doesn't fill the Tag UID field</span>
+        <span class="ts-fix">The USB RFID Writer injects keystrokes when a tag is placed on it — the cursor must be in the Tag UID field. Click <strong>"📡 Scan UID"</strong> to focus the field first, then place the tag on the writer. If still no input, check the USB cable connection or try a different USB port. Type the UID manually as a fallback.</span>
+      </li>
+      <li>
+        <span class="ts-error">"Failed to register box tag" / "Failed to register asset"</span>
+        <span class="ts-fix">The backend endpoint may not yet be deployed. Check System Health (Chapter 7). If the backend is healthy but the error persists, escalate to Admin with a screenshot of the error and the Tag UID you attempted to register. Record the tagging details in the physical logbook as a fallback.</span>
+      </li>
+      <li>
+        <span class="ts-error">Employee ID dropdown shows amber error or is empty</span>
+        <span class="ts-fix">1) Click the 🔄 Refresh button in the tab header. 2) Check System Health (Chapter 7) — the backend may be restarting. 3) If the backend is healthy but the list remains empty after two refresh attempts, escalate to Admin. Record badge issuances in the physical card logbook in the meantime.</span>
+      </li>
+      <li>
+        <span class="ts-error">Duplicate Tag UID rejected by system</span>
+        <span class="ts-fix">The UID is already registered to another record. Use the <strong>🔍 Verify / Read</strong> tab to identify what it is currently assigned to. If it is an outdated or incorrect record, ask Admin to remove it from the database. Then re-register using the same UID.</span>
+      </li>
+      <li>
+        <span class="ts-error">Batch write stalls or stops mid-way</span>
+        <span class="ts-fix">Check your internet connection. Individual entry failures display ⚠️ Error status but the batch continues for remaining entries. After completion, click <strong>"▶ Run Batch Write"</strong> again — it will only retry entries still in Pending or Error status.</span>
+      </li>
+      <li>
+        <span class="ts-error">Badge issued in system but doesn't work at the gate</span>
+        <span class="ts-fix">The digital issuance record is saved, but the gate attendance system may need a cache sync. Escalate to Admin with the staff member's full name and badge UID. Record attendance manually until the badge is confirmed working at the gate.</span>
+      </li>
+    </ul>
+  </div>
+</div>
+</div><!-- end ch5 (RFID Tag Writer) -->
+
+
+<!-- ============================================================
+     CH 6 — SYSTEM HEALTH
+     ============================================================ -->
+<div class="page-break" id="ch6">
+<div class="chapter-header">
+  <div class="ch-num">Chapter 7</div>
   <h2>System Health Monitor ❤️</h2>
   <p>Real-time backend service status and database health diagnostics.</p>
 </div>
@@ -925,21 +1121,21 @@
     </ul>
   </div>
 </div>
-</div><!-- end ch5 -->
+</div><!-- end ch6 -->
 
 
 <!-- ============================================================
-     CH 6 — AUDIT LOG
+     CH 7 — AUDIT LOG
      ============================================================ -->
-<div class="page-break" id="ch6">
+<div class="page-break" id="ch7">
 <div class="chapter-header">
-  <div class="ch-num">Chapter 7</div>
+  <div class="ch-num">Chapter 8</div>
   <h2>Audit Log 📜</h2>
   <p>Full trail of all system events — who did what, when, from which IP, and whether it succeeded.</p>
 </div>
 
 <div class="section" id="audit-how">
-  <h3>🔍 7.1 &nbsp; How to Read the Audit Log</h3>
+  <h3>🔍 8.1 &nbsp; How to Read the Audit Log</h3>
   <ol class="steps">
     <li><div class="step-text">Click the <strong>Audit Log</strong> tab. The most recent events load first.</div></li>
     <li><div class="step-text">Each row contains:
@@ -967,7 +1163,7 @@
 </div>
 
 <div class="section" id="audit-fail">
-  <h3>🔧 7.2 &nbsp; What To Do When the Audit Log Fails</h3>
+  <h3>🔧 8.2 &nbsp; What To Do When the Audit Log Fails</h3>
   <div class="troubleshoot">
     <div class="ts-title">⚠️ Troubleshooting — Audit Log</div>
     <ul class="ts-items">
@@ -990,21 +1186,21 @@
     </ul>
   </div>
 </div>
-</div><!-- end ch6 -->
+</div><!-- end ch7 -->
 
 
 <!-- ============================================================
-     CH 7 — ONBOARDING: STAFF
+     CH 8 — ONBOARDING: STAFF
      ============================================================ -->
-<div class="page-break" id="ch7">
+<div class="page-break" id="ch8">
 <div class="chapter-header">
-  <div class="ch-num">Chapter 8</div>
+  <div class="ch-num">Chapter 9</div>
   <h2>Onboarding — Staff 👤</h2>
   <p>Submit new staff onboarding requests to Admin for approval and account activation.</p>
 </div>
 
 <div class="section" id="onb-staff-how">
-  <h3>👤 8.1 &nbsp; How to Submit a Staff Onboarding Request</h3>
+  <h3>👤 9.1 &nbsp; How to Submit a Staff Onboarding Request</h3>
 
   <div class="warn">⚠️ <strong>Approval flow:</strong> IT Staff can <em>initiate</em> onboarding but cannot <em>activate</em> accounts. All submissions are sent to Admin as <span class="badge-pend">Pending</span>. Admin approves and activates the account, then completes Aadhar, Bank, and Face verification via the User Management panel.</div>
 
@@ -1053,7 +1249,7 @@
 </div>
 
 <div class="section" id="onb-staff-fail">
-  <h3>🔧 8.2 &nbsp; What To Do When Staff Onboarding Fails</h3>
+  <h3>🔧 9.2 &nbsp; What To Do When Staff Onboarding Fails</h3>
   <div class="troubleshoot">
     <div class="ts-title">⚠️ Troubleshooting — Staff Onboarding</div>
     <ul class="ts-items">
@@ -1080,21 +1276,21 @@
     </ul>
   </div>
 </div>
-</div><!-- end ch7 -->
+</div><!-- end ch8 -->
 
 
 <!-- ============================================================
-     CH 8 — ONBOARDING: SUPPLIERS
+     CH 9 — ONBOARDING: SUPPLIERS
      ============================================================ -->
-<div class="page-break" id="ch8">
+<div class="page-break" id="ch9">
 <div class="chapter-header">
-  <div class="ch-num">Chapter 9</div>
+  <div class="ch-num">Chapter 10</div>
   <h2>Onboarding — Suppliers &amp; Vendors 🚚</h2>
   <p>Register new boat owners and agents with Aadhar, bank details, and face recognition.</p>
 </div>
 
 <div class="section" id="onb-sup-how">
-  <h3>🚢 9.1 &nbsp; How to Register a Supplier / Vendor</h3>
+  <h3>🚢 10.1 &nbsp; How to Register a Supplier / Vendor</h3>
 
   <p>The Suppliers / Vendors panel mirrors the Staff Lead's full onboarding workflow. All new registrations are submitted with <span class="badge-pend">Pending</span> status and require Admin approval before the supplier can transact.</p>
 
@@ -1133,7 +1329,7 @@
 </div>
 
 <div class="section" id="onb-sup-fail">
-  <h3>🔧 9.2 &nbsp; What To Do When Supplier Onboarding Fails</h3>
+  <h3>🔧 10.2 &nbsp; What To Do When Supplier Onboarding Fails</h3>
   <div class="troubleshoot">
     <div class="ts-title">⚠️ Troubleshooting — Supplier Onboarding</div>
     <ul class="ts-items">
@@ -1168,21 +1364,21 @@
     </ul>
   </div>
 </div>
-</div><!-- end ch8 -->
+</div><!-- end ch9 -->
 
 
 <!-- ============================================================
-     CH 9 — ESCALATION & SUPPORT
+     CH 10 — ESCALATION & SUPPORT
      ============================================================ -->
-<div class="page-break" id="ch9">
+<div class="page-break" id="ch10">
 <div class="chapter-header">
-  <div class="ch-num">Chapter 10</div>
+  <div class="ch-num">Chapter 11</div>
   <h2>Escalation &amp; Support Reference</h2>
   <p>When to escalate, what information to collect, and who to contact.</p>
 </div>
 
 <div class="section">
-  <h3>📞 10.1 &nbsp; Escalation Decision Tree</h3>
+  <h3>📞 11.1 &nbsp; Escalation Decision Tree</h3>
   <table class="field-table">
     <tr><th>Situation</th><th>First Step</th><th>Escalate To</th><th>Urgency</th></tr>
     <tr><td>Feature shows error message</td><td>Refresh / retry once</td><td>Admin</td><td>Medium</td></tr>
@@ -1193,11 +1389,14 @@
     <tr><td>Staff account locked</td><td>Verify username is correct</td><td>Admin</td><td>Medium</td></tr>
     <tr><td>Camera/printer hardware fault</td><td>Power cycle the device</td><td>Maintenance Staff</td><td>Low</td></tr>
     <tr><td>Onboarding request lost</td><td>Check Admin's User Management</td><td>Admin</td><td>Low</td></tr>
+    <tr><td>RFID tag registration fails (box / asset)</td><td>Check System Health; note tag UID; fallback to paper log</td><td>Admin</td><td>Medium</td></tr>
+    <tr><td>Employee badge not working at gate</td><td>Verify issuance record in RFID Writer → Employee ID tab</td><td>Admin</td><td>High</td></tr>
+    <tr><td>RFID writer staff list fails to load</td><td>Click Refresh in Employee ID tab header</td><td>Admin</td><td>Low</td></tr>
   </table>
 </div>
 
 <div class="section">
-  <h3>🗂️ 10.2 &nbsp; Information to Collect Before Escalating</h3>
+  <h3>🗂️ 11.2 &nbsp; Information to Collect Before Escalating</h3>
   <p>When reporting an issue to Admin or Super Admin, always provide:</p>
   <ul class="plain">
     <li>✅ <strong>Date and time</strong> the issue occurred</li>
@@ -1212,7 +1411,7 @@
 </div>
 
 <div class="section">
-  <h3>⚡ 10.3 &nbsp; Quick Troubleshooting Checklist</h3>
+  <h3>⚡ 11.3 &nbsp; Quick Troubleshooting Checklist</h3>
   <p>Before escalating any issue, run through this checklist:</p>
   <ol class="steps">
     <li><div class="step-text"><strong>Refresh the page</strong> — <kbd>Ctrl</kbd>+<kbd>R</kbd> or <kbd>F5</kbd></div></li>
@@ -1227,7 +1426,7 @@
 </div>
 
 <div class="section">
-  <h3>🔒 10.4 &nbsp; Security Reminders for IT Staff</h3>
+  <h3>🔒 11.4 &nbsp; Security Reminders for IT Staff</h3>
   <div class="warn">These rules apply at all times. Violations must be reported to Admin.</div>
   <ul class="plain">
     <li>🔑 Never share your login credentials with anyone, including Admin.</li>
@@ -1250,7 +1449,7 @@
     <li><strong>Backend Status:</strong> <code>https://clamflowbackend-production.up.railway.app/health</code></li>
   </ul>
 </div>
-</div><!-- end ch9 -->
+</div><!-- end ch10 -->
 
 <div class="manual-footer">
   ClamFlow Cloud — IT Staff User Manual &nbsp;·&nbsp; Powered by Relish &nbsp;·&nbsp; Version 2.x &nbsp;·&nbsp; May 2026<br>
