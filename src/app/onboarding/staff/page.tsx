@@ -23,7 +23,7 @@ export default function StaffOnboardingPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const authorizedRoles = ['Super Admin', 'Admin', 'Production Lead', 'QC Lead', 'Staff Lead'];
+    const authorizedRoles = ['Super Admin', 'Admin', 'IT Staff', 'Production Lead', 'QC Lead', 'Staff Lead'];
 
     if (!user?.role || !authorizedRoles.includes(user.role)) {
       alert('Access Denied: You do not have permission to onboard staff.');
@@ -123,17 +123,28 @@ export default function StaffOnboardingPage() {
         return [{ value: 'QC Staff', label: 'QC Staff' }];
       case 'Staff Lead':
         return [{ value: 'Security Guard', label: 'Security Guard' }];
+      case 'IT Staff':
+        return [
+          { value: 'Production Staff', label: 'Production Staff' },
+          { value: 'QC Staff', label: 'QC Staff' },
+          { value: 'Security Guard', label: 'Security Guard' },
+          { value: 'Maintenance Staff', label: 'Maintenance Staff' },
+          { value: 'Gate Staff', label: 'Gate Staff' },
+        ];
       case 'Super Admin':
       case 'Admin':
         // Super Admin and Admin can onboard any role
         return [
           { value: 'Admin', label: 'Admin' },
+          { value: 'IT Staff', label: 'IT Staff' },
           { value: 'Production Lead', label: 'Production Lead' },
           { value: 'Staff Lead', label: 'Staff Lead' },
           { value: 'QC Lead', label: 'QC Lead' },
           { value: 'QC Staff', label: 'QC Staff' },
           { value: 'Production Staff', label: 'Production Staff' },
           { value: 'Security Guard', label: 'Security Guard' },
+          { value: 'Maintenance Staff', label: 'Maintenance Staff' },
+          { value: 'Gate Staff', label: 'Gate Staff' },
         ];
       default:
         return [];
