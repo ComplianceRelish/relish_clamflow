@@ -9,6 +9,7 @@ import { SystemHealthData } from '@/types/dashboard';
 import { DeviceRegistry } from '@/components/hardware/DeviceRegistry';
 import { HardwareConfig } from '@/components/hardware/HardwareConfig';
 import DeviceRFIDHandover from '@/components/hardware/DeviceRFIDHandover';
+import DeviceRFIDWriter from '@/components/hardware/DeviceRFIDWriter';
 import SupplierOnboardingPanel from '@/components/dashboards/stafflead/SupplierOnboardingPanel';
 
 // ============================================
@@ -24,6 +25,7 @@ type ActiveTab =
   | 'device-registry'
   | 'hardware-config'
   | 'rfid-handover'
+  | 'rfid-writer'
   | 'system-health'
   | 'audit-log'
   | 'onboarding';
@@ -113,6 +115,7 @@ const ITStaffDashboard: React.FC<ITStaffDashboardProps> = ({ currentUser }) => {
     { id: 'device-registry',  label: 'Device Registry', icon: '📋' },
     { id: 'hardware-config',  label: 'Hardware Config', icon: '⚙️' },
     { id: 'rfid-handover',    label: 'RFID Handover',   icon: '🔁' },
+    { id: 'rfid-writer',      label: 'RFID Writer',     icon: '✍️' },
     { id: 'system-health',    label: 'System Health',   icon: '❤️' },
     { id: 'audit-log',        label: 'Audit Log',       icon: '📜' },
     { id: 'onboarding',       label: 'Onboarding',      icon: '👤' },
@@ -649,6 +652,7 @@ const ITStaffDashboard: React.FC<ITStaffDashboardProps> = ({ currentUser }) => {
         {activeTab === 'device-registry' && <DeviceRegistry />}
         {activeTab === 'hardware-config' && renderHardwareConfig()}
         {activeTab === 'rfid-handover'   && <DeviceRFIDHandover />}
+        {activeTab === 'rfid-writer'     && <DeviceRFIDWriter />}
         {activeTab === 'system-health'   && renderSystemHealth()}
         {activeTab === 'audit-log'       && renderAuditLog()}
         {activeTab === 'onboarding'      && renderOnboarding()}

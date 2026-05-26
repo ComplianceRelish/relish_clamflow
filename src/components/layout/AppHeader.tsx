@@ -53,12 +53,9 @@ export function AppHeader({
             )}
             {showLogo && (
               <img
-                src="/icons/logo-relish.png"
+                src="/icons/icon-96x96.png"
                 alt="Relish"
-                className="h-8 w-auto object-contain"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none';
-                }}
+                className="h-8 w-8 object-contain rounded-md"
               />
             )}
           </div>
