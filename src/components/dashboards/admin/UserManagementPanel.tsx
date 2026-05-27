@@ -1021,22 +1021,22 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
                   </h3>
 
                   <div className="relative bg-gray-900 rounded-lg overflow-hidden aspect-[4/3]">
-                    {isCameraActive ? (
-                      <>
-                        <video
-                          ref={videoRef}
-                          autoPlay
-                          playsInline
-                          muted
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                          <div className="w-48 h-48 border-4 border-white border-dashed rounded-full opacity-50" />
-                        </div>
-                      </>
-                    ) : faceImage ? (
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className={`w-full h-full object-cover ${isCameraActive ? '' : 'hidden'}`}
+                    />
+                    {isCameraActive && (
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div className="w-48 h-48 border-4 border-white border-dashed rounded-full opacity-50" />
+                      </div>
+                    )}
+                    {!isCameraActive && faceImage && (
                       <img src={faceImage} alt="Captured face" className="w-full h-full object-cover" />
-                    ) : (
+                    )}
+                    {!isCameraActive && !faceImage && (
                       <div className="flex flex-col items-center justify-center h-full text-gray-400">
                         <Camera className="w-16 h-16 mb-2" />
                         <p>Click Start Camera to begin</p>

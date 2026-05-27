@@ -535,49 +535,47 @@ export default function StaffOnboardingPage() {
                 </div>
               )}
 
-              {/* Camera feed */}
-              {cameraActive && !capturedImage && (
-                <div className="space-y-3">
-                  <div className="relative w-full max-w-sm mx-auto">
-                    <video
-                      ref={videoRef}
-                      autoPlay
-                      muted
-                      playsInline
-                      className="w-full rounded-lg border-2 border-blue-400 shadow-md bg-black"
-                    />
-                    <div className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-medium animate-pulse">
-                      ● LIVE
-                    </div>
-                  </div>
-                  <canvas ref={canvasRef} className="hidden" />
-                  <div className="flex justify-center gap-3">
-                    <button
-                      type="button"
-                      onClick={capturePhoto}
-                      className="px-5 py-2.5 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm"
-                    >
-                      📸 Capture Face
-                    </button>
-                    <button
-                      type="button"
-                      onClick={stopCamera}
-                      className="px-4 py-2.5 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                    >
-                      ⏹ Cancel
-                    </button>
-                  </div>
-                  <div className="bg-blue-50 border border-blue-100 rounded-md p-3 max-w-sm mx-auto">
-                    <p className="text-xs text-blue-700 font-medium mb-1">Tips for a good capture:</p>
-                    <ul className="text-xs text-blue-600 space-y-0.5">
-                      <li>• Position face in center of frame</li>
-                      <li>• Ensure good, even lighting</li>
-                      <li>• Look directly at the camera</li>
-                      <li>• Remove glasses if possible</li>
-                    </ul>
+              {/* Camera feed — video always in DOM so videoRef is available when startCamera runs */}
+              <div className={`space-y-3 ${cameraActive && !capturedImage ? '' : 'hidden'}`}>
+                <div className="relative w-full max-w-sm mx-auto">
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    muted
+                    playsInline
+                    className="w-full rounded-lg border-2 border-blue-400 shadow-md bg-black"
+                  />
+                  <div className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-medium animate-pulse">
+                    ● LIVE
                   </div>
                 </div>
-              )}
+                <canvas ref={canvasRef} className="hidden" />
+                <div className="flex justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={capturePhoto}
+                    className="px-5 py-2.5 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm"
+                  >
+                    📸 Capture Face
+                  </button>
+                  <button
+                    type="button"
+                    onClick={stopCamera}
+                    className="px-4 py-2.5 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    ⏹ Cancel
+                  </button>
+                </div>
+                <div className="bg-blue-50 border border-blue-100 rounded-md p-3 max-w-sm mx-auto">
+                  <p className="text-xs text-blue-700 font-medium mb-1">Tips for a good capture:</p>
+                  <ul className="text-xs text-blue-600 space-y-0.5">
+                    <li>• Position face in center of frame</li>
+                    <li>• Ensure good, even lighting</li>
+                    <li>• Look directly at the camera</li>
+                    <li>• Remove glasses if possible</li>
+                  </ul>
+                </div>
+              </div>
 
               {/* Start camera button (initial state) */}
               {!cameraActive && !capturedImage && (

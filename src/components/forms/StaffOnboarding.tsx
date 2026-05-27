@@ -1044,16 +1044,15 @@ const StaffOnboarding: React.FC = () => {
                     <div className="max-w-lg mx-auto">
                       {!faceRegistered ? (
                         <div className="space-y-4">
-                          <div className="bg-gray-100 rounded-lg overflow-hidden aspect-video flex items-center justify-center">
-                            {isCameraActive ? (
-                              <video
-                                ref={videoRef}
-                                autoPlay
-                                muted
-                                playsInline
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
+                          <div className="bg-gray-100 rounded-lg overflow-hidden aspect-video flex items-center justify-center relative">
+                            <video
+                              ref={videoRef}
+                              autoPlay
+                              muted
+                              playsInline
+                              className={`w-full h-full object-cover ${isCameraActive ? '' : 'hidden'}`}
+                            />
+                            {!isCameraActive && (
                               <div className="text-center p-8">
                                 <span className="text-6xl">📷</span>
                                 <p className="text-gray-500 mt-2">Camera preview will appear here</p>
