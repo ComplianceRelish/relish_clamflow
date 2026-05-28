@@ -61,12 +61,49 @@ const ApprovalWorkflowPanel: React.FC<ApprovalWorkflowPanelProps> = ({ currentUs
   const handleApprove = async (approval: ApprovalItem) => {
     try {
       setProcessingId(approval.id);
-      const response = await clamflowAPI.approveForm(approval.form_id, approval.form_type);
-      
-      if (response.success) {
+
+      if (approval.form_type === 'staff_onboarding') {
+        // Use the onboarding-specific approval endpoint
+        const approvalRes = await clamflowAPI.approveOnboarding(approval.form_id);
+        if (!approvalRes.success) {
+          setError(approvalRes.error || 'Failed to approve onboarding');
+          return;
+        }
+
+        // Trigger AWS Rekognition face indexing after approval
+        const personRecordId = (approvalRes.data as any)?.person_record_id as string | undefined;
+        if (personRecordId) {
+          const faceBase64 = approval.data?.face_image as string | undefined;
+          if (faceBase64) {
+            try {
+              const base64Data = faceBase64.includes(',') ? faceBase64.split(',')[1] : faceBase64;
+              const byteArray = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+              const faceFile = new File(
+                [new Blob([byteArray], { type: 'image/jpeg' })],
+                'face.jpg',
+                { type: 'image/jpeg' }
+              );
+              await clamflowAPI.completeOnboarding(
+                personRecordId,
+                faceFile,
+                undefined,
+                approval.data?.aadhaar_qr_text as string | undefined
+              );
+            } catch {
+              // Face indexing failure is non-fatal — log and continue
+              console.warn('Rekognition face indexing failed for onboarding:', approval.form_id);
+            }
+          }
+        }
+
         setPendingApprovals(prev => prev.filter(item => item.id !== approval.id));
       } else {
-        setError(response.error || 'Failed to approve form');
+        const response = await clamflowAPI.approveForm(approval.form_id, approval.form_type);
+        if (response.success) {
+          setPendingApprovals(prev => prev.filter(item => item.id !== approval.id));
+        } else {
+          setError(response.error || 'Failed to approve form');
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to approve form');

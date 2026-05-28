@@ -7,7 +7,7 @@ const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   'https://clamflowbackend-production.up.railway.app';
 
-type ScanState = 'idle' | 'scanning' | 'submitting' | 'success' | 'error' | 'expired';
+type ScanState = 'idle' | 'scanning' | 'processing-image' | 'submitting' | 'success' | 'error' | 'expired';
 
 export default function MobileScanPage() {
   const params = useParams();
@@ -16,9 +16,10 @@ export default function MobileScanPage() {
   const [scanState, setScanState] = useState<ScanState>('idle');
   const [errorMsg, setErrorMsg] = useState('');
   const [scannedText, setScannedText] = useState('');
-  const scannerRef = useRef<{ clear: () => Promise<void> } | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [cancelLabel, setCancelLabel] = useState('');
+  const scannerRef = useRef<{ clear: () => void; stop?: () => Promise<void> } | null>(null);
   const hasSubmitted = useRef(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Submit raw QR text to the backend (no JWT required)
   const submitQRText = async (rawText: string) => {
@@ -34,7 +35,7 @@ export default function MobileScanPage() {
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ qr_text: rawText }),
+          body: JSON.stringify({ qr_data: rawText }),
         }
       );
 
@@ -55,30 +56,53 @@ export default function MobileScanPage() {
     }
   };
 
-  // Start html5-qrcode scanner
+  const stopScanner = async () => {
+    if (scannerRef.current) {
+      await scannerRef.current.stop?.().catch(() => {});
+      scannerRef.current.clear();
+      scannerRef.current = null;
+    }
+  };
+
+  // Start live camera scanner
   const startScanner = async () => {
     setScanState('scanning');
+    setCancelLabel('');
 
-    // Dynamic import — html5-qrcode manipulates the DOM and must run client-side only
-    const { Html5Qrcode } = await import('html5-qrcode');
+    const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import('html5-qrcode');
 
-    const qrScanner = new Html5Qrcode('qr-reader');
+    const qrScanner = new Html5Qrcode('qr-reader', {
+      // Only look for QR codes — faster and avoids false positives
+      formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+      // Use the native BarcodeDetector API where available (handles dense
+      // Aadhaar QR codes much better than the WASM fallback)
+      experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+      verbose: false,
+    });
     scannerRef.current = qrScanner;
 
     try {
       await qrScanner.start(
-        { facingMode: 'environment' }, // rear camera on phones
-        { fps: 10, qrbox: { width: 250, height: 250 } },
+        { facingMode: 'environment' },
+        {
+          fps: 20,
+          // Percentage-based box: 85% of the shorter side, so the user doesn't have
+          // to perfectly align a tiny fixed box over the Aadhaar QR in the corner.
+          qrbox: (w: number, h: number) => {
+            const size = Math.floor(Math.min(w, h) * 0.85);
+            return { width: size, height: size };
+          },
+        },
         async (decodedText) => {
-          // Stop scanner on first successful decode
-          await qrScanner.stop().catch(() => {});
+          await stopScanner();
           await submitQRText(decodedText);
         },
         () => {
-          // Scan failure callback — ignore per-frame failures
+          // Per-frame failure — normal, just keep scanning
         }
       );
     } catch (err) {
+      await stopScanner();
       setErrorMsg(
         err instanceof Error
           ? err.message
@@ -88,11 +112,31 @@ export default function MobileScanPage() {
     }
   };
 
-  // Cleanup scanner on unmount
+  // Scan QR from an image file entirely client-side (no backend, no JWT needed)
+  const handleImageFile = async (file: File) => {
+    if (!file) return;
+    setScanState('processing-image');
+
+    try {
+      const { Html5Qrcode } = await import('html5-qrcode');
+      // scanFile decodes QR from an image entirely in the browser
+      const decoder = new Html5Qrcode('qr-file-reader', { verbose: false });
+      const decodedText = await decoder.scanFile(file, /* showImage */ false);
+      decoder.clear();
+      await submitQRText(decodedText);
+    } catch {
+      setErrorMsg(
+        'Could not find a QR code in this photo.\n' +
+        'Tips: photograph just the BACK of the Aadhaar card in good light, keep the QR fully in frame, and avoid blur.'
+      );
+      setScanState('error');
+    }
+  };
+
+  // Cleanup on unmount
   useEffect(() => {
-    return () => {
-      scannerRef.current?.clear().catch(() => {});
-    };
+    return () => { stopScanner(); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!token) {
@@ -104,7 +148,7 @@ export default function MobileScanPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-start pt-8 px-4">
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-start pt-8 px-4 pb-8">
       {/* Header */}
       <div className="text-center mb-6">
         <div className="text-3xl mb-2">🦪</div>
@@ -115,39 +159,108 @@ export default function MobileScanPage() {
       {/* Card */}
       <div className="w-full max-w-sm bg-white rounded-xl shadow-md p-6">
 
-        {/* IDLE */}
+        {/* IDLE — choose method */}
         {scanState === 'idle' && (
-          <div className="text-center space-y-4">
-            <div className="text-5xl">📱</div>
-            <h2 className="text-lg font-semibold text-gray-800">Scan Aadhaar QR</h2>
-            <p className="text-sm text-gray-500">
-              Point your phone camera at the QR code on the back of the Aadhaar card.
-            </p>
+          <div className="space-y-5">
+            <div className="text-center">
+              <div className="text-4xl mb-2">📷</div>
+              <h2 className="text-lg font-semibold text-gray-800">Scan Aadhaar QR</h2>
+              <p className="text-sm text-gray-500 mt-1">
+                Use the <strong>back of the Aadhaar card</strong>. The QR code is in the bottom-right corner.
+              </p>
+            </div>
+
+            {/* Option 1: Live camera */}
             <button
               onClick={startScanner}
               className="w-full py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-colors"
             >
-              Open Camera
+              📸 Open Camera
             </button>
-            <p className="text-xs text-gray-400">This link expires in 10 minutes.</p>
+
+            <div className="flex items-center gap-2">
+              <div className="flex-1 h-px bg-gray-200" />
+              <span className="text-xs text-gray-400">or</span>
+              <div className="flex-1 h-px bg-gray-200" />
+            </div>
+
+            {/* Option 2: Upload photo from gallery */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full py-3 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 active:bg-gray-300 transition-colors border border-gray-300"
+            >
+              🖼️ Upload Photo from Gallery
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleImageFile(file);
+                e.target.value = '';
+              }}
+            />
+
+            <p className="text-xs text-gray-400 text-center">This link expires in 10 minutes.</p>
           </div>
         )}
 
-        {/* SCANNING */}
+        {/* SCANNING — live camera */}
         {scanState === 'scanning' && (
-          <div className="space-y-4">
+          <div className="space-y-3">
             <p className="text-center text-sm font-medium text-gray-700">
-              Hold the Aadhaar card steady in the frame
+              Point at the QR on the <strong>back</strong> of the Aadhaar card
             </p>
-            {/* html5-qrcode mounts the video into this div */}
-            <div
-              id="qr-reader"
-              ref={containerRef}
-              className="w-full rounded-lg overflow-hidden"
-            />
             <p className="text-center text-xs text-gray-400">
-              Looking for QR code…
+              Keep steady · good light · QR fully in frame
             </p>
+            {/* html5-qrcode mounts the video element here */}
+            <div id="qr-reader" className="w-full rounded-lg overflow-hidden" />
+            <div className="flex items-center justify-center gap-2 text-xs text-gray-400 mt-1">
+              <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-blue-600" />
+              Scanning…
+            </div>
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={async () => {
+                  await stopScanner();
+                  fileInputRef.current?.click();
+                }}
+                className="flex-1 py-2 text-xs text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors border border-gray-200"
+              >
+                🖼️ Upload Photo Instead
+              </button>
+              <button
+                onClick={async () => { await stopScanner(); setScanState('idle'); }}
+                className="flex-1 py-2 text-xs text-gray-500 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+            {/* Hidden file input for mid-scan fallback */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleImageFile(file);
+                e.target.value = '';
+              }}
+            />
+          </div>
+        )}
+
+        {/* PROCESSING IMAGE */}
+        {scanState === 'processing-image' && (
+          <div className="text-center space-y-4 py-4">
+            <div className="flex justify-center">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
+            </div>
+            <p className="text-sm font-medium text-gray-700">Reading QR from photo…</p>
           </div>
         )}
 
@@ -157,7 +270,7 @@ export default function MobileScanPage() {
             <div className="flex justify-center">
               <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
             </div>
-            <p className="text-sm font-medium text-gray-700">Sending QR data…</p>
+            <p className="text-sm font-medium text-gray-700">Sending QR data to PC…</p>
           </div>
         )}
 
@@ -194,7 +307,7 @@ export default function MobileScanPage() {
           <div className="text-center space-y-4 py-4">
             <div className="text-5xl">❌</div>
             <h2 className="text-lg font-semibold text-red-600">Scan Failed</h2>
-            <p className="text-sm text-gray-600">{errorMsg}</p>
+            <p className="text-sm text-gray-600 whitespace-pre-line">{errorMsg}</p>
             <button
               onClick={() => {
                 hasSubmitted.current = false;
@@ -208,6 +321,9 @@ export default function MobileScanPage() {
           </div>
         )}
       </div>
+
+      {/* Hidden div needed for Html5Qrcode.scanFile() — must be in the DOM */}
+      <div id="qr-file-reader" className="hidden" />
 
       <p className="mt-6 text-xs text-gray-400 text-center">
         ClamFlow · Powered by Relish Compliance

@@ -13,10 +13,8 @@ export async function scanQRFromImageFile(file: File): Promise<string | null> {
   // Method 1: BarcodeDetector (Chrome 83+, Edge 83+, Android Chrome)
   if (typeof window !== 'undefined' && 'BarcodeDetector' in window) {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const detector = new (window as any).BarcodeDetector({ formats: ['qr_code'] });
       const bitmap = await createImageBitmap(file);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const barcodes: any[] = await detector.detect(bitmap);
       if (barcodes.length > 0) return barcodes[0].rawValue as string;
     } catch {
@@ -27,7 +25,10 @@ export async function scanQRFromImageFile(file: File): Promise<string | null> {
   // Method 2: html5-qrcode scanFile (all modern browsers via canvas)
   try {
     const { Html5Qrcode } = await import('html5-qrcode');
-    return await Html5Qrcode.scanFile(file, /* showImage */ false);
+    const scanner = new Html5Qrcode('_qr_tmp', { verbose: false });
+    const text = await scanner.scanFile(file, /* showImage */ false);
+    scanner.clear();
+    return text;
   } catch {
     return null;
   }

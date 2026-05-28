@@ -57,12 +57,14 @@ export interface LoginResponse {
 
 export interface ApprovalItem {
   id: string;
-  form_type: 'weight_note' | 'ppc_form' | 'fp_form' | 'qc_form' | 'depuration_form';
+  form_type: 'weight_note' | 'ppc_form' | 'fp_form' | 'qc_form' | 'depuration_form' | 'staff_onboarding';
   form_id: string;
   submitted_by: string;
   submitted_at: string;
   status: 'pending' | 'approved' | 'rejected';
   priority: 'low' | 'medium' | 'high';
+  /** Onboarding JSONB payload — only present when form_type === 'staff_onboarding' */
+  data?: Record<string, unknown>;
 }
 
 export interface Notification {
@@ -373,6 +375,47 @@ export interface ScanAadhaarImageResponse {
   success: boolean;
   parsedResult?: AadhaarParsedResult;
   message?: string;
+}
+
+// ── Image Preprocessing ────────────────────────────────────────────────────────
+// Normalises orientation (EXIF), resizes to ≤1600px, and converts to JPEG.
+// This is the primary fix for "No QR code found" errors: phone cameras store
+// portrait shots as landscape pixels with an EXIF rotation tag. OpenCV on the
+// backend doesn't honour EXIF, so the QR appears sideways.
+// createImageBitmap({ imageOrientation: 'from-image' }) corrects this in-browser
+// before we ever touch the server.
+async function preprocessImageForUpload(file: File): Promise<File> {
+  if (typeof window === 'undefined') return file; // SSR guard
+  try {
+    const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+    const MAX = 1600;
+    let { width, height } = bitmap;
+    if (width > MAX || height > MAX) {
+      const ratio = Math.min(MAX / width, MAX / height);
+      width = Math.round(width * ratio);
+      height = Math.round(height * ratio);
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) { bitmap.close(); return file; }
+    ctx.drawImage(bitmap, 0, 0, width, height);
+    bitmap.close();
+    return await new Promise<File>((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) { reject(new Error('Canvas conversion failed')); return; }
+          resolve(new File([blob], 'aadhaar.jpg', { type: 'image/jpeg' }));
+        },
+        'image/jpeg',
+        0.92,
+      );
+    });
+  } catch {
+    // If preprocessing fails (unsupported format, etc.) send original file
+    return file;
+  }
 }
 
 class ClamFlowAPI {
@@ -1206,8 +1249,11 @@ class ClamFlowAPI {
   }
 
   // Onboarding approval (Admin only)
-  async approveOnboarding(id: string): Promise<ApiResponse<OnboardingResponse>> {
-    return this.put(`/api/onboarding/${id}/approve`);
+  async approveOnboarding(id: string, remarks?: string): Promise<ApiResponse<OnboardingResponse>> {
+    return this.put(`/api/onboarding/${id}/approve`, {
+      status: 'approved',
+      remarks: remarks ?? ''
+    });
   }
 
   async rejectOnboarding(id: string, reason?: string): Promise<ApiResponse<OnboardingResponse>> {
@@ -1234,8 +1280,13 @@ class ClamFlowAPI {
   // Upload Aadhaar photo — backend uses OpenCV to extract & parse QR (needs JWT)
   async scanAadhaarImage(imageFile: File): Promise<ApiResponse<ScanAadhaarImageResponse>> {
     try {
+      // Preprocess: respect EXIF orientation, resize to max 1600px, convert to JPEG.
+      // createImageBitmap with imageOrientation:'from-image' fixes the #1 failure cause:
+      // phone portraits arrive rotated 90° in pixel data — OpenCV can't find the QR.
+      const processedFile = await preprocessImageForUpload(imageFile);
+
       const fd = new FormData();
-      fd.append('aadhaar_image', imageFile);
+      fd.append('aadhaar_image', processedFile);
       const res = await fetch(`${this.baseURL}/api/onboarding/scan-aadhaar-image`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${this.token}` },
