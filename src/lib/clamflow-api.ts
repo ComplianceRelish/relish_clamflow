@@ -341,6 +341,39 @@ export interface AttendanceWsEvent {
   timestamp: string;
 }
 
+// ============================================
+// AADHAAR / MOBILE SCAN INTERFACES
+// ============================================
+
+export interface AadhaarParsedResult {
+  uid?: string;
+  name?: string;
+  dob?: string;
+  gender?: string;
+  address?: string;
+  pincode?: string;
+  state?: string;
+  district?: string;
+  raw_text?: string;
+}
+
+export interface MobileScanCreateResponse {
+  qr_image_base64: string;
+  mobile_url: string;
+  session_token: string;
+}
+
+export interface MobileScanResultResponse {
+  status: 'pending' | 'completed';
+  parsed_result?: AadhaarParsedResult;
+}
+
+export interface ScanAadhaarImageResponse {
+  success: boolean;
+  parsed_result?: AadhaarParsedResult;
+  message?: string;
+}
+
 class ClamFlowAPI {
   private baseURL: string;
   private token: string | null = null;
@@ -1183,6 +1216,67 @@ class ClamFlowAPI {
   // Get pending onboarding requests
   async getPendingOnboarding(): Promise<ApiResponse<OnboardingResponse[]>> {
     return this.get('/api/onboarding/pending');
+  }
+
+  // ── Aadhaar Mobile Handoff ─────────────────────────────────────────────────
+
+  // Create mobile scan session — returns QR image + session token (needs JWT)
+  async createMobileScan(): Promise<ApiResponse<MobileScanCreateResponse>> {
+    return this.post('/api/onboarding/mobile-scan/create');
+  }
+
+  // Poll scan result — call every 2 s until status === 'completed' (needs JWT)
+  async getMobileScanResult(token: string): Promise<ApiResponse<MobileScanResultResponse>> {
+    return this.get(`/api/onboarding/mobile-scan/${token}/result`);
+  }
+
+  // Upload Aadhaar photo — backend uses OpenCV to extract & parse QR (needs JWT)
+  async scanAadhaarImage(imageFile: File): Promise<ApiResponse<ScanAadhaarImageResponse>> {
+    try {
+      const fd = new FormData();
+      fd.append('aadhaar_image', imageFile);
+      const res = await fetch(`${this.baseURL}/api/onboarding/scan-aadhaar-image`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${this.token}` },
+        body: fd,
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || err.message || `HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      return { success: true, data };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  // Complete onboarding — enrolls face + verifies Aadhaar in one call (needs JWT)
+  async completeOnboarding(
+    personRecordId: string,
+    faceImageFile: File,
+    aadhaarImageFile?: File,
+    aadhaarQrText?: string
+  ): Promise<ApiResponse<OnboardingResponse>> {
+    try {
+      const fd = new FormData();
+      fd.append('face_image', faceImageFile);
+      if (aadhaarImageFile) fd.append('aadhaar_image', aadhaarImageFile);
+      if (aadhaarQrText) fd.append('aadhaar_qr_text', aadhaarQrText);
+      const res = await fetch(`${this.baseURL}/api/onboarding/complete/${personRecordId}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${this.token}` },
+        body: fd,
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || err.message || `HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      return { success: true, data };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
   }
 
   // RFID Operations
