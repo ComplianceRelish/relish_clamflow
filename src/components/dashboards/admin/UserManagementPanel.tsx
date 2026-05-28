@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Search, Plus, Edit2, Trash2, UserPlus, AlertTriangle, Camera, CreditCard, CheckCircle, XCircle, Fingerprint } from 'lucide-react';
 import { sendWelcomeMessage } from '@/services/whatsapp-service';
 import { useAuth } from '@/context/AuthContext';
+import clamflowAPI, { AadhaarParsedResult } from '@/lib/clamflow-api';
 
 // Use environment variable for API URL - standardized to NEXT_PUBLIC_API_URL
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://clamflowbackend-production.up.railway.app';
@@ -102,7 +103,19 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
   const [capturingFace, setCapturingFace] = useState(false);
   const [onboardingError, setOnboardingError] = useState<string | null>(null);
   const [onboardingSuccess, setOnboardingSuccess] = useState<string | null>(null);
-  
+
+  // Aadhaar scan state (mobile handoff + image upload)
+  type AadhaarScanMode = 'manual' | 'mobile' | 'upload';
+  const [aadhaarScanMode, setAadhaarScanMode] = useState<AadhaarScanMode>('manual');
+  const [aadhaarParsed, setAadhaarParsed] = useState<AadhaarParsedResult | null>(null);
+  const [aadhaarQrText, setAadhaarQrText] = useState('');
+  const [aadhaarScanError, setAadhaarScanError] = useState('');
+  const [mobileQRImage, setMobileQRImage] = useState('');
+  const [mobileScanToken, setMobileScanToken] = useState('');
+  const [mobileScanStatus, setMobileScanStatus] = useState<'idle' | 'waiting' | 'done'>('idle');
+  const [aadhaarUploadLoading, setAadhaarUploadLoading] = useState(false);
+  const mobilePollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   // Camera refs
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -400,6 +413,66 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
   // ONBOARDING FUNCTIONS
   // ============================================
 
+  const stopMobilePoll = useCallback(() => {
+    if (mobilePollRef.current) {
+      clearInterval(mobilePollRef.current);
+      mobilePollRef.current = null;
+    }
+  }, []);
+
+  const applyAadhaarParsed = useCallback((parsed: AadhaarParsedResult, qrText: string) => {
+    setAadhaarParsed(parsed);
+    setAadhaarQrText(qrText);
+    // Auto-fill the 12-digit UID into the aadhar number field
+    if (parsed.uid) {
+      const uid = parsed.uid.replace(/\s/g, '');
+      const formatted = uid.match(/.{1,4}/g)?.join(' ') ?? uid;
+      setAadharNumber(formatted);
+    }
+  }, []);
+
+  const handleMobileScanStart = useCallback(async () => {
+    setAadhaarScanMode('mobile');
+    setAadhaarScanError('');
+    setMobileScanStatus('idle');
+    setMobileQRImage('');
+    setMobileScanToken('');
+
+    const res = await clamflowAPI.createMobileScan();
+    if (!res.success || !res.data) {
+      setAadhaarScanError(res.error || 'Failed to create mobile scan session');
+      setAadhaarScanMode('manual');
+      return;
+    }
+
+    const { qr_image_base64, session_token } = res.data;
+    setMobileQRImage(qr_image_base64);
+    setMobileScanToken(session_token);
+    setMobileScanStatus('waiting');
+
+    mobilePollRef.current = setInterval(async () => {
+      const pollRes = await clamflowAPI.getMobileScanResult(session_token);
+      if (!pollRes.success) return;
+      if (pollRes.data?.status === 'completed' && pollRes.data.parsed_result) {
+        stopMobilePoll();
+        setMobileScanStatus('done');
+        applyAadhaarParsed(pollRes.data.parsed_result, pollRes.data.parsed_result.raw_text ?? '');
+      }
+    }, 2000);
+  }, [applyAadhaarParsed, stopMobilePoll]);
+
+  const handleAadhaarImageUpload = useCallback(async (file: File) => {
+    setAadhaarScanError('');
+    setAadhaarUploadLoading(true);
+    const res = await clamflowAPI.scanAadhaarImage(file);
+    setAadhaarUploadLoading(false);
+    if (!res.success || !res.data?.parsed_result) {
+      setAadhaarScanError(res.error || res.data?.message || 'Could not extract QR from image. Try a clearer photo.');
+      return;
+    }
+    applyAadhaarParsed(res.data.parsed_result, res.data.parsed_result.raw_text ?? '');
+  }, [applyAadhaarParsed]);
+
   const handleStartOnboarding = (user: User) => {
     setOnboardingUser(user);
     setShowOnboardingModal(true);
@@ -412,10 +485,19 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
     setFaceRegistered(user.face_registered || false);
     setOnboardingError(null);
     setOnboardingSuccess(null);
+    setAadhaarScanMode('manual');
+    setAadhaarParsed(null);
+    setAadhaarQrText('');
+    setAadhaarScanError('');
+    setMobileQRImage('');
+    setMobileScanToken('');
+    setMobileScanStatus('idle');
+    stopMobilePoll();
   };
 
   const handleCloseOnboarding = () => {
     stopCamera();
+    stopMobilePoll();
     setShowOnboardingModal(false);
     setOnboardingUser(null);
     setOnboardingStep('aadhar');
@@ -427,6 +509,13 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
     setFaceRegistered(false);
     setOnboardingError(null);
     setOnboardingSuccess(null);
+    setAadhaarScanMode('manual');
+    setAadhaarParsed(null);
+    setAadhaarQrText('');
+    setAadhaarScanError('');
+    setMobileQRImage('');
+    setMobileScanToken('');
+    setMobileScanStatus('idle');
   };
 
   const formatAadharNumber = (number: string): string => {
@@ -973,28 +1062,137 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
                     <CreditCard className="w-5 h-5 text-blue-600" />
                     Aadhar Verification
                   </h3>
-                  <p className="text-xs text-gray-500">Enter the 12-digit Aadhar number after physically verifying the document.</p>
-                  <div className="space-y-3">
-                    <div>
-                      <Label htmlFor="aadhar">Aadhar Number *</Label>
-                      <Input
-                        id="aadhar"
-                        value={aadharNumber}
-                        onChange={handleAadharChange}
-                        placeholder="XXXX XXXX XXXX"
-                        maxLength={14}
-                        className="font-mono text-lg"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">Enter 12-digit Aadhar number</p>
+
+                  {aadhaarScanError && (
+                    <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
+                      {aadhaarScanError}
                     </div>
-                    <Button
-                      onClick={confirmAadhar}
-                      disabled={aadharNumber.replace(/\s/g, '').length !== 12}
-                      className="w-full bg-blue-600 hover:bg-blue-700"
-                    >
-                      Confirm Aadhar
-                    </Button>
-                  </div>
+                  )}
+
+                  {/* Parsed result preview */}
+                  {aadhaarParsed && (
+                    <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-semibold text-green-800 flex items-center gap-1">
+                          <CheckCircle className="w-4 h-4" /> Aadhaar Scanned
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => { setAadhaarParsed(null); setAadhaarQrText(''); setAadhaarScanMode('manual'); stopMobilePoll(); setMobileScanStatus('idle'); }}
+                          className="text-xs text-gray-500 hover:text-red-600"
+                        >
+                          Clear
+                        </button>
+                      </div>
+                      <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-700">
+                        {aadhaarParsed.name && <><dt className="font-medium">Name</dt><dd>{aadhaarParsed.name}</dd></>}
+                        {aadhaarParsed.uid && <><dt className="font-medium">UID</dt><dd>{aadhaarParsed.uid}</dd></>}
+                        {aadhaarParsed.dob && <><dt className="font-medium">DOB</dt><dd>{aadhaarParsed.dob}</dd></>}
+                        {aadhaarParsed.gender && <><dt className="font-medium">Gender</dt><dd>{aadhaarParsed.gender}</dd></>}
+                        {aadhaarParsed.state && <><dt className="font-medium">State</dt><dd>{aadhaarParsed.state}</dd></>}
+                      </dl>
+                    </div>
+                  )}
+
+                  {/* Scan option buttons (show when no parsed result yet) */}
+                  {!aadhaarParsed && aadhaarScanMode === 'manual' && (
+                    <div className="grid grid-cols-2 gap-2 pb-1">
+                      <button
+                        type="button"
+                        onClick={handleMobileScanStart}
+                        className="flex flex-col items-center gap-1.5 p-3 border-2 border-dashed border-blue-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-center"
+                      >
+                        <span className="text-xl">📱</span>
+                        <span className="text-xs font-semibold text-blue-700">Scan with Phone</span>
+                        <span className="text-xs text-gray-400 leading-tight">Staff scans QR on Aadhaar via phone</span>
+                      </button>
+                      <label className="flex flex-col items-center gap-1.5 p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 hover:bg-gray-50 transition-colors text-center cursor-pointer">
+                        <span className="text-xl">🖼️</span>
+                        <span className="text-xs font-semibold text-gray-700">Upload Photo</span>
+                        <span className="text-xs text-gray-400 leading-tight">Upload a photo of the Aadhaar card</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) { setAadhaarScanMode('upload'); handleAadhaarImageUpload(file); }
+                          }}
+                        />
+                      </label>
+                    </div>
+                  )}
+
+                  {/* Upload loading indicator */}
+                  {aadhaarScanMode === 'upload' && aadhaarUploadLoading && (
+                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 flex-shrink-0" />
+                      <span className="text-sm text-gray-600">Extracting QR from image…</span>
+                    </div>
+                  )}
+
+                  {/* Mobile QR display + polling indicator */}
+                  {aadhaarScanMode === 'mobile' && mobileScanStatus === 'waiting' && (
+                    <div className="space-y-3 text-center">
+                      <p className="text-sm font-medium text-gray-700">Scan this QR with a phone:</p>
+                      {mobileQRImage && (
+                        <div className="inline-block p-2 bg-white border border-gray-200 rounded-lg shadow-sm">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={`data:image/png;base64,${mobileQRImage}`}
+                            alt="Mobile scan QR"
+                            className="w-40 h-40 object-contain"
+                          />
+                        </div>
+                      )}
+                      <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+                        <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-blue-600" />
+                        Waiting for phone scan…
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { stopMobilePoll(); setAadhaarScanMode('manual'); setMobileScanStatus('idle'); }}
+                        className="text-xs text-gray-400 hover:text-red-600"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Divider between scan options and manual input */}
+                  {!aadhaarParsed && aadhaarScanMode === 'manual' && (
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-px bg-gray-200" />
+                      <span className="text-xs text-gray-400">or enter manually</span>
+                      <div className="flex-1 h-px bg-gray-200" />
+                    </div>
+                  )}
+
+                  {/* Manual Aadhar input (always visible, auto-filled from scan) */}
+                  {(aadhaarScanMode === 'manual' || aadhaarParsed) && (
+                    <div className="space-y-3">
+                      <p className="text-xs text-gray-500">Enter the 12-digit Aadhar number after physically verifying the document.</p>
+                      <div>
+                        <Label htmlFor="aadhar">Aadhar Number *</Label>
+                        <Input
+                          id="aadhar"
+                          value={aadharNumber}
+                          onChange={handleAadharChange}
+                          placeholder="XXXX XXXX XXXX"
+                          maxLength={14}
+                          className="font-mono text-lg"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Enter 12-digit Aadhar number</p>
+                      </div>
+                      <Button
+                        onClick={confirmAadhar}
+                        disabled={aadharNumber.replace(/\s/g, '').length !== 12}
+                        className="w-full bg-blue-600 hover:bg-blue-700"
+                      >
+                        Confirm Aadhar
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
 
