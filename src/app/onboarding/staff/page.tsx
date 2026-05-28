@@ -105,14 +105,20 @@ export default function StaffOnboardingPage() {
       return;
     }
 
-    const { qr_image_base64, session_token } = res.data;
+    const { qr_image_base64, session_token, token } = res.data;
+    const scanToken = token || session_token;
+    if (!scanToken) {
+      setAadhaarError('No scan token returned from server');
+      setAadhaarMode('none');
+      return;
+    }
     setMobileQRImage(qr_image_base64);
-    setMobileScanToken(session_token);
+    setMobileScanToken(scanToken);
     setMobileScanStatus('waiting');
 
     // Poll every 2 seconds
     mobilePollRef.current = setInterval(async () => {
-      const pollRes = await clamflowAPI.getMobileScanResult(session_token);
+      const pollRes = await clamflowAPI.getMobileScanResult(scanToken);
       if (!pollRes.success) return; // transient error — keep polling
       if (pollRes.data?.status === 'completed' && pollRes.data.parsed_result) {
         stopMobilePoll();

@@ -361,6 +361,7 @@ export interface MobileScanCreateResponse {
   qr_image_base64: string;
   mobile_url: string;
   session_token: string;
+  token?: string;
 }
 
 export interface MobileScanResultResponse {

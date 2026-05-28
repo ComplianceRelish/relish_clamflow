@@ -445,13 +445,19 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
       return;
     }
 
-    const { qr_image_base64, session_token } = res.data;
+    const { qr_image_base64, session_token, token } = res.data;
+    const scanToken = token || session_token;
+    if (!scanToken) {
+      setAadhaarScanError('No scan token returned from server');
+      setAadhaarScanMode('manual');
+      return;
+    }
     setMobileQRImage(qr_image_base64);
-    setMobileScanToken(session_token);
+    setMobileScanToken(scanToken);
     setMobileScanStatus('waiting');
 
     mobilePollRef.current = setInterval(async () => {
-      const pollRes = await clamflowAPI.getMobileScanResult(session_token);
+      const pollRes = await clamflowAPI.getMobileScanResult(scanToken);
       if (!pollRes.success) return;
       if (pollRes.data?.status === 'completed' && pollRes.data.parsed_result) {
         stopMobilePoll();
