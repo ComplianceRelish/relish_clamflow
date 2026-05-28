@@ -112,7 +112,7 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
   const [aadhaarScanError, setAadhaarScanError] = useState('');
   const [mobileQRImage, setMobileQRImage] = useState('');
   const [mobileScanToken, setMobileScanToken] = useState('');
-  const [mobileScanStatus, setMobileScanStatus] = useState<'idle' | 'waiting' | 'done'>('idle');
+  const [mobileScanStatus, setMobileScanStatus] = useState<'idle' | 'waiting' | 'done' | 'error'>('idle');
   const [aadhaarUploadLoading, setAadhaarUploadLoading] = useState(false);
   const mobilePollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -445,24 +445,47 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
       return;
     }
 
-    const { qr_image_base64, session_token, token } = res.data;
-    const scanToken = token || session_token;
+    const { qrImageBase64, sessionToken, token } = res.data;
+    const scanToken = token || sessionToken;
     if (!scanToken) {
       setAadhaarScanError('No scan token returned from server');
       setAadhaarScanMode('manual');
       return;
     }
-    setMobileQRImage(qr_image_base64);
+    setMobileQRImage(qrImageBase64);
     setMobileScanToken(scanToken);
     setMobileScanStatus('waiting');
 
+    // Poll every 2 seconds for up to 10 minutes (300 attempts)
+    let pollCount = 0;
+    const MAX_POLLS = 300;
     mobilePollRef.current = setInterval(async () => {
+      pollCount++;
+      if (pollCount > MAX_POLLS) {
+        stopMobilePoll();
+        setMobileScanStatus('error');
+        setAadhaarScanError('Scan session timed out. Please try again.');
+        return;
+      }
       const pollRes = await clamflowAPI.getMobileScanResult(scanToken);
-      if (!pollRes.success) return;
-      if (pollRes.data?.status === 'completed' && pollRes.data.parsed_result) {
+      if (!pollRes.success) {
+        // Stop polling on terminal errors — session is gone and will never recover
+        const isTerminal = pollRes.error && (
+          pollRes.error.toLowerCase().includes('not found') ||
+          pollRes.error.toLowerCase().includes('already consumed') ||
+          pollRes.error.toLowerCase().includes('expired')
+        );
+        if (isTerminal) {
+          stopMobilePoll();
+          setMobileScanStatus('error');
+          setAadhaarScanError('Scan session expired or was already used. Please try again.');
+        }
+        return; // transient error — keep polling
+      }
+      if (pollRes.data?.status === 'completed' && pollRes.data.parsedResult) {
         stopMobilePoll();
         setMobileScanStatus('done');
-        applyAadhaarParsed(pollRes.data.parsed_result, pollRes.data.parsed_result.raw_text ?? '');
+        applyAadhaarParsed(pollRes.data.parsedResult, pollRes.data.parsedResult.rawText ?? '');
       }
     }, 2000);
   }, [applyAadhaarParsed, stopMobilePoll]);
@@ -472,11 +495,11 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
     setAadhaarUploadLoading(true);
     const res = await clamflowAPI.scanAadhaarImage(file);
     setAadhaarUploadLoading(false);
-    if (!res.success || !res.data?.parsed_result) {
+    if (!res.success || !res.data?.parsedResult) {
       setAadhaarScanError(res.error || res.data?.message || 'Could not extract QR from image. Try a clearer photo.');
       return;
     }
-    applyAadhaarParsed(res.data.parsed_result, res.data.parsed_result.raw_text ?? '');
+    applyAadhaarParsed(res.data.parsedResult, res.data.parsedResult.rawText ?? '');
   }, [applyAadhaarParsed]);
 
   const handleStartOnboarding = (user: User) => {
@@ -1134,6 +1157,20 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
                     <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 flex-shrink-0" />
                       <span className="text-sm text-gray-600">Extracting QR from image…</span>
+                    </div>
+                  )}
+
+                  {/* Mobile scan session error (expired / consumed) */}
+                  {aadhaarScanMode === 'mobile' && mobileScanStatus === 'error' && (
+                    <div className="space-y-2 text-center p-3 bg-red-50 rounded-lg border border-red-200">
+                      <p className="text-sm font-medium text-red-700">Scan session expired or failed.</p>
+                      <button
+                        type="button"
+                        onClick={() => { setAadhaarScanMode('manual'); setMobileScanStatus('idle'); setAadhaarScanError(''); }}
+                        className="text-xs text-blue-600 hover:text-blue-800 font-medium underline"
+                      >
+                        Try again
+                      </button>
                     </div>
                   )}
 

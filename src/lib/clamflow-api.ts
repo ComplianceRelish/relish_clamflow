@@ -354,24 +354,24 @@ export interface AadhaarParsedResult {
   pincode?: string;
   state?: string;
   district?: string;
-  raw_text?: string;
+  rawText?: string;
 }
 
 export interface MobileScanCreateResponse {
-  qr_image_base64: string;
-  mobile_url: string;
-  session_token: string;
+  qrImageBase64: string;
+  mobileUrl: string;
+  sessionToken: string;
   token?: string;
 }
 
 export interface MobileScanResultResponse {
   status: 'pending' | 'completed';
-  parsed_result?: AadhaarParsedResult;
+  parsedResult?: AadhaarParsedResult;
 }
 
 export interface ScanAadhaarImageResponse {
   success: boolean;
-  parsed_result?: AadhaarParsedResult;
+  parsedResult?: AadhaarParsedResult;
   message?: string;
 }
 
