@@ -324,77 +324,21 @@ const SupplierOnboardingPanel: React.FC<SupplierOnboardingPanelProps> = ({ curre
       const imageData = canvas.toDataURL('image/jpeg', 0.8);
       setFaceImage(imageData);
       
-      // Try to register with backend
-      const token = localStorage.getItem('clamflow_token');
-      try {
-        const response = await fetch(`${API_BASE_URL}/biometric/register-face`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            face_data: imageData,
-            person_name: `${formData.first_name} ${formData.last_name}`,
-            person_type: supplierType,
-            timestamp: new Date().toISOString()
-          })
-        });
-        
-        const result = await response.json();
-        
-        if (result.success || result.face_id) {
-          setFaceRegistered(true);
-          setFormData(prev => ({
-            ...prev,
-            face_registration: {
-              face_image: imageData,
-              registered: true,
-              registered_at: new Date().toISOString(),
-              face_encoding_id: result.face_id || result.encoding_id
-            }
-          }));
-          setSuccess('Face registered successfully!');
-          stopCamera();
-        } else {
-          throw new Error(result.message || 'Face registration failed');
+      // New supplier record: no person ID exists yet, face stored locally for form submission
+      setFaceRegistered(true);
+      setFormData(prev => ({
+        ...prev,
+        face_registration: {
+          face_image: imageData,
+          registered: true,
+          registered_at: new Date().toISOString(),
+          face_encoding_id: undefined
         }
-      } catch (apiErr: any) {
-        // OFFLINE-FIRST: Queue for sync when online
-        if (!navigator.onLine || apiErr.message?.includes('Failed to fetch')) {
-          if (offlineSyncService) {
-            offlineSyncService.queueOperation(
-              'face_registration',
-              `${API_BASE_URL}/biometric/register-face`,
-              'POST',
-              {
-                face_data: imageData,
-                person_name: `${formData.first_name} ${formData.last_name}`,
-                person_type: supplierType,
-                timestamp: new Date().toISOString()
-              },
-              currentUser?.id
-            );
-          }
-          
-          setFaceRegistered(true);
-          setFormData(prev => ({
-            ...prev,
-            face_registration: {
-              face_image: imageData,
-              registered: true,
-              registered_at: new Date().toISOString(),
-              face_encoding_id: `pending_sync_${Date.now()}`
-            }
-          }));
-          setSuccess('Face captured! Will sync to server when online.');
-          stopCamera();
-        } else {
-          throw apiErr;
-        }
-      }
+      }));
+      setSuccess('Face captured successfully!');
+      stopCamera();
     } catch (err: any) {
-      console.error('Face Registration Error:', err);
+      console.error('Face capture error:', err);
       setError(err.message || 'Face registration failed. Please try again.');
     } finally {
       setCapturingFace(false);

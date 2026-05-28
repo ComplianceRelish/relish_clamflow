@@ -116,7 +116,9 @@ export default function StaffOnboardingPage() {
     setMobileScanToken(scanToken);
     setMobileScanStatus('waiting');
 
-    // Poll every 2 seconds for up to 10 minutes (300 attempts)
+    // Poll every 2 seconds for up to 10 minutes (300 attempts).
+    // Initial 1.5s delay avoids racing the backend session write.
+    await new Promise(r => setTimeout(r, 1500));
     let pollCount = 0;
     const MAX_POLLS = 300;
     mobilePollRef.current = setInterval(async () => {
@@ -153,10 +155,28 @@ export default function StaffOnboardingPage() {
   const handleAadhaarImageUpload = useCallback(async (file: File) => {
     setAadhaarError('');
     setAadhaarUploadLoading(true);
+
+    // Step 1: Try client-side QR decoding first (faster, no server round-trip)
+    try {
+      const { scanQRFromImageFile, parseAadhaarXML } = await import('@/lib/aadhaar-qr');
+      const qrText = await scanQRFromImageFile(file);
+      if (qrText) {
+        const parsed = parseAadhaarXML(qrText);
+        if (parsed) {
+          setAadhaarUploadLoading(false);
+          applyAadhaarData(parsed, qrText);
+          return;
+        }
+      }
+    } catch {
+      // fall through to backend
+    }
+
+    // Step 2: Fall back to backend (handles Secure QR binary format)
     const res = await clamflowAPI.scanAadhaarImage(file);
     setAadhaarUploadLoading(false);
     if (!res.success || !res.data?.parsedResult) {
-      setAadhaarError(res.error || res.data?.message || 'Could not extract QR from image. Try a clearer photo.');
+      setAadhaarError(res.error || res.data?.message || 'Could not extract QR from image. Try a clearer photo of the back of the Aadhaar card.');
       return;
     }
     applyAadhaarData(res.data.parsedResult, res.data.parsedResult.rawText ?? '');
@@ -575,7 +595,7 @@ export default function StaffOnboardingPage() {
                   <label className="flex flex-col items-center gap-2 p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 hover:bg-gray-50 transition-colors cursor-pointer">
                     <span className="text-2xl">🖼️</span>
                     <span className="text-sm font-medium text-gray-700">Upload Aadhaar Photo</span>
-                    <span className="text-xs text-gray-500 text-center">Upload a photo of the Aadhaar card</span>
+                    <span className="text-xs text-gray-500 text-center">Upload a photo of the <strong>back</strong> of the Aadhaar card (the side with the QR code)</span>
                     <input
                       type="file"
                       accept="image/*"

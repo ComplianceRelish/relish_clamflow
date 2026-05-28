@@ -456,7 +456,9 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
     setMobileScanToken(scanToken);
     setMobileScanStatus('waiting');
 
-    // Poll every 2 seconds for up to 10 minutes (300 attempts)
+    // Poll every 2 seconds for up to 10 minutes (300 attempts).
+    // Initial 1.5s delay avoids racing the backend session write.
+    await new Promise(r => setTimeout(r, 1500));
     let pollCount = 0;
     const MAX_POLLS = 300;
     mobilePollRef.current = setInterval(async () => {
@@ -493,10 +495,28 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
   const handleAadhaarImageUpload = useCallback(async (file: File) => {
     setAadhaarScanError('');
     setAadhaarUploadLoading(true);
+
+    // Step 1: Try client-side QR decoding first (faster, no server round-trip)
+    try {
+      const { scanQRFromImageFile, parseAadhaarXML } = await import('@/lib/aadhaar-qr');
+      const qrText = await scanQRFromImageFile(file);
+      if (qrText) {
+        const parsed = parseAadhaarXML(qrText);
+        if (parsed) {
+          setAadhaarUploadLoading(false);
+          applyAadhaarParsed(parsed, qrText);
+          return;
+        }
+      }
+    } catch {
+      // fall through to backend
+    }
+
+    // Step 2: Fall back to backend (handles Secure QR binary format)
     const res = await clamflowAPI.scanAadhaarImage(file);
     setAadhaarUploadLoading(false);
     if (!res.success || !res.data?.parsedResult) {
-      setAadhaarScanError(res.error || res.data?.message || 'Could not extract QR from image. Try a clearer photo.');
+      setAadhaarScanError(res.error || res.data?.message || 'Could not extract QR from image. Try a clearer photo of the back of the Aadhaar card.');
       return;
     }
     applyAadhaarParsed(res.data.parsedResult, res.data.parsedResult.rawText ?? '');
@@ -626,36 +646,33 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
       const imageData = canvas.toDataURL('image/jpeg', 0.8);
       setFaceImage(imageData);
       
-      // Register face with backend
-      const response = await fetch(`${API_BASE_URL}/biometric/register-face`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          face_data: imageData,
-          person_name: onboardingUser.full_name,
-          person_type: 'staff',
-          user_id: onboardingUser.id,
-          username: onboardingUser.username,
-          timestamp: new Date().toISOString()
-        })
-      });
-      
-      const result = await response.json();
-      
-      if (result.success || result.face_id) {
-        setFaceRegistered(true);
-        setOnboardingSuccess('Face registered successfully! Onboarding complete.');
-        // Update user in list
-        setUsers(prev => prev.map(u => 
-          u.id === onboardingUser.id ? { ...u, face_registered: true, onboarding_complete: true } : u
-        ));
-        stopCamera();
-      } else {
-        throw new Error(result.message || 'Face registration failed');
+      // Register face: multipart/form-data with ?staff_id= query param (backend requirement)
+      const base64Data = imageData.split(',')[1];
+      const byteArray = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+      const imageBlob = new Blob([byteArray], { type: 'image/jpeg' });
+      const fd = new FormData();
+      fd.append('image', imageBlob, 'face.jpg');
+      const response = await fetch(
+        `${API_BASE_URL}/biometric/register-face?staff_id=${encodeURIComponent(onboardingUser.id)}`,
+        {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: fd
+        }
+      );
+
+      if (!response.ok) {
+        const errBody = await response.json().catch(() => ({}));
+        throw new Error(errBody.detail || errBody.message || `Registration failed (${response.status})`);
       }
+
+      setFaceRegistered(true);
+      setOnboardingSuccess('Face registered successfully! Onboarding complete.');
+      // Update user in list
+      setUsers(prev => prev.map(u =>
+        u.id === onboardingUser.id ? { ...u, face_registered: true, onboarding_complete: true } : u
+      ));
+      stopCamera();
     } catch (err: unknown) {
       console.error('Face Registration Error:', err);
       const errorMessage = err instanceof Error ? err.message : 'Face registration failed. Please try again.';
@@ -1138,7 +1155,7 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
                       <label className="flex flex-col items-center gap-1.5 p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 hover:bg-gray-50 transition-colors text-center cursor-pointer">
                         <span className="text-xl">🖼️</span>
                         <span className="text-xs font-semibold text-gray-700">Upload Photo</span>
-                        <span className="text-xs text-gray-400 leading-tight">Upload a photo of the Aadhaar card</span>
+                        <span className="text-xs text-gray-400 leading-tight">Upload a photo of the <strong>back</strong> of the Aadhaar card (the side with the QR code)</span>
                         <input
                           type="file"
                           accept="image/*"
