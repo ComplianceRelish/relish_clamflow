@@ -35,7 +35,7 @@ export default function MobileScanPage() {
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ qr_data: rawText }),
+          body: JSON.stringify({ qr_text: rawText }),
         }
       );
 

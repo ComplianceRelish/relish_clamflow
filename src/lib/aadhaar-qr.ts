@@ -25,10 +25,19 @@ export async function scanQRFromImageFile(file: File): Promise<string | null> {
   // Method 2: html5-qrcode scanFile (all modern browsers via canvas)
   try {
     const { Html5Qrcode } = await import('html5-qrcode');
-    const scanner = new Html5Qrcode('_qr_tmp', { verbose: false });
-    const text = await scanner.scanFile(file, /* showImage */ false);
-    scanner.clear();
-    return text;
+    // Html5Qrcode requires a real DOM element — create a hidden one, use it, then remove it
+    const container = document.createElement('div');
+    container.id = '_aadhaar_qr_tmp';
+    container.style.display = 'none';
+    document.body.appendChild(container);
+    try {
+      const scanner = new Html5Qrcode('_aadhaar_qr_tmp', { verbose: false });
+      const text = await scanner.scanFile(file, /* showImage */ false);
+      scanner.clear();
+      return text;
+    } finally {
+      document.body.removeChild(container);
+    }
   } catch {
     return null;
   }
