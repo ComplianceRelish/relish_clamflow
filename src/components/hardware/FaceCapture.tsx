@@ -37,7 +37,7 @@ export const FaceCapture: React.FC<FaceCaptureProps> = ({
         video: {
           width: { ideal: 640 },
           height: { ideal: 480 },
-          facingMode: deviceType === 'mobile' ? 'user' : 'environment'
+          facingMode: 'environment' // Rear camera — supervisor points device at subject
         }
       };
 

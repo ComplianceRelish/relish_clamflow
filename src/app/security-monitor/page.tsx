@@ -7,6 +7,7 @@ import clamflowAPI, {
   AttendanceWsEvent,
   CameraDetectionEvent,
   AttendanceMonitorEntry,
+  VisitorSubjectType,
 } from '../../lib/clamflow-api'
 
 const WS_BASE = (process.env.NEXT_PUBLIC_API_URL || 'https://clamflowbackend-production.up.railway.app')
@@ -290,44 +291,98 @@ export default function SecurityMonitorPage() {
               </div>
             ) : (
               <div className="divide-y divide-gray-800/60">
-                {cameraDetectionFeed.map((ev, idx) => (
-                  <div
-                    key={idx}
-                    className={`px-5 py-3 flex items-start justify-between gap-3 ${idx === 0 ? 'bg-gray-800/50' : ''}`}
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${
-                          ev.subject_type === 'staff'
-                            ? 'bg-green-900/60 text-green-300 border border-green-700'
-                            : 'bg-blue-900/60 text-blue-300 border border-blue-700'
-                        }`}>
-                          {ev.subject_type === 'staff' ? 'Staff' : 'Visitor'}
-                        </span>
-                        <p className="font-semibold text-white truncate">
-                          {ev.subject_type === 'staff' ? ev.person?.full_name : ev.visitor?.name}
+                {cameraDetectionFeed.map((ev, idx) => {
+                  const isFirst = idx === 0
+                  const rowBg = isFirst ? 'bg-gray-800/50' : ''
+
+                  return (
+                    <div
+                      key={idx}
+                      className={`px-5 py-3 flex items-start justify-between gap-3 ${rowBg}`}
+                    >
+                      <div className="min-w-0 flex-1">
+                        {/* ── Badge + primary name ── */}
+                        <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                          {/* subject_type badge — 5 values from POST /api/visitors/identify */}
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 border ${
+                            ev.subject_type === 'staff'
+                              ? 'bg-green-900/60 text-green-300 border-green-700'
+                              : ev.subject_type === 'known_visitor'
+                              ? 'bg-blue-900/60 text-blue-300 border-blue-700'
+                              : ev.subject_type === 'expired_visitor'
+                              ? 'bg-amber-900/60 text-amber-300 border-amber-700'
+                              : ev.subject_type === 'new_visitor'
+                              ? 'bg-slate-700/60 text-slate-300 border-slate-600'
+                              : /* no_face */ 'bg-gray-800/60 text-gray-500 border-gray-700'
+                          }`}>
+                            {ev.subject_type === 'staff'           ? 'Staff'
+                            : ev.subject_type === 'known_visitor'   ? 'Known Visitor'
+                            : ev.subject_type === 'expired_visitor' ? 'Expired Pass'
+                            : ev.subject_type === 'new_visitor'     ? 'New / Unknown'
+                            :                                         'No Face'}
+                          </span>
+
+                          {ev.subject_type === 'staff' && ev.person && (
+                            <p className="font-semibold text-white truncate">{ev.person.full_name}</p>
+                          )}
+                          {(ev.subject_type === 'known_visitor' || ev.subject_type === 'expired_visitor') && ev.visitor && (
+                            <p className="font-semibold text-white truncate">{ev.visitor.name}</p>
+                          )}
+                          {ev.subject_type === 'new_visitor' && (
+                            <p className="italic text-gray-400">Register this visitor →</p>
+                          )}
+                          {ev.subject_type === 'no_face' && (
+                            <p className="italic text-gray-600">Reposition — no face detected</p>
+                          )}
+                        </div>
+
+                        {/* ── Detail line ── */}
+                        {ev.subject_type === 'staff' && ev.person && (
+                          <p className="text-xs text-gray-400">{ev.person.role} · {ev.location}</p>
+                        )}
+                        {ev.subject_type === 'known_visitor' && ev.visitor && (
+                          <p className="text-xs text-blue-400">
+                            {ev.visitor.organisation ? `${ev.visitor.organisation} · ` : ''}
+                            {ev.visitor.visitor_category ?? ''}
+                            {ev.visitor.visit_count ? ` · visit #${ev.visitor.visit_count}` : ''}
+                            {ev.visitor.valid_until
+                              ? ` · valid until ${new Date(ev.visitor.valid_until).toLocaleTimeString()}`
+                              : ' · permanent'}
+                          </p>
+                        )}
+                        {ev.subject_type === 'expired_visitor' && ev.visitor && (
+                          <p className="text-xs text-amber-400">
+                            {ev.visitor.organisation ? `${ev.visitor.organisation} · ` : ''}
+                            Pass expired
+                            {ev.visitor.valid_until
+                              ? ` ${new Date(ev.visitor.valid_until).toLocaleDateString()}`
+                              : ''}
+                            {' '}— guard must renew
+                          </p>
+                        )}
+                        {ev.subject_type === 'new_visitor' && (
+                          <a
+                            href="/gate-pass/visitors"
+                            className="text-xs text-slate-400 underline hover:text-slate-200"
+                          >
+                            Open visitor registration
+                          </a>
+                        )}
+                      </div>
+
+                      {/* ── Confidence + timestamp ── */}
+                      <div className="text-right flex-shrink-0">
+                        {ev.subject_type !== 'no_face' && ev.confidence > 0 && (
+                          // Rekognition returns 0–100 (not 0–1)
+                          <p className="text-sm font-bold text-white">{ev.confidence.toFixed(1)}%</p>
+                        )}
+                        <p className="text-xs text-gray-500 font-mono mt-0.5">
+                          {new Date(ev.timestamp).toLocaleTimeString()}
                         </p>
                       </div>
-                      {ev.subject_type === 'staff' && ev.person && (
-                        <p className="text-xs text-gray-400">{ev.person.role} · {ev.location}</p>
-                      )}
-                      {ev.subject_type === 'visitor' && ev.visitor && (
-                        <p className={`text-xs ${
-                          new Date(ev.visitor.valid_until) > new Date() ? 'text-green-400' : 'text-red-400'
-                        }`}>
-                          Pass {new Date(ev.visitor.valid_until) > new Date() ? 'valid until' : 'EXPIRED'}{' '}
-                          {new Date(ev.visitor.valid_until).toLocaleTimeString()}
-                        </p>
-                      )}
                     </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-sm font-bold text-white">{Math.round(ev.confidence * 100)}%</p>
-                      <p className="text-xs text-gray-500 font-mono mt-0.5">
-                        {new Date(ev.timestamp).toLocaleTimeString()}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>

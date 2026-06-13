@@ -282,7 +282,7 @@ const SupplierOnboardingPanel: React.FC<SupplierOnboardingPanelProps> = ({ curre
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 640, height: 480, facingMode: 'user' }
+        video: { width: 640, height: 480, facingMode: 'environment' }
       });
       
       if (videoRef.current) {

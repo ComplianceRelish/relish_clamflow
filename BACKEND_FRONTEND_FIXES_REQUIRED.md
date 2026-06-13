@@ -417,3 +417,48 @@ if (approvalRes.success && approvalRes.data?.person_record_id) {
     }
 }
 ```
+
+---
+
+## Railway Deployment — Build Failure & Fix (2026-05-29)
+
+### Incident
+**Deployment `63c9efe7`** failed during Docker build at step `[5/7] RUN pip install`.
+
+**Root cause:** Transient network error on Railway's builder while downloading `pip 26.1.1` from PyPI.
+
+```
+BrokenPipeError: [Errno 32] Broken pipe
+pip._vendor.urllib3.exceptions.ProtocolError: Connection broken
+Build Failed: exit code 2
+```
+
+No application code was at fault — the TCP connection to PyPI dropped mid-stream on Railway's infrastructure.
+
+### Fix Applied — `Dockerfile` (commit `91c9c64` — 2026-05-29) ✅
+
+Added `--retries 5` to both `pip install` commands so pip automatically retries on transient network failures:
+
+```dockerfile
+# Before
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# After
+RUN pip install --no-cache-dir --retries 5 --upgrade pip && \
+    pip install --no-cache-dir --retries 5 -r requirements.txt
+```
+
+### Deployment Outcome
+**Deployment `76530b2c`** — fully successful ✅
+
+| Signal | Result |
+|---|---|
+| Docker build | ✅ All 7 layers completed |
+| Gunicorn startup | ✅ Listening on `0.0.0.0:8080` |
+| All routers loaded | ✅ 36 successful, 0 skipped |
+| DB engine created | ✅ Supabase connection lazy-ready |
+| Face recognition | ✅ OpenCV Haar Cascades initialized |
+| Healthcheck | ✅ `GET /health → 200` |
+
+> **Note:** Railway logs show `"severity":"error"` on all Python `INFO` log lines — this is Railway misclassifying Python's stderr output, not real errors. Application is healthy.

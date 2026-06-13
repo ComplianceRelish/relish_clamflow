@@ -79,7 +79,7 @@ export const FaceRecognitionLogin: React.FC<FaceRecognitionLoginProps> = ({
         video: {
           width: { ideal: 640 },
           height: { ideal: 480 },
-          facingMode: 'user' // Front camera for face login
+          facingMode: 'environment' // Rear camera — supervisor points device at subject
         }
       };
 

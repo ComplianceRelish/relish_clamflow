@@ -198,7 +198,7 @@ export default function StaffOnboardingPage() {
     setCameraError(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }
+        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'environment' }
       });
       if (videoRef.current) {
         videoRef.current.srcObject = stream;

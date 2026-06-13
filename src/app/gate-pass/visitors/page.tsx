@@ -6,20 +6,25 @@
  * Accessible to: Security Guard, Gate Staff, Staff Lead, Admin, Super Admin
  *
  * Tabs:
- *  1. Register  — collect visitor details + face embedding → POST /api/visitors/register
- *  2. Verify    — capture face → extract 512-d embedding → POST /api/visitors/verify
+ *  1. Register  — collect visitor details + face JPEG → POST /api/visitors/register
+ *  2. Verify    — capture face JPEG → POST /api/visitors/verify (AWS Rekognition server-side)
  *  3. Scan QR   — enter pass token → GET /api/visitors/{token}
  *  4. Log       — paginated list   → GET /api/visitors/list
  *
- * Face embedding is performed client-side via @vladmandic/face-api (ArcFace, 512-d).
- * Model weights must be present in /public/models/.
+ * Face recognition is performed server-side via AWS Rekognition (clamflow-visitors collection).
+ * The frontend captures a raw JPEG frame and sends it as base64 — no client-side ML models.
  */
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../context/AuthContext';
-import { clamflowAPI, VisitorPassResponse, VisitorListItem, VisitorScanResponse } from '../../../lib/clamflow-api';
-import { useFaceEmbedding } from '../../../hooks/useFaceEmbedding';
+import {
+  clamflowAPI,
+  VisitorPassResponse,
+  VisitorListItem,
+  VisitorScanResponse,
+  VisitorCategory,
+} from '../../../lib/clamflow-api';
 
 const AUTHORIZED_ROLES = [
   'Super Admin', 'Admin', 'Staff Lead', 'Security Guard', 'Gate Staff',
@@ -55,7 +60,7 @@ function useCameraCapture(videoRef: React.RefObject<HTMLVideoElement>, canvasRef
   const start = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
+        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'environment' },
       });
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -87,7 +92,15 @@ function useCameraCapture(videoRef: React.RefObject<HTMLVideoElement>, canvasRef
     return canvas;
   }, [videoRef, canvasRef]);
 
-  return { cam, start, stop, captureFrame };
+  // Returns raw base64 JPEG string (no data: prefix) — what AWS Rekognition expects
+  const captureJpeg = useCallback((): string | null => {
+    const canvas = captureFrame();
+    if (!canvas) return null;
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+    return dataUrl.replace(/^data:image\/jpeg;base64,/, '');
+  }, [captureFrame]);
+
+  return { cam, start, stop, captureFrame, captureJpeg };
 }
 
 // ── Main page ──────────────────────────────────────────────────────────────
@@ -164,32 +177,34 @@ export default function VisitorPassPage() {
 }
 
 // ── Register Tab ───────────────────────────────────────────────────────────
+const PERMANENT_CATEGORIES: VisitorCategory[] = ['supplier', 'vendor', 'government', 'contractor'];
+
 function RegisterTab() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { cam, start, stop, captureFrame } = useCameraCapture(videoRef, canvasRef);
-  const { isReady: faceReady, isLoading: faceLoading, error: faceError, extractEmbedding } = useFaceEmbedding();
+  const { cam, start, stop, captureJpeg } = useCameraCapture(videoRef, canvasRef);
 
   const [form, setForm] = useState({
     name: '', phone: '', purpose: '', host_staff_id: '', valid_hours: '8',
+    visitor_category: 'individual' as VisitorCategory, organisation: '',
   });
-  const [capturedEmbedding, setCapturedEmbedding] = useState<number[] | null>(null);
-  const [embeddingStatus, setEmbeddingStatus] = useState<string>('');
+  const [isPermanent, setIsPermanent] = useState(false);
+  const [capturedImageB64, setCapturedImageB64] = useState<string | null>(null);
+  const [captureStatus, setCaptureStatus] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<VisitorPassResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const handleCaptureFace = async () => {
-    const canvas = captureFrame();
-    if (!canvas) return;
-    setEmbeddingStatus('Detecting face…');
-    const embedding = await extractEmbedding(canvas);
-    if (embedding) {
-      setCapturedEmbedding(embedding);
-      setEmbeddingStatus(`✅ Face captured (${embedding.length}-d)`);
-    } else {
-      setEmbeddingStatus('⚠️ No face detected — try again or register without face recognition');
-    }
+  // Auto-set is_permanent when category changes to a commercial type
+  useEffect(() => {
+    setIsPermanent(PERMANENT_CATEGORIES.includes(form.visitor_category));
+  }, [form.visitor_category]);
+
+  const handleCaptureFace = () => {
+    const jpeg = captureJpeg();
+    if (!jpeg) { setCaptureStatus('⚠️ No frame captured — start camera first'); return; }
+    setCapturedImageB64(jpeg);
+    setCaptureStatus('✅ Face image captured — will be enrolled via AWS Rekognition');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -202,9 +217,12 @@ function RegisterTab() {
       name: form.name.trim(),
       ...(form.phone && { phone: form.phone.trim() }),
       ...(form.purpose && { purpose: form.purpose.trim() }),
-      ...(form.host_staff_id && { host_staff_id: form.host_staff_id.trim() }),
-      valid_hours: Number(form.valid_hours) || 8,
-      ...(capturedEmbedding && { face_embedding: capturedEmbedding }),
+      visitor_category: form.visitor_category,
+      ...(form.organisation.trim() && { organisation: form.organisation.trim() }),
+      is_permanent: isPermanent,
+      ...(form.host_staff_id.trim() && { host_staff_id: form.host_staff_id.trim() }),
+      ...(!isPermanent && { valid_hours: Number(form.valid_hours) || 8 }),
+      ...(capturedImageB64 && { face_image_b64: capturedImageB64 }),
     };
 
     const res = await clamflowAPI.registerVisitor(payload);
@@ -220,9 +238,9 @@ function RegisterTab() {
 
   const reset = () => {
     setResult(null);
-    setForm({ name: '', phone: '', purpose: '', host_staff_id: '', valid_hours: '8' });
-    setCapturedEmbedding(null);
-    setEmbeddingStatus('');
+    setForm({ name: '', phone: '', purpose: '', host_staff_id: '', valid_hours: '8', visitor_category: 'individual', organisation: '' });
+    setCapturedImageB64(null);
+    setCaptureStatus('');
     setError(null);
   };
 
@@ -231,10 +249,16 @@ function RegisterTab() {
       <div className="bg-white rounded-xl border border-green-200 p-8 max-w-lg mx-auto text-center">
         <div className="text-5xl mb-3">✅</div>
         <h2 className="text-xl font-bold text-green-700 mb-1">Pass Issued</h2>
-        <p className="text-gray-600 mb-4">Valid until {new Date(result.valid_until).toLocaleString()}</p>
+        <p className="text-gray-600 mb-4">
+          {result.valid_until
+            ? `Valid until ${new Date(result.valid_until).toLocaleString()}`
+            : 'Permanent pass — no expiry'}
+        </p>
         <PassTokenDisplay token={result.pass_token} />
         <div className="mt-4 text-sm text-gray-500 space-y-1">
           <p><span className="font-medium">Name:</span> {result.name}</p>
+          {result.organisation && <p><span className="font-medium">Organisation:</span> {result.organisation}</p>}
+          {result.visitor_category && <p><span className="font-medium">Category:</span> {result.visitor_category}</p>}
           {result.purpose && <p><span className="font-medium">Purpose:</span> {result.purpose}</p>}
           <p><span className="font-medium">Status:</span> {result.status}</p>
         </div>
@@ -267,7 +291,31 @@ function RegisterTab() {
             value={form.phone}
             onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500"
-            placeholder="+1-555-0100"
+            placeholder="+91-XXXXX-XXXXX"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+          <select
+            value={form.visitor_category}
+            onChange={e => setForm(f => ({ ...f, visitor_category: e.target.value as VisitorCategory }))}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500"
+          >
+            <option value="individual">Individual</option>
+            <option value="supplier">Supplier</option>
+            <option value="vendor">Vendor</option>
+            <option value="government">Government</option>
+            <option value="contractor">Contractor</option>
+            <option value="delivery">Delivery</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Organisation</label>
+          <input
+            value={form.organisation}
+            onChange={e => setForm(f => ({ ...f, organisation: e.target.value }))}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500"
+            placeholder="Company or agency name"
           />
         </div>
         <div className="sm:col-span-2">
@@ -276,17 +324,31 @@ function RegisterTab() {
             value={form.purpose}
             onChange={e => setForm(f => ({ ...f, purpose: e.target.value }))}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500"
-            placeholder="Delivery inspection, Meeting…"
+            placeholder="Delivery inspection, Meeting, Audit…"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Valid Hours (1–48)</label>
-          <input
-            type="number" min={1} max={48} value={form.valid_hours}
-            onChange={e => setForm(f => ({ ...f, valid_hours: e.target.value }))}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500"
-          />
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isPermanent}
+              onChange={e => setIsPermanent(e.target.checked)}
+              className="rounded border-gray-300"
+            />
+            Permanent visitor (no expiry)
+          </label>
+          <p className="text-xs text-gray-400 mt-1">Auto-enabled for supplier / vendor / government / contractor</p>
         </div>
+        {!isPermanent && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Valid Hours (1–168)</label>
+            <input
+              type="number" min={1} max={168} value={form.valid_hours}
+              onChange={e => setForm(f => ({ ...f, valid_hours: e.target.value }))}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500"
+            />
+          </div>
+        )}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Host Staff ID (optional)</label>
           <input
@@ -298,19 +360,15 @@ function RegisterTab() {
         </div>
       </div>
 
-      {/* Face capture section */}
+      {/* Face capture — JPEG sent to AWS Rekognition server-side; no client-side ML */}
       <div className="border border-dashed border-gray-300 rounded-xl p-4 space-y-3">
         <h3 className="text-sm font-semibold text-gray-700">
           Face Registration
-          <span className="ml-2 font-normal text-gray-400 text-xs">(optional — improves gate verification)</span>
+          <span className="ml-2 font-normal text-gray-400 text-xs">(optional — enables face recognition at gate)</span>
         </h3>
-
-        {faceError && (
-          <div className="bg-amber-50 border border-amber-200 rounded p-2 text-amber-700 text-xs">{faceError}</div>
-        )}
-        {faceLoading && (
-          <div className="text-xs text-gray-500 animate-pulse">Loading face recognition models…</div>
-        )}
+        <p className="text-xs text-gray-500">
+          Point rear camera at visitor and tap Capture. Image is enrolled via AWS Rekognition — no client-side ML needed.
+        </p>
 
         <video
           ref={videoRef}
@@ -319,9 +377,7 @@ function RegisterTab() {
         />
         <canvas ref={canvasRef} className="hidden" />
 
-        {embeddingStatus && (
-          <p className="text-xs text-gray-600">{embeddingStatus}</p>
-        )}
+        {captureStatus && <p className="text-xs text-gray-600">{captureStatus}</p>}
 
         <div className="flex flex-wrap gap-2">
           {!cam.streaming ? (
@@ -331,9 +387,9 @@ function RegisterTab() {
             </button>
           ) : (
             <>
-              <button type="button" onClick={handleCaptureFace} disabled={!faceReady}
-                className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 disabled:opacity-50">
-                {faceReady ? 'Capture Face' : 'Models loading…'}
+              <button type="button" onClick={handleCaptureFace}
+                className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700">
+                Capture Face
               </button>
               <button type="button" onClick={stop}
                 className="px-3 py-1.5 bg-gray-100 text-gray-700 border border-gray-300 rounded text-xs hover:bg-gray-200">
@@ -360,8 +416,7 @@ function RegisterTab() {
 function VerifyTab() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { cam, start, stop, captureFrame } = useCameraCapture(videoRef, canvasRef);
-  const { isReady: faceReady, isLoading: faceLoading, error: faceError, extractEmbedding } = useFaceEmbedding();
+  const { cam, start, stop, captureJpeg } = useCameraCapture(videoRef, canvasRef);
 
   const [gate, setGate] = useState('main_gate');
   const [verifying, setVerifying] = useState(false);
@@ -374,21 +429,14 @@ function VerifyTab() {
   const [error, setError] = useState<string | null>(null);
 
   const handleVerify = async () => {
-    const canvas = captureFrame();
-    if (!canvas) { setError('No camera frame captured'); return; }
-
+    const jpeg = captureJpeg();
+    if (!jpeg) { setError('No camera frame captured — start camera first'); return; }
     setVerifying(true);
     setError(null);
     setVerifyResult(null);
 
-    const embedding = await extractEmbedding(canvas);
-    if (!embedding) {
-      setError('No face detected in frame. Position face clearly in view and try again.');
-      setVerifying(false);
-      return;
-    }
-
-    const res = await clamflowAPI.verifyVisitorFace({ face_embedding: embedding, gate });
+    // Backend calls AWS Rekognition SearchFacesByImage against clamflow-visitors collection
+    const res = await clamflowAPI.verifyVisitorFace({ face_image_b64: jpeg, gate });
     setVerifying(false);
 
     if (res.success && res.data) {
@@ -401,13 +449,10 @@ function VerifyTab() {
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-6 max-w-lg mx-auto space-y-5">
       <h2 className="text-lg font-semibold text-gray-900">Verify Visitor by Face</h2>
+      <p className="text-xs text-gray-500">
+        Capture a JPEG frame — matched against clamflow-visitors collection via AWS Rekognition.
+      </p>
 
-      {faceError && (
-        <div className="bg-amber-50 border border-amber-200 rounded p-3 text-amber-700 text-sm">{faceError}</div>
-      )}
-      {faceLoading && (
-        <div className="text-sm text-gray-500 animate-pulse">Loading face recognition models…</div>
-      )}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm">{error}</div>
       )}
@@ -421,11 +466,23 @@ function VerifyTab() {
           {verifyResult.matched && verifyResult.visitor && (
             <div className="mt-2 text-sm space-y-0.5 text-gray-700">
               <p><span className="font-medium">Name:</span> {verifyResult.visitor.name}</p>
+              {verifyResult.visitor.organisation && (
+                <p><span className="font-medium">Organisation:</span> {verifyResult.visitor.organisation}</p>
+              )}
+              {verifyResult.visitor.visitor_category && (
+                <p><span className="font-medium">Category:</span> {verifyResult.visitor.visitor_category}</p>
+              )}
               {verifyResult.visitor.purpose && (
                 <p><span className="font-medium">Purpose:</span> {verifyResult.visitor.purpose}</p>
               )}
-              <p><span className="font-medium">Valid until:</span> {new Date(verifyResult.visitor.valid_until).toLocaleString()}</p>
-              <p><span className="font-medium">Confidence:</span> {verifyResult.confidence !== null ? `${(verifyResult.confidence * 100).toFixed(1)}%` : '—'}</p>
+              <p>
+                <span className="font-medium">Valid until:</span>{' '}
+                {verifyResult.visitor.valid_until
+                  ? new Date(verifyResult.visitor.valid_until).toLocaleString()
+                  : '∞ Permanent — no expiry'}
+              </p>
+              {/* Rekognition confidence is already 0–100 */}
+              <p><span className="font-medium">Confidence:</span> {verifyResult.confidence !== null ? `${verifyResult.confidence.toFixed(1)}%` : '—'}</p>
             </div>
           )}
         </div>
@@ -456,9 +513,9 @@ function VerifyTab() {
           </button>
         ) : (
           <>
-            <button onClick={handleVerify} type="button" disabled={verifying || !faceReady}
+            <button onClick={handleVerify} type="button" disabled={verifying}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">
-              {verifying ? 'Verifying…' : faceReady ? 'Verify Face' : 'Models loading…'}
+              {verifying ? 'Verifying…' : 'Verify Face'}
             </button>
             <button onClick={stop} type="button"
               className="px-4 py-2 bg-gray-100 text-gray-700 border border-gray-300 rounded-lg text-sm hover:bg-gray-200">
@@ -557,7 +614,12 @@ function ScanTab() {
                 <p><span className="font-medium">Purpose:</span> {scanResult.visitor.purpose}</p>
               )}
               <p><span className="font-medium">Valid from:</span> {new Date(scanResult.visitor.valid_from).toLocaleString()}</p>
-              <p><span className="font-medium">Valid until:</span> {new Date(scanResult.visitor.valid_until).toLocaleString()}</p>
+              <p>
+                <span className="font-medium">Valid until:</span>{' '}
+                {scanResult.visitor.valid_until
+                  ? new Date(scanResult.visitor.valid_until).toLocaleString()
+                  : '\u221e Permanent'}
+              </p>
             </div>
           </div>
 
@@ -671,7 +733,7 @@ function LogTab() {
                     </span>
                   </td>
                   <td className="py-2 pr-4 text-gray-600 text-xs">
-                    {new Date(v.valid_until).toLocaleString()}
+                    {v.valid_until ? new Date(v.valid_until).toLocaleString() : '\u221e Permanent'}
                   </td>
                   <td className="py-2 text-gray-600">{v.event_count}</td>
                 </tr>

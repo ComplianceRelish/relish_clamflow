@@ -249,13 +249,32 @@ interface AdminFormData {
 // VISITOR PASS INTERFACES
 // ============================================
 
+/** The six visitor categories recognised by the backend. */
+export type VisitorCategory =
+  | 'individual' | 'supplier' | 'vendor'
+  | 'government' | 'contractor' | 'delivery';
+
+/**
+ * The five outcomes of POST /api/visitors/identify.
+ * Also used as the subject_type in WebSocket CameraDetectionEvent.
+ */
+export type VisitorSubjectType =
+  | 'staff'           // known plant employee — no pass needed
+  | 'known_visitor'   // valid active pass
+  | 'expired_visitor' // known face, pass lapsed — guard can renew
+  | 'new_visitor'     // no face match — guard registers
+  | 'no_face';        // camera did not detect a face
+
 export interface VisitorRegisterRequest {
   name: string;
   phone?: string;
   purpose?: string;
+  visitor_category?: VisitorCategory;
+  organisation?: string;
+  is_permanent?: boolean;        // null → backend derives from category
   host_staff_id?: string;
-  valid_hours?: number;
-  face_embedding?: number[]; // 512 floats, generated client-side via face-api.js ArcFace model
+  valid_hours?: number;          // ignored when is_permanent=true
+  face_image_b64?: string;       // base64 JPEG — enrolled server-side via AWS Rekognition
 }
 
 export interface VisitorPassResponse {
@@ -263,25 +282,38 @@ export interface VisitorPassResponse {
   name: string;
   phone?: string;
   purpose?: string;
+  visitor_category?: VisitorCategory;
+  organisation?: string;
+  is_permanent: boolean;
+  visit_count?: number;
   host_staff_id?: string;
   pass_token: string;
   valid_from: string;
-  valid_until: string;
+  valid_until: string | null;    // null when is_permanent=true
   status: 'active' | 'expired' | 'revoked';
   photo_url?: string;
   created_at: string;
 }
 
 export interface VisitorVerifyRequest {
-  face_embedding: number[]; // 512 floats — required
+  face_image_b64: string;        // base64 JPEG — matched server-side via AWS Rekognition
   gate?: string;
 }
 
 export interface VisitorVerifyResponse {
   matched: boolean;
-  confidence: number | null;
+  confidence: number | null;     // Rekognition similarity score 0–100
   visitor: VisitorPassResponse | null;
   event_id: string | null;
+  message: string;
+}
+
+/** Response from POST /api/visitors/identify — the primary gate-screen endpoint. */
+export interface IdentifyPersonResponse {
+  subject_type: VisitorSubjectType;
+  staff?: { id: string; full_name: string; role: string; photo_url?: string };
+  visitor?: VisitorPassResponse;  // present for known_visitor and expired_visitor
+  confidence: number | null;
   message: string;
 }
 
@@ -304,9 +336,12 @@ export interface VisitorListItem {
   name: string;
   phone?: string;
   purpose?: string;
+  visitor_category?: VisitorCategory;
+  organisation?: string;
+  is_permanent: boolean;
   status: 'active' | 'expired' | 'revoked';
   valid_from: string;
-  valid_until: string;
+  valid_until: string | null;    // null when is_permanent=true
   pass_token: string;
   event_count: number;
 }
@@ -326,9 +361,17 @@ export interface AttendanceMonitorEntry {
 
 export interface CameraDetectionEvent {
   detected: boolean;
-  subject_type: 'staff' | 'visitor';
+  subject_type: VisitorSubjectType;
   person?: { id: string; full_name: string; role: string };
-  visitor?: { id: string; name: string; pass_token: string; valid_until: string };
+  visitor?: {
+    id: string;
+    name: string;
+    pass_token: string;
+    valid_until: string | null;
+    organisation?: string;
+    visitor_category?: VisitorCategory;
+    visit_count?: number;
+  };
   confidence: number;
   location: string;
   timestamp: string;
@@ -1370,6 +1413,18 @@ class ClamFlowAPI {
 
   async registerVisitor(data: VisitorRegisterRequest): Promise<ApiResponse<VisitorPassResponse>> {
     return this.post('/api/visitors/register', data);
+  }
+
+  /**
+   * Primary gate-screen endpoint. Sends a JPEG frame to the backend, which calls
+   * AWS Rekognition SearchFacesByImage against clamflow-staff then clamflow-visitors.
+   * Returns subject_type: staff | known_visitor | expired_visitor | new_visitor | no_face
+   */
+  async identifyPerson(faceImageB64: string, gate?: string): Promise<ApiResponse<IdentifyPersonResponse>> {
+    return this.post('/api/visitors/identify', {
+      face_image_b64: faceImageB64,
+      ...(gate && { gate }),
+    });
   }
 
   async verifyVisitorFace(data: VisitorVerifyRequest): Promise<ApiResponse<VisitorVerifyResponse>> {

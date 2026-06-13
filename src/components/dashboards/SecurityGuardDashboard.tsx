@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { User } from '../../types/auth'
-import clamflowAPI, { AttendanceWsEvent, RFIDTagResponse, CameraDetectionEvent, AttendanceMonitorEntry } from '../../lib/clamflow-api'
+import clamflowAPI, { AttendanceWsEvent, RFIDTagResponse, CameraDetectionEvent, AttendanceMonitorEntry, VisitorSubjectType } from '../../lib/clamflow-api'
 
 const WS_BASE = (process.env.NEXT_PUBLIC_API_URL || 'https://clamflowbackend-production.up.railway.app')
   .replace(/^http/, 'ws').replace(/\/$/, '')
@@ -48,6 +48,109 @@ const loadOverrideRequests = (): OverrideRequest[] => {
   const stored = localStorage.getItem(`clamflow_overrides_${today}`)
   if (!stored) return []
   try { return JSON.parse(stored) as OverrideRequest[] } catch { return [] }
+}
+
+// ── Detection card — shared between Camera tab and security-monitor ─────────
+// Renders one CameraDetectionEvent as a card with 5 branches matching the
+// backend's subject_type values from POST /api/visitors/identify:
+//   staff           → green   — known plant employee, no pass needed
+//   known_visitor   → blue    — valid active pass
+//   expired_visitor → amber   — face known, pass lapsed → guard renews
+//   new_visitor     → slate   — no match → registration prompt
+//   no_face         → gray    — camera didn't detect a face
+
+const SUBJECT_BADGE: Record<string, { label: string; light: string; dark: string }> = {
+  staff:           { label: 'Staff',            light: 'bg-green-100 text-green-800 border-green-300',      dark: 'bg-green-900/60 text-green-300 border-green-700' },
+  known_visitor:   { label: 'Known Visitor',    light: 'bg-blue-100 text-blue-800 border-blue-300',         dark: 'bg-blue-900/60 text-blue-300 border-blue-700' },
+  expired_visitor: { label: 'Expired Pass',     light: 'bg-amber-100 text-amber-800 border-amber-300',      dark: 'bg-amber-900/60 text-amber-300 border-amber-700' },
+  new_visitor:     { label: 'New / Unknown',    light: 'bg-slate-100 text-slate-700 border-slate-300',      dark: 'bg-slate-700/60 text-slate-300 border-slate-600' },
+  no_face:         { label: 'No Face',          light: 'bg-gray-100 text-gray-500 border-gray-200',         dark: 'bg-gray-800/60 text-gray-500 border-gray-700' },
+}
+
+interface DetectionCardProps {
+  ev: CameraDetectionEvent
+  isFirst: boolean
+  dark: boolean  // true = security-monitor dark theme, false = dashboard light theme
+}
+
+function DetectionCard({ ev, isFirst, dark }: DetectionCardProps) {
+  const badge = SUBJECT_BADGE[ev.subject_type] ?? SUBJECT_BADGE['no_face']
+  const badgeCls = dark ? badge.dark : badge.light
+  const rowBg   = dark
+    ? (isFirst ? 'bg-gray-800/50' : '')
+    : (isFirst ? 'bg-gray-50' : '')
+  const textPri = dark ? 'text-white' : 'text-gray-900'
+  const textSec = dark ? 'text-gray-400' : 'text-gray-500'
+
+  return (
+    <div className={`px-4 py-3 flex items-start justify-between gap-3 ${rowBg}`}>
+      <div className="min-w-0 flex-1">
+        {/* Badge row */}
+        <div className="flex items-center gap-2 flex-wrap mb-0.5">
+          <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 border ${badgeCls}`}>
+            {badge.label}
+          </span>
+
+          {/* Primary name */}
+          {ev.subject_type === 'staff' && ev.person && (
+            <p className={`font-semibold truncate ${textPri}`}>{ev.person.full_name}</p>
+          )}
+          {(ev.subject_type === 'known_visitor' || ev.subject_type === 'expired_visitor') && ev.visitor && (
+            <p className={`font-semibold truncate ${textPri}`}>{ev.visitor.name}</p>
+          )}
+          {ev.subject_type === 'new_visitor' && (
+            <p className={`italic ${textSec}`}>Register this visitor →</p>
+          )}
+          {ev.subject_type === 'no_face' && (
+            <p className={`italic ${textSec}`}>Reposition — no face detected</p>
+          )}
+        </div>
+
+        {/* Detail line */}
+        {ev.subject_type === 'staff' && ev.person && (
+          <p className={`text-xs ${textSec}`}>{ev.person.role} · {ev.location}</p>
+        )}
+        {ev.subject_type === 'known_visitor' && ev.visitor && (
+          <p className="text-xs text-blue-500">
+            {ev.visitor.organisation ? `${ev.visitor.organisation} · ` : ''}
+            {ev.visitor.visitor_category ?? ''}
+            {ev.visitor.visit_count ? ` · visit #${ev.visitor.visit_count}` : ''}
+            {ev.visitor.valid_until
+              ? ` · valid until ${new Date(ev.visitor.valid_until).toLocaleTimeString()}`
+              : ' · permanent'}
+          </p>
+        )}
+        {ev.subject_type === 'expired_visitor' && ev.visitor && (
+          <p className="text-xs text-amber-500">
+            {ev.visitor.organisation ? `${ev.visitor.organisation} · ` : ''}
+            Pass expired — tap to renew
+            {ev.visitor.valid_until
+              ? ` (expired ${new Date(ev.visitor.valid_until).toLocaleDateString()})`
+              : ''}
+          </p>
+        )}
+        {ev.subject_type === 'new_visitor' && (
+          <a
+            href="/gate-pass/visitors"
+            className="text-xs text-slate-400 underline hover:text-slate-200"
+          >
+            Open visitor registration
+          </a>
+        )}
+      </div>
+
+      {/* Right column — confidence + time */}
+      <div className="text-right flex-shrink-0">
+        {ev.subject_type !== 'no_face' && ev.confidence > 0 && (
+          // Rekognition returns 0–100 (not 0–1)
+          <p className={`text-sm font-bold ${textPri}`}>{ev.confidence.toFixed(1)}%</p>
+        )}
+        <p className={`text-xs font-mono mt-0.5 ${textSec}`}>
+          {new Date(ev.timestamp).toLocaleTimeString()}
+        </p>
+      </div>
+    </div>
+  )
 }
 
 const SecurityGuardDashboard: React.FC<SecurityGuardDashboardProps> = ({ currentUser }) => {
@@ -636,37 +739,7 @@ const SecurityGuardDashboard: React.FC<SecurityGuardDashboardProps> = ({ current
               ) : (
                 <div className="divide-y divide-gray-100 overflow-y-auto max-h-[360px]">
                   {cameraDetectionFeed.map((ev, idx) => (
-                    <div key={idx} className="p-3 flex items-start justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${
-                            ev.subject_type === 'staff'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-blue-100 text-blue-800'
-                          }`}>
-                            {ev.subject_type === 'staff' ? 'Staff' : 'Visitor'}
-                          </span>
-                          <p className="text-sm font-medium text-gray-900 truncate">
-                            {ev.subject_type === 'staff' ? ev.person?.full_name : ev.visitor?.name}
-                          </p>
-                        </div>
-                        {ev.subject_type === 'staff' && ev.person && (
-                          <p className="text-xs text-gray-500 mt-0.5">{ev.person.role} • {ev.location}</p>
-                        )}
-                        {ev.subject_type === 'visitor' && ev.visitor && (
-                          <p className={`text-xs mt-0.5 ${
-                            new Date(ev.visitor.valid_until) > new Date() ? 'text-green-600' : 'text-red-600'
-                          }`}>
-                            Pass {new Date(ev.visitor.valid_until) > new Date() ? 'valid until' : 'EXPIRED'}{' '}
-                            {new Date(ev.visitor.valid_until).toLocaleTimeString()}
-                          </p>
-                        )}
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <p className="text-xs font-medium text-gray-700">{Math.round(ev.confidence * 100)}%</p>
-                        <p className="text-xs text-gray-400">{new Date(ev.timestamp).toLocaleTimeString()}</p>
-                      </div>
-                    </div>
+                    <DetectionCard key={idx} ev={ev} isFirst={idx === 0} dark={false} />
                   ))}
                 </div>
               )}
