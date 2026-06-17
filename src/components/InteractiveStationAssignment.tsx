@@ -2,7 +2,18 @@
 // Production-ready: Uses real staff and station data from backend API
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { DndContext, DragOverlay, useDraggable, useDroppable, DragEndEvent } from '@dnd-kit/core';
+import {
+  DndContext,
+  DragOverlay,
+  useDraggable,
+  useDroppable,
+  DragEndEvent,
+  DragStartEvent,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
 import { motion, AnimatePresence } from 'framer-motion';
 import clamflowAPI from '../lib/clamflow-api';
 
@@ -367,6 +378,13 @@ export const InteractiveStationAssignment: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [activeStaffMember, setActiveStaffMember] = useState<StaffMember | null>(null);
+
+  // Configured sensors: 8px distance for desktop pointer, 200ms hold for mobile touch
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor,   { activationConstraint: { delay: 200, tolerance: 8 } }),
+  );
 
   // Fetch stations from backend API
   useEffect(() => {
@@ -597,8 +615,15 @@ export const InteractiveStationAssignment: React.FC = () => {
     }
   };
 
+  // Track the dragged staff member for the DragOverlay ghost
+  const handleDragStart = (event: DragStartEvent) => {
+    const member = event.active.data.current?.staff as StaffMember | undefined;
+    if (member) setActiveStaffMember(member);
+  };
+
   // Handle drag end
   const handleDragEnd = async (event: DragEndEvent) => {
+    setActiveStaffMember(null);
     const { active, over } = event;
     
     if (!over) return;
@@ -804,7 +829,11 @@ export const InteractiveStationAssignment: React.FC = () => {
         </div>
       </div>
 
-      <DndContext onDragEnd={handleDragEnd}>
+      <DndContext
+        sensors={sensors}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
       <div className="assignment-body">
         {/* Staff Panel */}
         <AnimatePresence>
@@ -1106,6 +1135,43 @@ export const InteractiveStationAssignment: React.FC = () => {
             </motion.div>
           )}
         </AnimatePresence>
+        <DragOverlay dropAnimation={{ duration: 150, easing: 'ease' }}>
+          {activeStaffMember && (
+            <motion.div
+              style={{
+                background: 'white',
+                borderRadius: 12,
+                padding: '10px 14px',
+                boxShadow: '0 20px 40px rgba(0,0,0,0.25)',
+                border: '2px solid #667eea',
+                width: 220,
+                transform: 'rotate(2deg)',
+                pointerEvents: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+              }}
+            >
+              <div style={{
+                width: 36, height: 36, borderRadius: '50%',
+                background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'white', fontWeight: 700, fontSize: 16, flexShrink: 0,
+              }}>
+                {activeStaffMember.name.charAt(0).toUpperCase()}
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 600, fontSize: 13, color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {activeStaffMember.name}
+                </div>
+                <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>
+                  {activeStaffMember.role}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </DragOverlay>
+
       </div>
       </DndContext>
 

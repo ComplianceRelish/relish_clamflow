@@ -382,6 +382,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'USER_VIEW',
     'SHIFT_VIEW',
     'SHIFT_SCHEDULE_ALL',         // Can schedule security and general staff
+    'STATION_ASSIGN_ALL',         // Assign security guards and general staff to stations
     'STAFF_MANAGE_ABSENCE',       // Manage absences for non-production/QC staff
     'VIEW_REPORTS',
     'GATE_PASS_VIEW',             // View gate passes for coordination
