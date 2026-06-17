@@ -73,5 +73,5 @@ export default function StationAssignmentPage() {
     );
   }
 
-  return <InteractiveStationAssignment />;
+  return <InteractiveStationAssignment currentUser={user ? { role: user.role } : null} />;
 }

@@ -79,6 +79,16 @@ const PLANT_WORKER_ROLES = new Set([
 const isPlantWorker = (role: string): boolean =>
   PLANT_WORKER_ROLES.has(role.toLowerCase().replace(/\s+/g, '_'));
 
+// Role-scoped scheduling: each Lead can ONLY schedule their own staff category.
+// null = no restriction (Admin / Super Admin see all plant workers).
+const LEAD_SCOPE: Record<string, string[]> = {
+  'Staff Lead':      ['security_guard'],
+  'Production Lead': ['production_staff'],
+  'QC Lead':         ['qc_staff'],
+};
+const getLeadScope = (role: string): string[] | null =>
+  LEAD_SCOPE[role] ?? null;
+
 const normalizeRole = (role: string): string => {
   if (!role) return '';
   return role.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
@@ -432,11 +442,17 @@ export const InteractiveShiftCalendar: React.FC<ShiftCalendarProps> = ({
   }, [weekStart.toISOString(), selectedPlant, staffList.length]);
 
   // ── Derived ──────────────────────────────────────────────────────────────────
-  const visibleStaff = useMemo(() =>
-    staffList.filter(s =>
-      s.isAvailable && (s.department === selectedPlant || s.department === 'Both')
-    ), [staffList, selectedPlant]
-  );
+  const visibleStaff = useMemo(() => {
+    const scope = getLeadScope(currentUser?.role ?? '');
+    return staffList.filter(s => {
+      if (!s.isAvailable) return false;
+      if (s.department !== selectedPlant && s.department !== 'Both') return false;
+      // Apply lead-specific scope: only show the category they are permitted to schedule
+      const rawRole = s.role.toLowerCase().replace(/\s+/g, '_');
+      if (scope && !scope.includes(rawRole)) return false;
+      return true;
+    });
+  }, [staffList, selectedPlant, currentUser?.role]);
 
   const staffGroups = useMemo(() => {
     const g: Record<string, StaffMember[]> = {};
@@ -539,13 +555,19 @@ export const InteractiveShiftCalendar: React.FC<ShiftCalendarProps> = ({
   };
 
   // ── Staff panel (desktop sidebar + mobile drawer share this) ─────────────────
-  const StaffPanel = () => (
+  const StaffPanel = () => {
+    const scopeLabel =
+      currentUser?.role === 'Staff Lead'      ? 'Security Guards' :
+      currentUser?.role === 'Production Lead' ? 'Production Staff' :
+      currentUser?.role === 'QC Lead'         ? 'QC Staff' :
+      'All Plant Workers';
+    return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       <div style={{
         padding: '12px 16px', borderBottom: '1px solid #e5e7eb',
         background: '#f9fafb', flexShrink: 0,
       }}>
-        <div style={{ fontWeight: 700, fontSize: 14, color: '#111827' }}>👷 Plant Workers</div>
+        <div style={{ fontWeight: 700, fontSize: 14, color: '#111827' }}>👷 {scopeLabel}</div>
         <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>
           {visibleStaff.length} available · drag a card to assign
         </div>
@@ -582,7 +604,8 @@ export const InteractiveShiftCalendar: React.FC<ShiftCalendarProps> = ({
         )}
       </div>
     </div>
-  );
+    );
+  };
 
   // ─────────────────────────────────────────────────────────────────────────────
   return (
@@ -623,20 +646,6 @@ export const InteractiveShiftCalendar: React.FC<ShiftCalendarProps> = ({
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            {/* Plant selector */}
-            <div style={{ display: 'flex', borderRadius: 8, overflow: 'hidden', border: '1px solid #e5e7eb' }}>
-              {(['PPC', 'FP'] as const).map(p => (
-                <button key={p} onClick={() => setSelectedPlant(p)} style={{
-                  padding: '6px 16px', fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer',
-                  background: selectedPlant === p ? '#2563eb' : 'white',
-                  color: selectedPlant === p ? 'white' : '#374151',
-                  transition: 'background 0.15s, color 0.15s',
-                }}>
-                  {p === 'PPC' ? '🏭 PPC' : '📦 FP'}
-                </button>
-              ))}
-            </div>
-
             {/* Week nav */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
               <button onClick={() => setCurrentDate(d => addDays(d, -7))} style={navBtnStyle}>‹ Prev</button>
@@ -653,6 +662,40 @@ export const InteractiveShiftCalendar: React.FC<ShiftCalendarProps> = ({
               👷 Staff
             </button>
           </div>
+        </div>
+
+        {/* ── Plant tabs — full-width, prominent, mobile-friendly ── */}
+        <div style={{
+          display: 'flex', flexShrink: 0,
+          background: 'white', borderBottom: '2px solid #e5e7eb',
+        }}>
+          {(['PPC', 'FP'] as const).map(p => (
+            <button
+              key={p}
+              onClick={() => setSelectedPlant(p)}
+              style={{
+                flex: 1, padding: '14px 12px',
+                border: 'none', cursor: 'pointer',
+                background: selectedPlant === p ? '#eff6ff' : 'white',
+                borderBottom: `3px solid ${selectedPlant === p ? '#2563eb' : 'transparent'}`,
+                transition: 'background 0.15s',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+              }}
+            >
+              <span style={{ fontSize: 22 }}>{p === 'PPC' ? '🏭' : '📦'}</span>
+              <div style={{ textAlign: 'left' }}>
+                <div style={{
+                  fontWeight: 700, fontSize: 15,
+                  color: selectedPlant === p ? '#1d4ed8' : '#374151',
+                }}>
+                  {p === 'PPC' ? 'PPC Plant' : 'FP Plant'}
+                </div>
+                <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 1 }}>
+                  {p === 'PPC' ? 'Pre-Processing Calendar' : 'Finished Products Calendar'}
+                </div>
+              </div>
+            </button>
+          ))}
         </div>
 
         {/* ── Body ── */}

@@ -36,7 +36,7 @@ export default function ShiftSchedulingPage() {
         return
       }
 
-      const authorizedRoles = ['Production Lead', 'QC Lead', 'Admin', 'Super Admin']
+      const authorizedRoles = ['Production Lead', 'QC Lead', 'Staff Lead', 'Admin', 'Super Admin']
       const hasPermission = authorizedRoles.includes(user.role)
       
       if (!hasPermission) {

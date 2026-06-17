@@ -198,6 +198,16 @@ const isFloorRole = (role: string): boolean => {
   return FLOOR_ROLES.includes(normalized);
 };
 
+// Role-scoped station assignment: each Lead assigns only their permitted staff category.
+// null = no restriction (Admin / Super Admin see all floor workers).
+const LEAD_SCOPE_STATION: Record<string, string[]> = {
+  'Staff Lead':      ['Security Guard'],
+  'Production Lead': ['Production Staff'],
+  'QC Lead':         ['QC Staff'],
+};
+const getLeadScopeForStation = (role: string): string[] | null =>
+  LEAD_SCOPE_STATION[role] ?? null;
+
 // Display order for staff panel grouping
 const STAFF_PANEL_GROUPS = [
   { label: 'Production Lead', roles: ['Production Lead'] },
@@ -363,7 +373,11 @@ const StationDropZone: React.FC<{
 };
 
 // Main Component
-export const InteractiveStationAssignment: React.FC = () => {
+interface StationAssignmentProps {
+  currentUser?: { role: string } | null;
+}
+
+export const InteractiveStationAssignment: React.FC<StationAssignmentProps> = ({ currentUser }) => {
   const router = useRouter();
   const [selectedPlant, setSelectedPlant] = useState<'PPC' | 'FP'>('PPC');
   const [stations, setStations] = useState<ProductionStation[]>([...DEFAULT_PPC_STATIONS, ...DEFAULT_FP_STATIONS]);
@@ -868,6 +882,9 @@ export const InteractiveStationAssignment: React.FC = () => {
                   </div>
                 ) : (
                   STAFF_PANEL_GROUPS.map(group => {
+                    const scope = getLeadScopeForStation(currentUser?.role ?? '');
+                    // Scope filter: if this lead has a restricted category, only show that group
+                    if (scope && !group.roles.some(r => scope.includes(r))) return null;
                     const groupStaff = staff.filter(s => 
                       group.roles.includes(s.role) && 
                       (s.department === selectedPlant || s.department === 'Both')
