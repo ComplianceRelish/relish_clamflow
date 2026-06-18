@@ -4,6 +4,8 @@
 **Router audit date**: February 27, 2026 | **Onboarding fix date**: May 28, 2026  
 **Last Updated**: June 18, 2026
 
+> ⚠️ **Active production failures as of June 18, 2026:** The shift scheduling feature is partially broken because `GET/POST /api/shifts/shift-assignments` does not exist on the backend. See [Missing Endpoints](#missing-endpoints-not-yet-implemented) section below.
+
 > **How to use this document:** Work through fixes in priority order (P0 first).  
 > The frontend has been updated to expect exactly the endpoints listed in the Full API Contract section.  
 > All backend responses must use **snake_case** keys — the frontend auto-converts to camelCase.
@@ -12,16 +14,185 @@
 
 ## Table of Contents
 
-1. [P0 — Critical Security Fixes](#p0--critical-security-fixes)
-2. [P1 — Route Collision Fixes](#p1--route-collision-fixes)
-3. [P2 — Station Data Audit](#p2--station-data-audit)
-4. [P3 — Authentication Unification](#p3--authentication-unification)
-5. [P4 — Dead Code Removal](#p4--dead-code-removal)
-6. [P5 — Bug Fixes](#p5--bug-fixes)
-7. [P6 — Technical Debt](#p6--technical-debt)
-8. [Onboarding Module Bugs (all fixed)](#onboarding-module-bugs)
-9. [Full Frontend API Contract](#full-frontend-api-contract)
-10. [Response Format Standard](#response-format-standard)
+1. [**Missing Endpoints (Implement These)**](#missing-endpoints-not-yet-implemented) ← **Start here — active 404s**
+2. [P0 — Critical Security Fixes](#p0--critical-security-fixes)
+3. [P1 — Route Collision Fixes](#p1--route-collision-fixes)
+4. [P2 — Station Data Audit](#p2--station-data-audit)
+5. [P3 — Authentication Unification](#p3--authentication-unification)
+6. [P4 — Dead Code Removal](#p4--dead-code-removal)
+7. [P5 — Bug Fixes](#p5--bug-fixes)
+8. [P6 — Technical Debt](#p6--technical-debt)
+9. [Onboarding Module Bugs (all fixed)](#onboarding-module-bugs)
+10. [Full Frontend API Contract](#full-frontend-api-contract)
+11. [Response Format Standard](#response-format-standard)
+
+---
+
+## Missing Endpoints (Not Yet Implemented)
+
+> These endpoints are called by the live frontend today. They do not exist on the backend — the router either has no handler registered or the entire sub-route is absent. Each one listed here currently returns **HTTP 404**.
+
+---
+
+### 1. Shift Assignments CRUD — `GET/POST/PUT/DELETE /api/shifts/shift-assignments`
+
+**Why it's needed:** The shift scheduling calendar (`/shift-scheduling`) fully loads (staff list and shift definitions both work), but every drag-and-drop assignment and every page load returns 404 because the assignments sub-routes don't exist.
+
+**Current backend state:** `/api/shifts/shift-definitions` ✅ works · `/api/shifts/staff-for-scheduler` ✅ works · `/api/shifts/shift-assignments` ❌ missing.
+
+**Database table required:**
+```sql
+CREATE TABLE shift_assignments (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  staff_id            UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
+  shift_definition_id UUID NOT NULL REFERENCES shift_definitions(id) ON DELETE CASCADE,
+  date                DATE NOT NULL,
+  plant               VARCHAR(10) NOT NULL CHECK (plant IN ('PPC', 'FP')),
+  status              VARCHAR(20) NOT NULL DEFAULT 'scheduled'
+                      CHECK (status IN ('scheduled', 'completed', 'cancelled', 'no_show')),
+  notes               TEXT,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX uq_shift_assignment
+  ON shift_assignments (staff_id, shift_definition_id, date);
+```
+
+**Endpoints to implement:**
+
+#### `GET /api/shifts/shift-assignments`
+```
+Query params:
+  start_date  string  YYYY-MM-DD  (optional)
+  end_date    string  YYYY-MM-DD  (optional)
+  plant       string  PPC | FP    (optional)
+  staff_id    UUID                (optional)
+
+Response 200:
+[
+  {
+    "id":                   "uuid",
+    "staff_id":             "uuid",
+    "shift_definition_id":  "uuid",
+    "date":                 "YYYY-MM-DD",
+    "plant":                "PPC" | "FP",
+    "status":               "scheduled" | "completed" | "cancelled" | "no_show",
+    "notes":                "string" | null,
+    "created_at":           "ISO datetime",
+    "updated_at":           "ISO datetime"
+  }
+]
+```
+
+#### `POST /api/shifts/shift-assignments`
+```
+Request body:
+{
+  "staff_id":             "uuid",           // required
+  "shift_definition_id":  "uuid",           // required
+  "date":                 "YYYY-MM-DD",     // required
+  "plant":                "PPC" | "FP",    // required
+  "notes":                "string"          // optional
+}
+
+Response 201: same shape as GET single item above
+Response 409: { "detail": "Staff member already assigned to this shift on this date" }
+Auth: requires JWT — any role in ['Production Lead','QC Lead','Staff Lead','Admin','Super Admin']
+```
+
+#### `GET /api/shifts/shift-assignments/{assignment_id}`
+```
+Response 200: single ShiftAssignment object (same shape as above)
+Response 404: { "detail": "Assignment not found" }
+```
+
+#### `PUT /api/shifts/shift-assignments/{assignment_id}`
+```
+Request body (all fields optional — partial update):
+{
+  "shift_definition_id":  "uuid",
+  "date":                 "YYYY-MM-DD",
+  "plant":                "PPC" | "FP",
+  "status":               "scheduled" | "completed" | "cancelled" | "no_show",
+  "notes":                "string"
+}
+
+Response 200: updated ShiftAssignment object
+```
+
+#### `DELETE /api/shifts/shift-assignments/{assignment_id}`
+```
+Response 204: no body
+Response 404: { "detail": "Assignment not found" }
+```
+
+**Additional action:** The shifts router is currently mounted at the root level (`/shifts/`). It must be moved to `/api/shifts/` so all its routes are reachable at the paths the frontend expects. `shift-definitions` and `staff-for-scheduler` appear to work, which suggests the router may already be at `/api/shifts/` in the current Railway deployment — but `shift-assignments` sub-routes are simply absent from the router file.
+
+---
+
+### 2. Shifts Router Path — Confirm prefix is `/api/shifts/`
+
+**Current state:** `shift-definitions` and `staff-for-scheduler` return 200 at `/api/shifts/...` → the prefix is already correct in the deployed version. No path change needed; just implement the missing `shift-assignments` routes above.
+
+---
+
+### 3. Attendance Override — `POST /api/attendance/override`
+
+**Why it's needed:** When a staff member fails face recognition + RFID at the gate, the Security Guard logs an override request (stored locally). The supervisor (Production Lead / Staff Lead) then needs to execute the actual override via their dashboard.
+
+**Current state:** Frontend `SECURITY_GUARD_DASHBOARD.md` notes this endpoint is referenced but the backend implementation is unconfirmed. The endpoint is **required by the supervisor override flow**.
+
+```
+POST /api/attendance/override
+
+Query params (or body — confirm with backend preference):
+  person_id   UUID    (required) — the staff member who failed to authenticate
+  reason      string  (required) — override reason text
+  location    string  (required) — gate/station location
+
+Response 200:
+{
+  "success":    true,
+  "message":    "Override recorded",
+  "logged_by":  "supervisor-uuid",
+  "timestamp":  "ISO datetime"
+}
+
+Auth: requires JWT role in ['Production Lead', 'Staff Lead', 'Admin', 'Super Admin']
+      Security Guard role → 403 Forbidden (by design)
+```
+
+---
+
+### 4. Camera Locations — `GET /api/camera/locations` (Low Priority)
+
+**Why it's needed:** Camera location values (`docks`, `main_gate`, `processing`) are hardcoded in two places in the frontend (`SecurityGuardDashboard.tsx` and `security-monitor/page.tsx`). Any new camera the backend adds will not appear in the frontend until a developer manually updates both files.
+
+**Current state:** Endpoint does not exist. Hardcoded values are a temporary workaround.
+
+```
+GET /api/camera/locations
+
+Response 200:
+[
+  { "value": "docks",     "label": "Docks" },
+  { "value": "main_gate", "label": "Main Gate" },
+  { "value": "processing","label": "Processing" }
+]
+```
+
+If this endpoint is added, both camera location `<select>` dropdowns in the frontend should be switched to dynamic data fetching.
+
+---
+
+### 5. Box Tally Response Shape — `GET /api/gate/inside-vehicles`
+
+**Why it matters:** The SecurityGuardDashboard defensively handles 3 different response shapes (`data[]`, `data.count`, `data.total`) because the backend shape is unstable. Pick **one** and document it. The frontend should be simplified once confirmed.
+
+**Recommended canonical shape:**
+```json
+{ "count": 42 }
+```
 
 ---
 
@@ -381,15 +552,15 @@ DELETE    /api/stations/assignments/by-date/{date}
 
 ### Shifts (`/api/shifts/`)
 
-> **Note:** Backend currently mounts shifts at root level — must be moved under `/api/shifts/`.
+> **Note:** Router prefix appears correct in current Railway deployment (`shift-definitions` and `staff-for-scheduler` return 200). The `shift-assignments` sub-routes are simply absent — implement them per [Missing Endpoints §1](#1-shift-assignments-crud--getpostputdelete-apishiftsshift-assignments) above.
 
-```
-GET/POST  /api/shifts/shift-definitions
-GET/PUT/DELETE /api/shifts/shift-definitions/{id}
-GET/POST  /api/shifts/shift-assignments
-GET/PUT/DELETE /api/shifts/shift-assignments/{id}
-GET       /api/shifts/staff-for-scheduler
-```
+| Method | Path | Status |
+|--------|------|--------|
+| `GET/POST` | `/api/shifts/shift-definitions` | ✅ Working |
+| `GET/PUT/DELETE` | `/api/shifts/shift-definitions/{id}` | ✅ Working |
+| `GET` | `/api/shifts/staff-for-scheduler` | ✅ Working |
+| `GET/POST` | `/api/shifts/shift-assignments` | ❌ **404 — Not implemented** |
+| `GET/PUT/DELETE` | `/api/shifts/shift-assignments/{id}` | ❌ **404 — Not implemented** |
 
 ### Onboarding (`/api/onboarding/`)
 
