@@ -48,27 +48,9 @@ export default function ShiftSchedulingPage() {
     }
   }, [user, isLoading, router])
 
-  const handleShiftUpdate = async (shift: any) => {
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/scheduling/shifts`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('clamflow_token')}`
-        },
-        body: JSON.stringify(shift)
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to update shift')
-      }
-
-      const result = await response.json()
-      console.log('Shift updated successfully:', result)
-    } catch (error) {
-      console.error('Error updating shift:', error)
-    }
-  }
+  // NOTE: shift saves are handled entirely inside InteractiveShiftCalendar via
+  // clamflowAPI.createShiftAssignment() → POST /api/shifts/shift-assignments
+  // No page-level save handler is needed.
 
   const handleConflictDetected = (conflicts: any[]) => {
     console.warn('Shift conflicts detected:', conflicts)
@@ -121,7 +103,6 @@ export default function ShiftSchedulingPage() {
 
       <InteractiveShiftCalendar 
         currentUser={currentUser}
-        onShiftUpdate={handleShiftUpdate}
         onConflictDetected={handleConflictDetected}
       />
     </div>
