@@ -1,19 +1,21 @@
 "use client"
 
 import React, { useState, useEffect, useCallback } from 'react'
-import { LayoutDashboard, Users, Wrench, Tablet, BarChart3, Settings, Menu, X, RefreshCw, Bell, Database } from 'lucide-react'
+import { LayoutDashboard, Users, Wrench, Tablet, BarChart3, Settings, Menu, X, RefreshCw, Bell, Database, Clock, MapPin } from 'lucide-react'
 import { User } from '../../types/auth'
 import UserManagementPanel from './admin/UserManagementPanel'
 import HardwareManagementPanel from './admin/HardwareManagementPanel'
 import DashboardMetricsPanel from './admin/DashboardMetricsPanel'
 import AdminSettingsPanel from './admin/AdminSettingsPanel'
 import DeviceRegistryPanel from './admin/DeviceRegistryPanel'
+import ShiftManagementPanel from './admin/ShiftManagementPanel'
+import StationManagementPanel from './admin/StationManagementPanel'
 
 interface AdminDashboardProps {
   currentUser: User | null
 }
 
-type AdminView = 'overview' | 'users' | 'hardware' | 'device-registry' | 'metrics' | 'settings'
+type AdminView = 'overview' | 'users' | 'hardware' | 'device-registry' | 'metrics' | 'shifts' | 'stations' | 'settings'
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
   const [activeView, setActiveView] = useState<AdminView>('overview')
@@ -199,12 +201,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
   }, [notificationPermission, notificationSettings.soundEnabled, notificationSettings.soundType, requestNotificationPermission, playNotificationSound])
 
   const navigationItems = [
-    { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-    { id: 'users', label: 'User Management', icon: Users },
-    { id: 'hardware', label: 'Hardware Config', icon: Wrench },
-    { id: 'device-registry', label: 'Device Registry', icon: Tablet },
-    { id: 'metrics', label: 'Metrics', icon: BarChart3 },
-    { id: 'settings', label: 'Settings', icon: Settings }
+    { id: 'overview',         label: 'Overview',          icon: LayoutDashboard },
+    { id: 'users',            label: 'User Management',   icon: Users },
+    { id: 'hardware',         label: 'Hardware Config',   icon: Wrench },
+    { id: 'device-registry',  label: 'Device Registry',   icon: Tablet },
+    { id: 'metrics',          label: 'Metrics',           icon: BarChart3 },
+    { id: 'shifts',           label: 'Shift Definitions', icon: Clock },
+    { id: 'stations',         label: 'Station Definitions', icon: MapPin },
+    { id: 'settings',         label: 'Settings',          icon: Settings },
   ]
 
   return (
@@ -339,6 +343,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
           {activeView === 'hardware' && <HardwareManagementPanel />}
           {activeView === 'device-registry' && <DeviceRegistryPanel />}
           {activeView === 'metrics' && <DashboardMetricsPanel />}
+          {activeView === 'shifts' && <ShiftManagementPanel />}
+          {activeView === 'stations' && <StationManagementPanel />}
           
           {activeView === 'settings' && (
             <div className="space-y-6">
