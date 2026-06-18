@@ -335,7 +335,7 @@ export const InteractiveShiftCalendar: React.FC<ShiftCalendarProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [activeStaff, setActiveStaff] = useState<StaffMember | null>(null);
   const [showMobileDrawer, setShowMobileDrawer] = useState(false);
-  const [shiftDefinitions, setShiftDefinitions] = useState<{ id: string; code: string }[]>([]);
+  const [shiftDefinitions, setShiftDefinitions] = useState<{ id: string; name: string; shiftType: string }[]>([]);
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
@@ -395,7 +395,19 @@ export const InteractiveShiftCalendar: React.FC<ShiftCalendarProps> = ({
   // ── Shift definitions ────────────────────────────────────────────────────────
   useEffect(() => {
     clamflowAPI.getShiftDefinitions()
-      .then(r => { if (r?.success && r.data) setShiftDefinitions(r.data); })
+      .then(r => {
+        if (r?.success && r.data) {
+          setShiftDefinitions(
+            // Backend returns shift_type → camelCase transform gives shiftType.
+            // The ShiftDefinition interface still uses code (legacy), so we map explicitly.
+            (r.data as any[]).map(d => ({
+              id: d.id,
+              name: d.name ?? '',
+              shiftType: d.shiftType ?? d.shift_type ?? d.name ?? '',
+            }))
+          );
+        }
+      })
       .catch(() => {});
   }, []);
 
@@ -414,12 +426,13 @@ export const InteractiveShiftCalendar: React.FC<ShiftCalendarProps> = ({
         if (cancelled) return;
         if (res?.success && res.data) {
           const mapped: ShiftAssignment[] = res.data.map((a: any) => {
-            const code = (
-              a.shiftDefinition?.code ?? a.shift_definition?.code ?? ''
+            // Backend enriched response returns shiftType flat (after camelCase transform)
+            const shiftType = (
+              a.shiftType ?? a.shift_type ?? a.shiftDefinition?.shiftType ?? ''
             ).toLowerCase();
             const period: ShiftPeriod =
-              code.includes('night') ? 'Night' :
-              code.includes('swing') || code.includes('afternoon') ? 'Swing' : 'Day';
+              shiftType.includes('night') ? 'Night' :
+              shiftType.includes('swing') || shiftType.includes('afternoon') ? 'Swing' : 'Day';
             const staff = staffList.find(s => s.id === (a.staffId ?? a.staff_id));
             return {
               id: a.id,
@@ -503,15 +516,25 @@ export const InteractiveShiftCalendar: React.FC<ShiftCalendarProps> = ({
     setIsSaving(true);
     try {
       const p = dropData.period;
+      // Backend returns shiftType (camelCase after transform), not code
       const shiftDef = shiftDefinitions.find(d => {
-        const c = (d.code ?? '').toLowerCase();
-        if (p === 'Night') return c.includes('night');
-        if (p === 'Swing') return c.includes('swing') || c.includes('afternoon');
-        return c.includes('day') || c.includes('morning');
+        const type = (d.shiftType ?? d.name ?? '').toLowerCase();
+        if (p === 'Night') return type.includes('night');
+        if (p === 'Swing') return type.includes('swing') || type.includes('afternoon');
+        return type.includes('day') || type.includes('morning');
       });
+
+      if (!shiftDef) {
+        // No matching shift definition — roll back optimistic update
+        setAssignments(prev => prev.filter(a => a.id !== tempId));
+        console.error(`No shift definition found for period "${p}". Check that shift definitions are seeded in the database.`);
+        setIsSaving(false);
+        return;
+      }
+
       const res = await clamflowAPI.createShiftAssignment({
         staff_id: staff.id,
-        shift_definition_id: shiftDef?.id ?? '',
+        shift_definition_id: shiftDef.id,
         date: dropData.date,
         plant: selectedPlant,
         notes: 'Assigned via shift calendar',
