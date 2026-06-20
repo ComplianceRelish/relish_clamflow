@@ -205,6 +205,8 @@ export const FaceRecognitionLogin: React.FC<FaceRecognitionLoginProps> = ({
 
   if (!isOpen) return null;
 
+  if (!isOpen) return null;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <Card className="w-full max-w-lg mx-4 p-6">

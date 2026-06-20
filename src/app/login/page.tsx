@@ -144,7 +144,7 @@ const LoginPage: React.FC = () => {
             <div>
               <Button
                 type="submit"
-                disabled={state.loading || !state.username || !state.password}
+                disabled={state.loading}
                 className="w-full py-3 text-lg"
               >
                 {state.loading ? (
