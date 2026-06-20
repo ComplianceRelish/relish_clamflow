@@ -51,8 +51,9 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// API Base URL - standardized to NEXT_PUBLIC_API_URL
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://clamflowbackend-production.up.railway.app';
+// Auth calls go through the Next.js server-side proxy (/api/backend → Railway)
+// This avoids cross-origin CORS issues on all clients (mobile, desktop, PWA).
+const API_BASE_URL = '/api/backend';
 
 // Production: All authentication is handled by the backend API
 // No fallback credentials - ensures security compliance
