@@ -216,13 +216,28 @@ const AssignedBadge: React.FC<{
   onRemove: (id: string) => void;
 }> = ({ assignment, period, onRemove }) => {
   const c = roleColor(assignment.role);
+  const draggable = useDraggable({
+    id: `assignment-${assignment.id}`,
+    data: { assignment },
+    disabled: !!assignment.isPlaceholder || assignment.id.startsWith('temp-') || assignment.id.startsWith('placeholder-'),
+  });
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      background: 'white', borderRadius: 7, padding: '4px 6px 4px 8px',
-      border: `1px solid ${period.border}`,
-      boxShadow: '0 1px 2px rgba(0,0,0,0.06)', gap: 6,
-    }}>
+    <div
+      ref={draggable.setNodeRef}
+      {...draggable.listeners}
+      {...draggable.attributes}
+      style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        background: 'white', borderRadius: 7, padding: '4px 6px 4px 8px',
+        border: `1px solid ${period.border}`,
+        boxShadow: '0 1px 2px rgba(0,0,0,0.06)', gap: 6,
+        transform: draggable.transform
+          ? `translate3d(${draggable.transform.x}px,${draggable.transform.y}px,0)`
+          : undefined,
+        opacity: draggable.isDragging ? 0 : 1,
+        cursor: assignment.isPlaceholder ? 'default' : 'grab',
+        touchAction: 'none',
+      }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
         <div style={{
           width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
@@ -258,6 +273,29 @@ const AssignedBadge: React.FC<{
       >
         ×
       </button>
+    </div>
+  );
+};
+
+// ─── TrashBin ──────────────────────────────────────────────────────────────────
+
+const TrashBin: React.FC<{ visible: boolean }> = ({ visible }) => {
+  const { setNodeRef, isOver } = useDroppable({ id: 'trash-bin' });
+  if (!visible) return null;
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+        padding: '7px 16px', borderRadius: 8,
+        border: `2px dashed ${isOver ? '#ef4444' : '#f87171'}`,
+        background: isOver ? '#fef2f2' : '#fff7f7',
+        color: isOver ? '#dc2626' : '#ef4444',
+        fontWeight: 600, fontSize: 12, transition: 'all 0.15s',
+        minWidth: 140, userSelect: 'none',
+      }}
+    >
+      🗑️ {isOver ? 'Release to delete' : 'Drop to delete'}
     </div>
   );
 };
@@ -334,6 +372,7 @@ export const InteractiveShiftCalendar: React.FC<ShiftCalendarProps> = ({
   const [staffError, setStaffError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [activeStaff, setActiveStaff] = useState<StaffMember | null>(null);
+  const [activeAssignment, setActiveAssignment] = useState<ShiftAssignment | null>(null);
   const [showMobileDrawer, setShowMobileDrawer] = useState(false);
   const [shiftDefinitions, setShiftDefinitions] = useState<{ id: string; name: string; shiftType: string }[]>([]);
 
@@ -485,13 +524,72 @@ export const InteractiveShiftCalendar: React.FC<ShiftCalendarProps> = ({
   // ── DnD ──────────────────────────────────────────────────────────────────────
   const handleDragStart = (e: DragStartEvent) => {
     const staff = e.active.data.current?.staff as StaffMember | undefined;
+    const assignment = e.active.data.current?.assignment as ShiftAssignment | undefined;
     if (staff) setActiveStaff(staff);
+    if (assignment) setActiveAssignment(assignment);
   };
+
+  const resolveShiftDef = (period: ShiftPeriod) =>
+    shiftDefinitions.find(d => {
+      const type = (d.shiftType ?? d.name ?? '').toLowerCase();
+      if (period === 'Night') return type.includes('night');
+      if (period === 'Swing') return type.includes('swing') || type.includes('afternoon');
+      return type.includes('day') || type.includes('morning');
+    });
 
   const handleDragEnd = async (event: DragEndEvent) => {
     setActiveStaff(null);
+    setActiveAssignment(null);
     const { active, over } = event;
     if (!over) return;
+
+    const draggedAssignment = active.data.current?.assignment as ShiftAssignment | undefined;
+
+    // ── Assignment dropped on trash bin → delete ──────────────────────────────
+    if (over.id === 'trash-bin' && draggedAssignment) {
+      await handleRemove(draggedAssignment.id);
+      return;
+    }
+
+    // ── Assignment dropped on a cell → reschedule ─────────────────────────────
+    if (draggedAssignment) {
+      const dropData = over.data.current as { date: string; period: ShiftPeriod } | undefined;
+      if (!dropData) return;
+      // Same cell: no-op
+      if (draggedAssignment.date === dropData.date && draggedAssignment.shiftPeriod === dropData.period) return;
+
+      const shiftDef = resolveShiftDef(dropData.period);
+      if (!shiftDef) {
+        console.error(`No shift definition found for period "${dropData.period}".`);
+        return;
+      }
+
+      // Optimistic update
+      setAssignments(prev => prev.map(a =>
+        a.id === draggedAssignment.id ? { ...a, date: dropData.date, shiftPeriod: dropData.period } : a
+      ));
+      setIsSaving(true);
+      try {
+        const res = await clamflowAPI.updateShiftAssignment(draggedAssignment.id, {
+          assigned_date: dropData.date,
+          shift_definition_id: shiftDef.id,
+        } as any);
+        if (!res?.success) {
+          setAssignments(prev => prev.map(a =>
+            a.id === draggedAssignment.id ? draggedAssignment : a
+          ));
+        }
+      } catch {
+        setAssignments(prev => prev.map(a =>
+          a.id === draggedAssignment.id ? draggedAssignment : a
+        ));
+      } finally {
+        setIsSaving(false);
+      }
+      return;
+    }
+
+    // ── Staff dropped on a cell → create new assignment ───────────────────────
     const staff = active.data.current?.staff as StaffMember | undefined;
     const dropData = over.data.current as { date: string; period: ShiftPeriod } | undefined;
     if (!staff || !dropData) return;
@@ -515,19 +613,12 @@ export const InteractiveShiftCalendar: React.FC<ShiftCalendarProps> = ({
 
     setIsSaving(true);
     try {
-      const p = dropData.period;
       // Backend returns shiftType (camelCase after transform), not code
-      const shiftDef = shiftDefinitions.find(d => {
-        const type = (d.shiftType ?? d.name ?? '').toLowerCase();
-        if (p === 'Night') return type.includes('night');
-        if (p === 'Swing') return type.includes('swing') || type.includes('afternoon');
-        return type.includes('day') || type.includes('morning');
-      });
+      const shiftDef = resolveShiftDef(dropData.period);
 
       if (!shiftDef) {
-        // No matching shift definition — roll back optimistic update
         setAssignments(prev => prev.filter(a => a.id !== tempId));
-        console.error(`No shift definition found for period "${p}". Check that shift definitions are seeded in the database.`);
+        console.error(`No shift definition found for period "${dropData.period}". Check that shift definitions are seeded in the database.`);
         setIsSaving(false);
         return;
       }
@@ -675,6 +766,9 @@ export const InteractiveShiftCalendar: React.FC<ShiftCalendarProps> = ({
               <button onClick={() => setCurrentDate(new Date())} style={{ ...navBtnStyle, color: '#6b7280' }}>Today</button>
               <button onClick={() => setCurrentDate(d => addDays(d, 7))} style={navBtnStyle}>Next ›</button>
             </div>
+
+            {/* Trash bin — visible only while dragging an assignment */}
+            <TrashBin visible={!!activeAssignment} />
 
             {/* Mobile: open staff drawer */}
             <button
@@ -891,6 +985,33 @@ export const InteractiveShiftCalendar: React.FC<ShiftCalendarProps> = ({
               <StaffCardView staff={activeStaff} scheduled={false} />
             </div>
           )}
+          {activeAssignment && (() => {
+            const c = roleColor(activeAssignment.role);
+            return (
+              <div style={{
+                pointerEvents: 'none', width: 190, transform: 'rotate(1.5deg)',
+                boxShadow: '0 16px 32px rgba(0,0,0,0.22)',
+                borderRadius: 10, border: '2px solid #2563eb',
+                background: 'white', padding: '7px 10px',
+                display: 'flex', alignItems: 'center', gap: 8,
+              }}>
+                <div style={{
+                  width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+                  background: c.bg, color: c.text, border: `2px solid ${c.ring}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontWeight: 700, fontSize: 13,
+                }}>
+                  {activeAssignment.staffName.trim().charAt(0).toUpperCase()}
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, fontSize: 12, color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {activeAssignment.staffName}
+                  </div>
+                  <div style={{ fontSize: 10, color: '#6b7280' }}>{normalizeRole(activeAssignment.role)}</div>
+                </div>
+              </div>
+            );
+          })()}
         </DragOverlay>
       </div>
 
