@@ -16,7 +16,7 @@ import SecurityGuardDashboard from '@/components/dashboards/SecurityGuardDashboa
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 // Roles that have dashboard access
-const DASHBOARD_ROLES = ['Super Admin', 'Admin', 'IT Staff', 'Staff Lead', 'Production Lead', 'QC Lead', 'QC Staff', 'Production Staff', 'Security Guard'];
+const DASHBOARD_ROLES = ['Super Admin', 'Admin', 'IT Staff', 'Staff Lead', 'Production Lead', 'QC Lead', 'QC Staff', 'Production Staff', 'Security Guard', 'EIA Officer'];
 
 const DashboardPage: React.FC = () => {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -40,6 +40,12 @@ const DashboardPage: React.FC = () => {
     // Check if user has dashboard access
     if (!DASHBOARD_ROLES.includes(user.role)) {
       setError(`Access denied. Role "${user.role}" does not have dashboard access.`);
+      return;
+    }
+
+    // EIA Officer gets redirected to the compliance module
+    if (user.role === 'EIA Officer') {
+      router.replace('/compliance');
       return;
     }
   }, [isAuthenticated, isLoading, user, router]);

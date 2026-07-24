@@ -12,7 +12,8 @@ export type UserRole =
   | 'Production Staff'
   | 'Maintenance Staff'
   | 'Security Guard'
-  | 'Gate Staff';
+  | 'Gate Staff'
+  | 'EIA Officer';
 
 export interface User {
   id: string;
@@ -60,6 +61,7 @@ export const ROLE_DISPLAY_NAMES: Record<UserRole, string> = {
   'Maintenance Staff': 'Maintenance Staff',
   'Security Guard': 'Security Guard',
   'Gate Staff': 'Gate Staff',
+  'EIA Officer': 'EIA Officer',
 };
 
 // Role Hierarchy (for permission checking)
@@ -75,6 +77,7 @@ export const ROLE_HIERARCHY: Record<UserRole, number> = {
   'Maintenance Staff': 2,
   'Security Guard': 2,
   'Gate Staff': 1,
+  'EIA Officer': 1,
 };
 
 // Helper function to check if user has required role level

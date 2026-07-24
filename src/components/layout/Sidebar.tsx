@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Scale, Package, Droplets, Beaker, ClipboardList, FileText, BarChart3, Tag } from 'lucide-react';
+import { LayoutDashboard, Scale, Package, Droplets, Beaker, ClipboardList, FileText, BarChart3, Tag, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 export default function Sidebar() {
@@ -19,12 +19,15 @@ export default function Sidebar() {
     { href: '/fp', label: 'FP Forms', icon: FileText, roles: ['qc_staff', 'qc_lead'] },
     { href: '/inventory', label: 'Inventory', icon: BarChart3, roles: ['all'] },
     { href: '/rfid', label: 'RFID Tracking', icon: Tag, roles: ['production_lead', 'qc_lead'] },
+    { href: '/compliance', label: 'EIA Compliance', icon: ShieldCheck, roles: ['qc_lead', 'production_lead', 'admin', 'super_admin'] },
   ];
 
   const filteredItems = menuItems.filter(item => 
     item.roles.includes('all') || 
-    (user?.role && item.roles.includes(user.role.toLowerCase().replace(' ', '_')))
+    (user?.role && item.roles.includes(user.role.toLowerCase().replace(/ /g, '_')))
   );
+
+  if (user?.role === 'EIA Officer') return null;
 
   return (
     <aside className="w-64 bg-white border-r border-gray-200 shadow-sm h-[calc(100vh-4rem)]">

@@ -1471,6 +1471,101 @@ class ClamFlowAPI {
     if (location) params.set('location', location);
     return this.post(`/api/attendance/override?${params.toString()}`, {});
   }
+
+  // ── EIA Compliance ─────────────────────────────────────────────────────
+
+  async submitEIAComment(data: {
+    record_type: string;
+    record_id: string;
+    comment_text: string;
+  }) {
+    return this.post<any>('/api/compliance/comments', data);
+  }
+
+  async getCommentsForRecord(recordType: string, recordId: string) {
+    return this.get<any[]>(
+      `/api/compliance/comments?record_type=${recordType}&record_id=${recordId}`
+    );
+  }
+
+  async listNCRs(ncrStatus?: string) {
+    const qs = ncrStatus ? `?ncr_status=${ncrStatus}` : '';
+    return this.get<any[]>(`/api/compliance/ncr${qs}`);
+  }
+
+  async getNCR(ncrId: string) {
+    return this.get<any>(`/api/compliance/ncr/${ncrId}`);
+  }
+
+  async classifyNCR(ncrId: string, data: {
+    decision: 'CONFIRMED_NCR' | 'CLARIFICATION';
+    severity?: 'MINOR' | 'MAJOR' | 'CRITICAL';
+    description?: string;
+  }) {
+    return this.request<any>(`/api/compliance/ncr/${ncrId}/classify`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async dispatchCorrectiveAction(ncrId: string, data: {
+    assignee_id: string;
+    corrective_instruction: string;
+    assignee_due_date: string;
+  }) {
+    return this.request<any>(`/api/compliance/ncr/${ncrId}/dispatch`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async submitEvidenceUrl(ncrId: string, evidenceUrl: string) {
+    return this.request<any>(`/api/compliance/ncr/${ncrId}/submit-evidence`, {
+      method: 'PATCH',
+      body: JSON.stringify({ evidence_url: evidenceUrl }),
+    });
+  }
+
+  async uploadEvidenceFile(ncrId: string, file: File) {
+    const token = localStorage.getItem('clamflow_token');
+    const fd = new FormData();
+    fd.append('file', file);
+    const response = await fetch(
+      `${this.baseURL}/api/compliance/ncr/${ncrId}/upload-evidence`,
+      { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd }
+    );
+    if (!response.ok) throw new Error(`Upload failed: ${response.status}`);
+    return response.json();
+  }
+
+  async closeNCR(ncrId: string) {
+    return this.request<any>(`/api/compliance/ncr/${ncrId}/close`, { method: 'PATCH' });
+  }
+
+  async getMyNotifications(unreadOnly = false) {
+    const qs = unreadOnly ? '?unread_only=true' : '';
+    return this.get<any[]>(`/api/compliance/notifications${qs}`);
+  }
+
+  async markNotificationRead(notifId: string) {
+    return this.request<any>(`/api/compliance/notifications/${notifId}/read`, { method: 'PATCH' });
+  }
+
+  async markAllNotificationsRead() {
+    return this.request<any>('/api/compliance/notifications/read-all', { method: 'PATCH' });
+  }
+
+  async getWeightNote(noteId: string) {
+    return this.get<any>(`/api/weight-notes/${noteId}`);
+  }
+
+  async getDepurationForm(formId: string) {
+    return this.get<any>(`/api/v1/depuration/form/${formId}`);
+  }
+
+  async getUsersList() {
+    return this.get<any[]>('/api/users/');
+  }
 }
 
 

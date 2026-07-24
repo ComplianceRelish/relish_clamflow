@@ -211,6 +211,47 @@ ClamFlow Team`;
       };
     }
   }
+
+  async sendNCRAlert(params: {
+    recipientPhone: string;
+    recipientName: string;
+    ncrNumber: string;
+    alertType: 'NEW_NCR' | 'OVERDUE' | 'BREACH';
+    hoursRemaining?: number;
+    recordType: string;
+  }): Promise<WhatsAppMessageResponse> {
+    if (!this.enabled) return { success: false, message: 'WhatsApp disabled' };
+    const messages: Record<string, string> = {
+      NEW_NCR: `ClamFlow — RHHF\n\nNew EIA Comment — ${params.ncrNumber}\nRecord: ${params.recordType}\nPlease classify within 24 hours.\nLogin: https://clamflowcloud.vercel.app`,
+      OVERDUE: `ClamFlow — RHHF\n\n⚠ OVERDUE NCR: ${params.ncrNumber}\nQC Lead has NOT classified within 24 hours.\nImmediate action required.\nLogin: https://clamflowcloud.vercel.app`,
+      BREACH:  `ClamFlow — RHHF\n\n🚨 BREACH NCR: ${params.ncrNumber}\nCorrective action was NOT dispatched within 48 hours.\nEscalated to Admin.\nLogin: https://clamflowcloud.vercel.app`,
+    };
+    return this.sendMessage(
+      this.formatPhoneNumber(params.recipientPhone),
+      messages[params.alertType]
+    );
+  }
+
+  private async sendMessage(to: string, body: string): Promise<WhatsAppMessageResponse> {
+    const url = `https://api.twilio.com/2010-04-01/Accounts/${this.accountSid}/Messages.json`;
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Basic ' + btoa(`${this.accountSid}:${this.authToken}`),
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({ From: this.whatsappNumber, To: to, Body: body }).toString(),
+      });
+      const data = await response.json();
+      return { success: response.ok, message: data.sid || data.message };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
 }
 
 // Export singleton instance

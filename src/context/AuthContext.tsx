@@ -9,7 +9,7 @@ interface User {
   id: string;
   username: string;
   full_name: string;
-  role: 'Super Admin' | 'Admin' | 'IT Staff' | 'Production Lead' | 'QC Lead' | 'Staff Lead' | 'QC Staff' | 'Production Staff' | 'Maintenance Staff' | 'Security Guard' | 'Gate Staff';
+  role: 'Super Admin' | 'Admin' | 'IT Staff' | 'Production Lead' | 'QC Lead' | 'Staff Lead' | 'QC Staff' | 'Production Staff' | 'Maintenance Staff' | 'Security Guard' | 'Gate Staff' | 'EIA Officer';
   station?: string;
   is_active: boolean;
   last_login?: string;

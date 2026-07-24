@@ -1,6 +1,7 @@
 // Central type exports for ClamFlow Frontend
 export * from './auth';
 export * from './api';
+export * from './compliance';
 // Export forms but exclude types that are duplicated in qc-workflow
 export { 
   type WeightNoteFormData,
@@ -39,7 +40,7 @@ export interface BaseEntity {
 }
 
 // User role type definition - EXACT schema values
-export type UserRole = 'Super Admin' | 'Admin' | 'IT Staff' | 'Production Lead' | 'QC Lead' | 'Staff Lead' | 'QC Staff' | 'Production Staff' | 'Maintenance Staff' | 'Security Guard' | 'Gate Staff';
+export type UserRole = 'Super Admin' | 'Admin' | 'IT Staff' | 'Production Lead' | 'QC Lead' | 'Staff Lead' | 'QC Staff' | 'Production Staff' | 'Maintenance Staff' | 'Security Guard' | 'Gate Staff' | 'EIA Officer';
 
 export interface BiometricAuthRequest {
   type: 'fingerprint' | 'facial' | 'iris';

@@ -1,6 +1,8 @@
 'use client';
 
-import { ArrowLeft, User, LogOut } from "lucide-react";
+import { useState, useEffect } from 'react';
+import { ArrowLeft, User, LogOut, Bell } from "lucide-react";
+import clamflowAPI from '../../lib/clamflow-api';
 
 interface AppHeaderProps {
   title?: string;
@@ -37,6 +39,24 @@ export function AppHeader({
     minute: "2-digit",
   });
 
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [showNotifs, setShowNotifs] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await clamflowAPI.getMyNotifications(true);
+        const list = Array.isArray(res) ? res : [];
+        setUnreadCount(list.length);
+        setNotifications(list.slice(0, 10));
+      } catch (_e) {}
+    };
+    load();
+    const interval = setInterval(load, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
       <div className="px-4 py-3 sm:px-6">
@@ -62,6 +82,69 @@ export function AppHeader({
 
           <div className="flex items-center gap-3">
             {rightContent}
+
+            {/* Notification bell */}
+            <div className="relative">
+              <button
+                onClick={() => setShowNotifs(!showNotifs)}
+                className="relative p-2 text-gray-500 hover:text-gray-700 min-h-[44px] min-w-[44px]
+                  flex items-center justify-center"
+              >
+                <Bell className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 bg-red-500 text-white text-xs
+                    rounded-full w-4 h-4 flex items-center justify-center leading-none">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {showNotifs && (
+                <div className="absolute right-0 top-12 w-80 bg-white rounded-xl shadow-lg border
+                  border-gray-200 z-50 max-h-96 overflow-y-auto">
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                    <span className="text-sm font-medium text-gray-800">Notifications</span>
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={() => clamflowAPI.markAllNotificationsRead().then(() => {
+                          setUnreadCount(0); setShowNotifs(false);
+                        })}
+                        className="text-xs text-[#8B5CF6] hover:underline"
+                      >Mark all read</button>
+                    )}
+                  </div>
+                  {notifications.length === 0 && (
+                    <p className="p-4 text-sm text-gray-400">No new notifications.</p>
+                  )}
+                  {notifications.map((n: any) => (
+                    <div
+                      key={n.id}
+                      className={`px-4 py-3 border-b border-gray-50 cursor-pointer hover:bg-gray-50 ${
+                        n.isRead ? 'opacity-60' : ''
+                      }`}
+                      onClick={() => {
+                        clamflowAPI.markNotificationRead(n.id);
+                        setShowNotifs(false);
+                        if (n.referenceId) {
+                          window.location.href = `/compliance`;
+                        }
+                      }}
+                    >
+                      <p className={`text-xs font-semibold mb-0.5 ${
+                        n.category === 'BREACH'   ? 'text-red-700' :
+                        n.category === 'OVERDUE'  ? 'text-amber-700' :
+                        n.category === 'RESOLVED' ? 'text-green-700' : 'text-gray-800'
+                      }`}>{n.title}</p>
+                      <p className="text-xs text-gray-500 line-clamp-2">{n.body}</p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {new Date(n.createdAt).toLocaleString('en-IN')}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {userName && (
               <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg border border-gray-200">
                 <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-full">
