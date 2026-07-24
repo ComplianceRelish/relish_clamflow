@@ -495,12 +495,12 @@ class ClamFlowAPI {
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     try {
-      const url = `${this.baseURL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
+      let url = `${this.baseURL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
       
-      // Log the URL to catch any HTTP protocol issues
+      // Force HTTPS — browser blocks mixed content; env var may have been saved with http://
       if (url.startsWith('http:')) {
-        console.error('🚨 SECURITY WARNING: Attempting HTTP request to:', url);
-        console.error('🔧 This should be HTTPS. Forcing HTTPS...');
+        console.error('🚨 SECURITY WARNING: Forcing HTTPS for:', url);
+        url = url.replace(/^http:/, 'https:');
       }
       
       const config: RequestInit = {
