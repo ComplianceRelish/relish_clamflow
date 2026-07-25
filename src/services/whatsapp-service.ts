@@ -21,15 +21,9 @@ interface WhatsAppMessageResponse {
  * Sends welcome messages with login credentials to new users
  */
 class WhatsAppService {
-  private readonly accountSid: string;
-  private readonly authToken: string;
-  private readonly whatsappNumber: string;
   private readonly enabled: boolean;
 
   constructor() {
-    this.accountSid = process.env.TWILIO_ACCOUNT_SID || '';
-    this.authToken = process.env.TWILIO_AUTH_TOKEN || '';
-    this.whatsappNumber = process.env.TWILIO_WHATSAPP_NUMBER || 'whatsapp:+14155238886';
     this.enabled = process.env.NEXT_PUBLIC_TWILIO_ENABLED === 'true';
   }
 
@@ -42,58 +36,17 @@ class WhatsAppService {
       return { success: false, error: 'WhatsApp service is disabled' };
     }
 
-    if (!this.accountSid || !this.authToken) {
-      console.error('Twilio credentials are missing');
-      return { success: false, error: 'Twilio credentials not configured' };
-    }
-
     const { username, password, full_name, role, phone_number } = userCredentials;
-
-    // Format phone number for WhatsApp (must include country code)
     const formattedPhone = this.formatPhoneNumber(phone_number);
-
     const message = this.generateWelcomeMessage(full_name, username, password, role);
 
-    try {
-      const response = await fetch(
-        `https://api.twilio.com/2010-04-01/Accounts/${this.accountSid}/Messages.json`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': 'Basic ' + Buffer.from(`${this.accountSid}:${this.authToken}`).toString('base64'),
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: new URLSearchParams({
-            From: this.whatsappNumber,
-            To: `whatsapp:${formattedPhone}`,
-            Body: message,
-          }),
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('✅ WhatsApp welcome message sent successfully:', data.sid);
-        return { 
-          success: true, 
-          message: 'Welcome message sent successfully',
-          messageSid: data.sid 
-        };
-      } else {
-        const errorData = await response.json();
-        console.error('❌ Failed to send WhatsApp message:', errorData);
-        return { 
-          success: false, 
-          error: errorData.message || 'Failed to send WhatsApp message' 
-        };
-      }
-    } catch (error) {
-      console.error('❌ WhatsApp service error:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error occurred' 
-      };
+    const result = await this.sendMessage(formattedPhone, message);
+    if (result.success) {
+      console.log('✅ WhatsApp welcome message sent successfully:', result.message);
+    } else {
+      console.error('❌ Failed to send WhatsApp message:', result.error);
     }
+    return result;
   }
 
   /**
@@ -176,40 +129,7 @@ Your password has been reset successfully.
 Best regards,
 ClamFlow Team`;
 
-    try {
-      const response = await fetch(
-        `https://api.twilio.com/2010-04-01/Accounts/${this.accountSid}/Messages.json`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': 'Basic ' + Buffer.from(`${this.accountSid}:${this.authToken}`).toString('base64'),
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: new URLSearchParams({
-            From: this.whatsappNumber,
-            To: `whatsapp:${formattedPhone}`,
-            Body: message,
-          }),
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        return { 
-          success: true, 
-          message: 'Password reset notification sent',
-          messageSid: data.sid 
-        };
-      } else {
-        const errorData = await response.json();
-        return { success: false, error: errorData.message };
-      }
-    } catch (error) {
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
-      };
-    }
+    return this.sendMessage(formattedPhone, message);
   }
 
   async sendNCRAlert(params: {
@@ -233,18 +153,14 @@ ClamFlow Team`;
   }
 
   private async sendMessage(to: string, body: string): Promise<WhatsAppMessageResponse> {
-    const url = `https://api.twilio.com/2010-04-01/Accounts/${this.accountSid}/Messages.json`;
     try {
-      const response = await fetch(url, {
+      const response = await fetch('/api/whatsapp', {
         method: 'POST',
-        headers: {
-          'Authorization': 'Basic ' + btoa(`${this.accountSid}:${this.authToken}`),
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({ From: this.whatsappNumber, To: to, Body: body }).toString(),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to, messageBody: body }),
       });
       const data = await response.json();
-      return { success: response.ok, message: data.sid || data.message };
+      return { success: data.success, message: data.messageSid || data.message, error: data.error };
     } catch (error) {
       return {
         success: false,

@@ -691,8 +691,8 @@ class ClamFlowAPI {
     return this.post('/api/weight-notes/', formData);
   }
 
-  async approveWeightNote(noteId: string): Promise<ApiResponse<WeightNoteFormData>> {
-    return this.put(`/api/weight-notes/${noteId}`);
+  async approveWeightNote(noteId: string, qcStaffId?: string, qcNotes?: string): Promise<ApiResponse<WeightNoteFormData>> {
+    return this.put(`/api/weight-notes/${noteId}/approve`, { qc_staff_id: qcStaffId, qc_notes: qcNotes });
   }
 
   // DASHBOARD - Updated to match backend

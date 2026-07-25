@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, User, LogOut, Bell } from "lucide-react";
 import clamflowAPI from '../../lib/clamflow-api';
 
@@ -42,6 +42,8 @@ export function AppHeader({
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifs, setShowNotifs] = useState(false);
+  // Track IDs already alerted so we don't send duplicate WhatsApp messages
+  const alertedIds = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const load = async () => {
@@ -50,6 +52,27 @@ export function AppHeader({
         const list = Array.isArray(res) ? res : [];
         setUnreadCount(list.length);
         setNotifications(list.slice(0, 10));
+
+        // Auto-fire WhatsApp alert for new OVERDUE / BREACH notifications (P6)
+        const alertWorthy = list.filter(
+          (n: any) =>
+            (n.category === 'OVERDUE' || n.category === 'BREACH') &&
+            !alertedIds.current.has(n.id)
+        );
+        for (const n of alertWorthy) {
+          alertedIds.current.add(n.id);
+          fetch('/api/whatsapp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              to: process.env.NEXT_PUBLIC_NCR_ALERT_PHONE ?? '',
+              messageBody:
+                n.category === 'BREACH'
+                  ? `ClamFlow — RHHF\n\n🚨 BREACH: ${n.title}\n${n.body ?? ''}\nLogin: https://clamflowcloud.vercel.app`
+                  : `ClamFlow — RHHF\n\n⚠ OVERDUE: ${n.title}\n${n.body ?? ''}\nLogin: https://clamflowcloud.vercel.app`,
+            }),
+          }).catch(() => {/* fire-and-forget */});
+        }
       } catch (_e) {}
     };
     load();

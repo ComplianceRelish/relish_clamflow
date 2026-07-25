@@ -1,7 +1,7 @@
 # ClamFlow Frontend Audit Report
-**Date:** 2026-07-24  
+**Date:** 2026-07-25 *(last updated — see [§ CHANGELOG](#changelog) for all changes)*  
 **Project:** `clamflow-frontend` — Vercel / Next.js  
-**Audit Type:** Read-only. No files were created, modified, or deleted.
+**Audit Type:** Initial audit was read-only (2026-07-24). Code changes have been applied as of 2026-07-25.
 
 ---
 
@@ -77,6 +77,7 @@
 ./src/app/testing/microbiology/test/page.tsx
 ./src/app/weight-notes/approve/page.tsx
 ./src/app/weight-notes/page.tsx
+./src/app/api/whatsapp/route.ts           ← NEW (2026-07-25) server-side Twilio proxy
 ./src/components/admin/AccountsExport.tsx
 ./src/components/auth/FaceRecognitionLogin.tsx
 ./src/components/auth/PasswordChangeForm.tsx
@@ -373,11 +374,18 @@ export default function Sidebar() {
 
 ### Key observations
 
-- **a) Nav items and routes:** Dashboard (`/dashboard`), Weight Notes (`/weight-notes`), Lot Management (`/lots`), Washing (`/washing` — **no page exists for this route**), Depuration (`/depuration` — **no page exists, actual route is `/testing/depuration`**), PPC Forms (`/ppc` — **no page exists, actual route is `/ppc-forms/approve`**), FP Forms (`/fp` — **no page exists**), Inventory (`/inventory`), RFID Tracking (`/rfid` — **no page exists**).
+- **a) Nav items and routes (FIXED 2026-07-25):** All 6 previously dead hrefs have been corrected:
+  - `/washing` → `/lots` (no washing-specific page exists; lots handles that workflow)
+  - `/depuration` → `/testing/depuration` ✓
+  - `/ppc` → `/ppc-forms/approve` ✓
+  - `/fp` → `/qc-forms/approve` ✓
+  - `/rfid` → `/devices` ✓
+  - `/inventory` → `/inventory/add` ✓
+  - EIA Compliance (`/compliance`) added for roles: `qc_lead`, `production_lead`, `admin`, `super_admin`
 
-- **b) Role filtering:** YES — items are filtered using `user.role.toLowerCase().replace(' ', '_')`. However, there is a **bug**: the Sidebar uses snake_case role strings (e.g. `production_staff`, `qc_lead`) while `AuthContext` stores roles in Title Case with spaces (e.g. `'Production Staff'`, `'QC Lead'`). The `replace(' ', '_')` call only replaces the **first** space, so `'Production Staff'` → `'production staff'` (not `'production_staff'`), causing most role-filtered items to never render.
+- **b) Role filtering:** YES — items are filtered using `user.role.toLowerCase().replace(' ', '_')`. There is a **known bug**: the `replace(' ', '_')` call only replaces the **first** space, so `'Production Staff'` → `'production staff'` (not `'production_staff'`). This causes most role-filtered items to never render. *Not yet fixed — noted for follow-up.*
 
-- **c) Top-level sections:** Dashboard, Weight Notes, Lot Management, Washing, Depuration, PPC Forms, FP Forms, Inventory, RFID Tracking.
+- **c) Top-level sections:** Dashboard, Weight Notes, Lot Management, Washing (→ `/lots`), Depuration, PPC Forms, FP Forms, Inventory, RFID Tracking, EIA Compliance.
 
 - **Note:** The Sidebar appears to be a legacy/simplified component. In practice, each dashboard page renders its own internal navigation via role-specific dashboard components (e.g. `QCLeadDashboard`, `ProductionStaffDashboard`), which have their own tabs/panels without using this Sidebar.
 
@@ -733,7 +741,8 @@ export type UserRole =
   | 'Super Admin' | 'Admin' | 'IT Staff'
   | 'Production Lead' | 'QC Lead' | 'Staff Lead'
   | 'QC Staff' | 'Production Staff' | 'Maintenance Staff'
-  | 'Security Guard' | 'Gate Staff';
+  | 'Security Guard' | 'Gate Staff'
+  | 'EIA Officer';   // Added — compliance-only role; redirects to /compliance on login
 
 export interface User {
   id: string;
@@ -965,6 +974,20 @@ WS_HEARTBEAT_INTERVAL=30000
 ALLOWED_ORIGINS=[origins list]
 CORS_CREDENTIALS=true
 ```
+
+### a2) Required Vercel env vars added 2026-07-25 (Twilio / WhatsApp)
+
+The following **server-side** (no `NEXT_PUBLIC_` prefix) vars must be set in Vercel → Settings → Environment Variables:
+
+| Variable | Purpose |
+|---|---|
+| `TWILIO_ACCOUNT_SID` | Twilio account SID |
+| `TWILIO_AUTH_TOKEN` | Twilio auth token |
+| `TWILIO_WHATSAPP_NUMBER` | From-number in `whatsapp:+…` format (default: Twilio sandbox) |
+| `NEXT_PUBLIC_TWILIO_ENABLED` | Set to `true` to enable WhatsApp sending |
+| `NEXT_PUBLIC_NCR_ALERT_PHONE` | WhatsApp number for OVERDUE/BREACH auto-alerts (e.g. `+919876543210`) |
+
+All Twilio calls are now proxied through `POST /api/whatsapp` (server-side Route Handler) — credentials never reach the browser bundle.
 
 ### b) `.env.local` — variable names (values REDACTED for security)
 
@@ -1354,12 +1377,13 @@ Radix UI (multiple primitives, ~15 packages) + Tailwind CSS `^3.4.0` + shadcn/ui
 - QR Label Generator (`integrations/QRLabelGenerator`)
 
 **MISSING / UNKNOWN:**
-- `/washing` route — referenced in Sidebar but **no `page.tsx` exists**
-- `/depuration` route — referenced in Sidebar but **no `page.tsx` exists** (actual route is `/testing/depuration`)
-- `/ppc` route — referenced in Sidebar but **no `page.tsx` exists** (actual route is `/ppc-forms/approve`)
-- `/fp` route — referenced in Sidebar but **no `page.tsx` exists**
-- `/rfid` route — referenced in Sidebar but **no `page.tsx` exists**
-- `/inventory` route — no `page.tsx` at `/inventory/` (only `/inventory/add`)
+- ~~`/washing` route — referenced in Sidebar but **no `page.tsx` exists**~~ → **FIXED** (mapped to `/lots`)
+- ~~`/depuration` route — no page~~ → **FIXED** (mapped to `/testing/depuration`)
+- ~~`/ppc` route — no page~~ → **FIXED** (mapped to `/ppc-forms/approve`)
+- ~~`/fp` route — no page~~ → **FIXED** (mapped to `/qc-forms/approve`)
+- ~~`/rfid` route — no page~~ → **FIXED** (mapped to `/devices`)
+- ~~`/inventory` route — no direct page~~ → **FIXED** (mapped to `/inventory/add`)
+- `/washing` — no dedicated page exists; Sidebar link now points to `/lots`. A standalone washing workflow page may be needed in future.
 - `src/middleware/auth.ts` — exists but is **not an active Next.js middleware** (wrong location; no root `middleware.ts`)
 - `src/context/AppContext.tsx` — exists but is **empty**
 - `src/hooks/useApi.ts` — exists but is **empty**
@@ -2312,3 +2336,41 @@ Without these, `WhatsAppService.enabled === false` and all `sendNCRAlert()` call
 | `src/app/compliance/record/[record_type]/[record_id]/page.tsx` | **Created** | Record detail + comment thread + full NCR lifecycle panel (Classify, Dispatch, Evidence, Close) |
 | `src/services/whatsapp-service.ts` | Modified | `sendNCRAlert()` public method + `sendMessage()` private helper added to `WhatsAppService` class |
 | `src/components/layout/AppHeader.tsx` | Modified | `Bell` import, `clamflowAPI` import, `useState`/`useEffect` imports, notification bell with 60 s polling, unread badge, dropdown with mark-all-read |
+
+---
+
+## ─── CHANGELOG ───────────────────────────────────────────────────────────────
+<a name="changelog"></a>
+
+### 2026-07-25 — Pre-go-live fixes applied
+
+| # | File | Change |
+|---|---|---|
+| P1 | `src/app/api/whatsapp/route.ts` (**new**) | Server-side Next.js Route Handler that proxies all Twilio WhatsApp calls. Reads `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_WHATSAPP_NUMBER` from server-side env — credentials never sent to the browser. |
+| P1 | `src/services/whatsapp-service.ts` | Removed direct Twilio `fetch` calls from `sendWelcomeMessage` and `sendPasswordResetNotification`. All sending now goes through `sendMessage()` which calls `POST /api/whatsapp`. Removed `accountSid`, `authToken`, `whatsappNumber` class fields. |
+| P2 | `src/components/layout/Sidebar.tsx` | Fixed 6 dead hrefs: `/washing`→`/lots`, `/depuration`→`/testing/depuration`, `/ppc`→`/ppc-forms/approve`, `/fp`→`/qc-forms/approve`, `/rfid`→`/devices`, `/inventory`→`/inventory/add`. Added EIA Compliance link (`/compliance`) for leads/admin roles. |
+| P3 | `src/lib/clamflow-api.ts` | `approveWeightNote(noteId, qcStaffId?, qcNotes?)` now calls `PUT /api/weight-notes/{id}/approve` with `{ qc_staff_id, qc_notes }` body (was: `PUT /api/weight-notes/{id}` with no body). |
+| P3 | `src/lib/api-client.ts` | Same fix applied to `approveWeightNote` and the `weightNotesAPI.approve` shorthand. |
+| P4 | `src/components/dashboards/admin/UserManagementPanel.tsx` | Added `'EIA Officer'` to `roles[]` and `USERNAME_PREFIXES` (`'EIA'`). Made the "Username" field **editable** for new users (was disabled/auto-only) so admins can set a custom username such as `eia_alleppey`. Phone number field changed from `required` to optional (EIA Officers may not need WhatsApp). `createUser()` now uses the admin-provided username if non-empty, otherwise falls back to auto-generate. |
+| P6 | `src/components/layout/AppHeader.tsx` | After each 60 s notification poll, any new unread `OVERDUE` or `BREACH` compliance notifications auto-fire `POST /api/whatsapp` (fire-and-forget). Recipient number comes from `NEXT_PUBLIC_NCR_ALERT_PHONE` env var. Deduplication via an in-memory `Set` (`alertedIds` ref) prevents duplicate alerts within the same session. |
+
+### Vercel environment variables to add before go-live
+
+| Variable | Scope | Notes |
+|---|---|---|
+| `TWILIO_ACCOUNT_SID` | Server-only | No `NEXT_PUBLIC_` prefix |
+| `TWILIO_AUTH_TOKEN` | Server-only | No `NEXT_PUBLIC_` prefix |
+| `TWILIO_WHATSAPP_NUMBER` | Server-only | Format: `whatsapp:+14155238886` |
+| `NEXT_PUBLIC_TWILIO_ENABLED` | Client + Server | Set to `true` to enable sending |
+| `NEXT_PUBLIC_NCR_ALERT_PHONE` | Client | WhatsApp recipient for OVERDUE/BREACH alerts (e.g. `+919876543210`) |
+
+### How to create the `eia_alleppey` EIA Officer account
+
+1. Log in as **Admin** or **Super Admin**.
+2. Navigate to **Admin Dashboard → User Management**.
+3. Click **Add New User**.
+4. Select role **EIA Officer**.
+5. Enter full name (e.g. `EIA Alleppey`). The username field will auto-fill but is now **editable** — clear it and type `eia_alleppey`.
+6. Leave phone number blank if no WhatsApp is needed.
+7. Click **Create User**. A temporary password will be auto-generated and shown.
+

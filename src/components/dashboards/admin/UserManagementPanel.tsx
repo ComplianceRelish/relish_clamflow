@@ -130,6 +130,7 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
     'Maintenance Staff',
     'Security Guard',
     'Gate Staff',
+    'EIA Officer',
   ];
 
   const USERNAME_PREFIXES: { [key: string]: string } = {
@@ -142,6 +143,7 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
     'Maintenance Staff':'MT',
     'Security Guard':   'SG',
     'Gate Staff':       'GS',
+    'EIA Officer':      'EIA',
   };
 
   const getRolePrefix = (role: string): string => {
@@ -213,8 +215,10 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
 
   const createUser = async (userData: any) => {
     try {
-      // Use the auto-assigned prefix and generate username
-      const username = generateUsername(userData.role, userData.full_name);
+      // Use the admin-provided username if set, otherwise auto-generate
+      const username = (userData.username && userData.username.trim())
+        ? userData.username.trim()
+        : generateUsername(userData.role, userData.full_name);
 
       // Generate secure random password
       const generatedPassword = userData.password || `Clam${Math.random().toString(36).slice(2, 10)}!`;
@@ -916,14 +920,15 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
 
                 {!editingUser && (
                   <div>
-                    <Label htmlFor="generated_username">Generated Username *</Label>
+                    <Label htmlFor="generated_username">Username *</Label>
                     <Input
                       id="generated_username"
                       value={formData.username}
-                      disabled
-                      className="bg-gray-100 cursor-not-allowed"
+                      onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
+                      placeholder="e.g. eia_alleppey (auto-filled, editable)"
+                      className="bg-white"
                     />
-                    <p className="text-xs text-gray-500 mt-1">Auto-generated: {USERNAME_PREFIXES[formData.role]}_FirstName</p>
+                    <p className="text-xs text-gray-500 mt-1">Auto-generated from role + name. You may override it (e.g. <code>eia_alleppey</code>).</p>
                   </div>
                 )}
 
@@ -1016,16 +1021,15 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
 
                 {!editingUser && (
                   <div>
-                    <Label htmlFor="phone_number">Phone Number (WhatsApp) *</Label>
+                    <Label htmlFor="phone_number">Phone Number (WhatsApp)</Label>
                     <Input
                       id="phone_number"
                       type="tel"
                       value={formData.phone_number}
                       onChange={(e) => setFormData(prev => ({ ...prev, phone_number: e.target.value }))}
-                      placeholder="+91 XXXXXXXXXX"
-                      required
+                      placeholder="+91 XXXXXXXXXX (optional — leave blank to skip WhatsApp)"
                     />
-                    <p className="text-xs text-gray-500 mt-1">Login credentials will be sent via WhatsApp</p>
+                    <p className="text-xs text-gray-500 mt-1">If provided, login credentials will be sent via WhatsApp</p>
                   </div>
                 )}
 

@@ -165,8 +165,8 @@ class APIClient {
     return this.client.post('/api/weight-notes/', data);
   }
 
-  async approveWeightNote(id: string) {
-    return this.client.put(`/api/weight-notes/${id}`);
+  async approveWeightNote(id: string, qcStaffId?: string, qcNotes?: string) {
+    return this.client.put(`/api/weight-notes/${id}/approve`, { qc_staff_id: qcStaffId, qc_notes: qcNotes });
   }
 
   async getWeightNotes() {
@@ -369,7 +369,7 @@ export const apiClient = new APIClient();
 // Export individual API modules for better organization
 export const weightNotesAPI = {
   create: (data: CreateWeightNoteRequest) => apiClient.createWeightNote(data),
-  approve: (id: string) => apiClient.approveWeightNote(id),
+  approve: (id: string, qcStaffId?: string, qcNotes?: string) => apiClient.approveWeightNote(id, qcStaffId, qcNotes),
   getAll: () => apiClient.getWeightNotes(),
 };
 

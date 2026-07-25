@@ -13,12 +13,12 @@ export default function Sidebar() {
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['all'] },
     { href: '/weight-notes', label: 'Weight Notes', icon: Scale, roles: ['production_staff', 'gatekeeper'] },
     { href: '/lots', label: 'Lot Management', icon: Package, roles: ['production_staff', 'production_lead'] },
-    { href: '/washing', label: 'Washing', icon: Droplets, roles: ['production_staff'] },
-    { href: '/depuration', label: 'Depuration', icon: Beaker, roles: ['production_staff'] },
-    { href: '/ppc', label: 'PPC Forms', icon: ClipboardList, roles: ['qc_staff', 'qc_lead'] },
-    { href: '/fp', label: 'FP Forms', icon: FileText, roles: ['qc_staff', 'qc_lead'] },
-    { href: '/inventory', label: 'Inventory', icon: BarChart3, roles: ['all'] },
-    { href: '/rfid', label: 'RFID Tracking', icon: Tag, roles: ['production_lead', 'qc_lead'] },
+    { href: '/lots', label: 'Washing', icon: Droplets, roles: ['production_staff'] },
+    { href: '/testing/depuration', label: 'Depuration', icon: Beaker, roles: ['production_staff'] },
+    { href: '/ppc-forms/approve', label: 'PPC Forms', icon: ClipboardList, roles: ['qc_staff', 'qc_lead'] },
+    { href: '/qc-forms/approve', label: 'FP Forms', icon: FileText, roles: ['qc_staff', 'qc_lead'] },
+    { href: '/inventory/add', label: 'Inventory', icon: BarChart3, roles: ['all'] },
+    { href: '/devices', label: 'RFID Tracking', icon: Tag, roles: ['production_lead', 'qc_lead'] },
     { href: '/compliance', label: 'EIA Compliance', icon: ShieldCheck, roles: ['qc_lead', 'production_lead', 'admin', 'super_admin'] },
   ];
 
