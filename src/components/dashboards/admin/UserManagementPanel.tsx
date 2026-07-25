@@ -260,10 +260,17 @@ export default function UserManagementPanel({ currentUser }: UserManagementPanel
           
           if (whatsappResult.success) {
             setWhatsappStatus('✅ WhatsApp welcome message sent successfully!');
-          } else if (whatsappResult.error === 'WhatsApp service is disabled' || whatsappResult.error === 'Twilio credentials not configured') {
-            setWhatsappStatus('✅ User created successfully. WhatsApp notifications are not configured — please share credentials manually.');
+          } else if (
+            !whatsappResult.error ||
+            whatsappResult.error.includes('disabled') ||
+            whatsappResult.error.includes('not configured') ||
+            whatsappResult.error.includes('Authentication Error') ||
+            whatsappResult.error.includes('invalid username') ||
+            (whatsappResult as any).twilioStatus === 401
+          ) {
+            setWhatsappStatus('✅ User created successfully. WhatsApp not yet activated — share credentials manually. (Twilio credentials need to be set in Vercel environment variables.)');
           } else {
-            setWhatsappStatus(`⚠️ User created but WhatsApp delivery failed. Please share credentials manually.`);
+            setWhatsappStatus(`⚠️ User created but WhatsApp delivery failed: ${whatsappResult.error}. Share credentials manually.`);
             console.warn('WhatsApp delivery failed:', whatsappResult.error);
           }
         } catch (whatsappErr) {
