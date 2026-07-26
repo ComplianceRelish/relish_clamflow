@@ -683,8 +683,9 @@ class ClamFlowAPI {
   }
 
   // FORMS - Backend: /api/weight-notes/
-  async getWeightNotes(): Promise<ApiResponse<WeightNoteFormData[]>> {
-    return this.get('/api/weight-notes/');
+  async getWeightNotes(lotId?: string): Promise<ApiResponse<WeightNoteFormData[]>> {
+    const qs = lotId ? `?lot_id=${lotId}` : '';
+    return this.get(`/api/weight-notes/${qs}`);
   }
 
   async createWeightNote(formData: WeightNoteFormData): Promise<ApiResponse<WeightNoteFormData>> {
@@ -1141,8 +1142,9 @@ class ClamFlowAPI {
   // ============================================
 
   // PPC Forms (PPC Station)
-  async getPPCForms(): Promise<ApiResponse<PPCFormData[]>> {
-    return this.get('/api/ppc-forms/');
+  async getPPCForms(lotId?: string): Promise<ApiResponse<PPCFormData[]>> {
+    const qs = lotId ? `?lot_id=${lotId}` : '';
+    return this.get(`/api/ppc-forms/${qs}`);
   }
 
   async createPPCForm(formData: Partial<PPCFormData>): Promise<ApiResponse<PPCFormData>> {
@@ -1166,8 +1168,9 @@ class ClamFlowAPI {
   }
 
   // FP Forms (FP Station)
-  async getFPForms(): Promise<ApiResponse<FPFormData[]>> {
-    return this.get('/api/fp-forms/');
+  async getFPForms(lotId?: string): Promise<ApiResponse<FPFormData[]>> {
+    const qs = lotId ? `?lot_id=${lotId}` : '';
+    return this.get(`/api/fp-forms/${qs}`);
   }
 
   async createFPForm(formData: Partial<FPFormData>): Promise<ApiResponse<FPFormData>> {
@@ -1227,8 +1230,9 @@ class ClamFlowAPI {
   }
 
   // Depuration Workflow (Part of PPC)
-  async getDepurationForms(): Promise<ApiResponse<DepurationFormResponse[]>> {
-    return this.get('/api/v1/depuration/forms');
+  async getDepurationForms(lotId?: string): Promise<ApiResponse<DepurationFormResponse[]>> {
+    const qs = lotId ? `?lot_id=${lotId}` : '';
+    return this.get(`/api/v1/depuration/form/${qs}`);
   }
 
   async extractSample(sampleData: SampleExtractionRequest): Promise<ApiResponse<unknown>> {

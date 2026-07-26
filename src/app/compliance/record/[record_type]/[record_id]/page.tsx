@@ -23,6 +23,154 @@ function StatusBadge({ status }: { status: NCRStatus }) {
   );
 }
 
+function RelatedRecordsNav({ record }: { record: any }) {
+  const router = useRouter();
+  const lotId: string = record.id;
+
+  const [related, setRelated] = useState<{
+    weightNotes: any[];
+    depurationForms: any[];
+    ppcForms: any[];
+    fpForms: any[];
+  }>({ weightNotes: [], depurationForms: [], ppcForms: [], fpForms: [] });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAll = async () => {
+      const [wn, ppc, fp, dep] = await Promise.allSettled([
+        clamflowAPI.getWeightNotes(lotId),
+        clamflowAPI.getPPCForms(lotId),
+        clamflowAPI.getFPForms(lotId),
+        clamflowAPI.getDepurationForms(lotId),
+      ]);
+      setRelated({
+        weightNotes: wn.status === 'fulfilled'
+          ? (Array.isArray(wn.value) ? wn.value : (wn.value as any)?.notes || (wn.value as any)?.data || [])
+          : [],
+        ppcForms: ppc.status === 'fulfilled'
+          ? (Array.isArray(ppc.value) ? ppc.value : (ppc.value as any)?.forms || (ppc.value as any)?.data || [])
+          : [],
+        fpForms: fp.status === 'fulfilled'
+          ? (Array.isArray(fp.value) ? fp.value : (fp.value as any)?.forms || (fp.value as any)?.data || [])
+          : [],
+        depurationForms: dep.status === 'fulfilled'
+          ? (Array.isArray(dep.value) ? dep.value : (dep.value as any)?.forms || (dep.value as any)?.data || [])
+          : [],
+      });
+      setLoading(false);
+    };
+    fetchAll();
+  }, [lotId]);
+
+  const sections = [
+    {
+      label: 'Weight Notes',
+      icon: '⚖️',
+      type: 'weight_notes',
+      records: related.weightNotes,
+      labelField: (r: any) =>
+        r.noteNumber || r.note_number || r.id?.substring(0, 8),
+      subField: (r: any) =>
+        r.status ? `Status: ${r.status}` : null,
+    },
+    {
+      label: 'Depuration Log (CCP2)',
+      icon: '💧',
+      type: 'depuration_forms',
+      records: related.depurationForms,
+      labelField: (r: any) =>
+        r.tankNumber || r.tank_number ||
+        r.sampleExtractionId?.substring(0, 8) ||
+        r.id?.substring(0, 8),
+      subField: (r: any) =>
+        r.status === 'approved' ? 'Approved ✓' :
+        r.status === 'pending'  ? 'Pending QC' :
+        r.status || null,
+    },
+    {
+      label: 'PPC Processing',
+      icon: '🦪',
+      type: 'ppc_forms',
+      records: related.ppcForms,
+      labelField: (r: any) =>
+        r.formNumber || r.form_number || r.batchCode || r.id?.substring(0, 8),
+      subField: (r: any) =>
+        r.status ? `Status: ${r.status}` : null,
+    },
+    {
+      label: 'Freezing Plant (CCP5/6/7)',
+      icon: '❄️',
+      type: 'fp_forms',
+      records: related.fpForms,
+      labelField: (r: any) =>
+        r.formNumber || r.form_number || r.batchCode || r.id?.substring(0, 8),
+      subField: (r: any) =>
+        r.status ? `Status: ${r.status}` : null,
+    },
+  ];
+
+  const hasAny = sections.some(s => s.records.length > 0);
+
+  if (loading) return (
+    <div className="mt-4 pt-4 border-t border-gray-100">
+      <p className="text-xs text-gray-400">Loading linked records…</p>
+    </div>
+  );
+
+  if (!hasAny) return (
+    <div className="mt-4 pt-4 border-t border-gray-100">
+      <p className="text-xs text-gray-400">
+        No linked production records yet — records are created as the
+        lot progresses through each processing stage.
+      </p>
+    </div>
+  );
+
+  return (
+    <div className="mt-4 pt-4 border-t border-gray-100">
+      <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">
+        Linked Production Records
+      </p>
+      <div className="space-y-3">
+        {sections.map(section => (
+          section.records.length > 0 && (
+            <div key={section.type}>
+              <p className="text-xs text-gray-400 mb-1 flex items-center gap-1">
+                <span>{section.icon}</span>
+                <span>{section.label}</span>
+              </p>
+              <div className="space-y-1">
+                {section.records.map((rec: any) => {
+                  const id = rec.id || rec.formId;
+                  const label = section.labelField(rec);
+                  const sub = section.subField(rec);
+                  return (
+                    <button
+                      key={id}
+                      onClick={() => id && router.push(
+                        `/compliance/record/${section.type}/${id}`
+                      )}
+                      className="w-full text-left flex items-center gap-2 px-3 py-2
+                        rounded-lg border border-gray-200 hover:border-[#8B5CF6]
+                        hover:bg-purple-50 transition-colors min-h-[44px] text-sm"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[#8B5CF6] font-medium truncate">{label}</p>
+                        {sub && <p className="text-xs text-gray-500 mt-0.5">{sub}</p>}
+                      </div>
+                      <span className="ml-auto text-gray-400 text-xs shrink-0">View →</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function RecordDetailPage({
   params,
 }: {
@@ -54,7 +202,7 @@ export default function RecordDetailPage({
     try {
       let res: any;
       const id = params.record_id;
-      if (params.record_type === 'lots') res = await (clamflowAPI as any).getLot?.(id);
+      if (params.record_type === 'lots') res = await clamflowAPI.getLot(id);
       else if (params.record_type === 'weight_notes') res = await clamflowAPI.getWeightNote(id);
       else if (params.record_type === 'ppc_forms') res = await clamflowAPI.getPPCForm(id);
       else if (params.record_type === 'fp_forms') res = await clamflowAPI.getFPForm(id);
@@ -130,11 +278,23 @@ export default function RecordDetailPage({
                                 {JSON.stringify(value, null, 2)}
                               </pre>
                             )
-                            : String(value)}
+                            : (() => {
+                                // Detect ISO date strings and format them for display
+                                if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value)) {
+                                  return new Date(value).toLocaleString('en-IN', {
+                                    day: '2-digit', month: 'short', year: 'numeric',
+                                    hour: '2-digit', minute: '2-digit', hour12: true
+                                  });
+                                }
+                                return String(value);
+                              })()}
                     </dd>
                   </div>
                 ))}
             </dl>
+            {params.record_type === 'lots' && record && (
+              <RelatedRecordsNav record={record} />
+            )}
           ) : (
             <p className="text-gray-400 text-sm">Record not found or access denied.</p>
           )}
@@ -273,7 +433,8 @@ function NCRPanel({
           <DispatchForm ncrId={localNcr.id} onDone={() => { setShowDispatch(false); refresh(); }} />
         )}
 
-        {localNcr.status === 'ACTION_DISPATCHED' && !showEvidence && (
+        {localNcr.status === 'ACTION_DISPATCHED' && !showEvidence &&
+         user?.role !== 'EIA Officer' && (
           <button
             onClick={() => setShowEvidence(true)}
             className="w-full border border-[#8B5CF6] text-[#8B5CF6] text-sm py-2 rounded-lg min-h-[44px]"

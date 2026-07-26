@@ -33,6 +33,133 @@ function StatusBadge({ status, hours }: { status: NCRStatus; hours?: number }) {
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
+const RECORD_TYPES = [
+  { value: 'lots',             label: 'Lots',           icon: '📦' },
+  { value: 'weight_notes',     label: 'Weight Notes',   icon: '⚖️' },
+  { value: 'ppc_forms',        label: 'PPC Processing', icon: '🦪' },
+  { value: 'fp_forms',         label: 'Freezing Plant', icon: '❄️' },
+  { value: 'depuration_forms', label: 'Depuration',     icon: '💧' },
+] as const;
+
+function RecordTypeList({
+  recordType,
+  onNavigate
+}: {
+  recordType: string;
+  onNavigate: (type: string, id: string) => void;
+}) {
+  const [records, setRecords] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    const fetch = async () => {
+      try {
+        let res: any;
+        if (recordType === 'lots') {
+          res = await clamflowAPI.getLots();
+          const arr = Array.isArray(res) ? res : res?.lots || res?.data || [];
+          setRecords(arr);
+        } else if (recordType === 'weight_notes') {
+          res = await clamflowAPI.getWeightNotes?.();
+          const arr = Array.isArray(res) ? res : res?.notes || res?.data || [];
+          setRecords(arr);
+        } else if (recordType === 'ppc_forms') {
+          res = await clamflowAPI.getPPCForms?.();
+          const arr = Array.isArray(res) ? res : res?.forms || res?.data || [];
+          setRecords(arr);
+        } else if (recordType === 'fp_forms') {
+          res = await clamflowAPI.getFPForms?.();
+          const arr = Array.isArray(res) ? res : res?.forms || res?.data || [];
+          setRecords(arr);
+        } else if (recordType === 'depuration_forms') {
+          res = await clamflowAPI.getDepurationForms?.();
+          const arr = Array.isArray(res) ? res : res?.forms || res?.data || [];
+          setRecords(arr);
+        }
+      } catch (e: any) {
+        setError(e?.message || 'Failed to load records');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetch();
+  }, [recordType]);
+
+  if (loading) return (
+    <div className="bg-white rounded-xl border border-gray-200 p-8
+      text-center text-gray-400 text-sm">
+      Loading…
+    </div>
+  );
+
+  if (error) return (
+    <div className="bg-white rounded-xl border border-gray-200 p-8
+      text-center text-red-400 text-sm">
+      {error}
+    </div>
+  );
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+        <span className="text-sm font-medium text-gray-700">
+          {records.length} record{records.length !== 1 ? 's' : ''}
+        </span>
+      </div>
+      <div className="divide-y divide-gray-100">
+        {records.length === 0 && (
+          <p className="p-8 text-center text-gray-400 text-sm">
+            No records found for this category.
+          </p>
+        )}
+        {records.map((rec: any) => {
+          const id = rec.id || rec.lotId || rec.formId || rec.noteId;
+          const label =
+            rec.lotNumber || rec.lot_number ||
+            rec.noteNumber || rec.note_number ||
+            rec.formNumber || rec.form_number ||
+            rec.batchCode || rec.batch_code ||
+            id?.substring(0, 8) + '…';
+          const sub =
+            rec.status
+              ? `Status: ${rec.status}`
+              : rec.lotId
+              ? `Lot: ${rec.lotId?.substring(0, 8)}…`
+              : '';
+          const date = rec.createdAt || rec.created_at || rec.arrivalDate;
+
+          return (
+            <div
+              key={id}
+              onClick={() => id && onNavigate(recordType, id)}
+              className="flex items-center justify-between px-4 py-3
+                hover:bg-gray-50 cursor-pointer"
+            >
+              <div>
+                <p className="font-medium text-[#8B5CF6] text-sm">{label}</p>
+                {sub && (
+                  <p className="text-xs text-gray-500 mt-0.5">{sub}</p>
+                )}
+              </div>
+              <div className="flex items-center gap-3">
+                {date && (
+                  <span className="text-xs text-gray-400">
+                    {new Date(date).toLocaleDateString('en-IN')}
+                  </span>
+                )}
+                <span className="text-[#8B5CF6] text-xs">View →</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function CompliancePage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -40,12 +167,16 @@ export default function CompliancePage() {
   const [lots, setLots] = useState<any[]>([]);
   const [ncrs, setNcrs] = useState<NCRRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [recordType, setRecordType] = useState<
+    'lots' | 'weight_notes' | 'ppc_forms' | 'fp_forms' | 'depuration_forms'
+  >('lots');
+  const [typeRecords, setTypeRecords] = useState<any[]>([]);
   const isEIA = user?.role === 'EIA Officer';
   const isQCOrAdmin = ['QC Lead', 'Admin', 'Super Admin'].includes(user?.role || '');
 
   const loadData = useCallback(async () => {
     try {
-      const lotsRes = await clamflowAPI.getLots?.();
+      const lotsRes = await clamflowAPI.getLots();
       if (lotsRes) setLots(Array.isArray(lotsRes) ? lotsRes : (lotsRes as any).lots || []);
     } catch (e) { console.error(e); }
     if (isQCOrAdmin) {
@@ -115,40 +246,32 @@ export default function CompliancePage() {
 
       {/* Production Records tab */}
       {tab === 'records' && (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
-            <span className="text-sm font-medium text-gray-700">
-              Lot Register — {lots.length} lots
-            </span>
-          </div>
-          <div className="divide-y divide-gray-100">
-            {lots.length === 0 && (
-              <p className="p-8 text-center text-gray-400 text-sm">No lots found.</p>
-            )}
-            {lots.map((lot: any) => (
-              <div
-                key={lot.id || lot.lotId}
-                onClick={() => router.push(`/compliance/record/lots/${lot.id || lot.lotId}`)}
-                className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 cursor-pointer"
+        <>
+          {/* Record type selector */}
+          <div className="flex gap-2 flex-wrap mb-4">
+            {RECORD_TYPES.map(rt => (
+              <button
+                key={rt.value}
+                onClick={() => setRecordType(rt.value)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full
+                  text-sm border transition-colors min-h-[36px] ${
+                  recordType === rt.value
+                    ? 'bg-[#8B5CF6] text-white border-[#8B5CF6]'
+                    : 'bg-white text-gray-600 border-gray-300 hover:border-[#8B5CF6]'
+                }`}
               >
-                <div>
-                  <p className="font-medium text-[#8B5CF6] text-sm">
-                    {lot.lotNumber || lot.lot_number}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    {lot.species} · {new Date(lot.arrivalDate || lot.arrival_date || lot.createdAt).toLocaleDateString('en-IN')}
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded capitalize">
-                    {lot.status}
-                  </span>
-                  <span className="text-[#8B5CF6] text-xs">View →</span>
-                </div>
-              </div>
+                <span>{rt.icon}</span>
+                <span>{rt.label}</span>
+              </button>
             ))}
           </div>
-        </div>
+
+          {/* Record list — changes based on recordType */}
+          <RecordTypeList
+            recordType={recordType}
+            onNavigate={(type, id) => router.push(`/compliance/record/${type}/${id}`)}
+          />
+        </>
       )}
 
       {/* NCR Register tab */}
