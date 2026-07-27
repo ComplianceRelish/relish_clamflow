@@ -179,14 +179,14 @@ export default function CompliancePage() {
       const lotsRes = await clamflowAPI.getLots();
       if (lotsRes) setLots(Array.isArray(lotsRes) ? lotsRes : (lotsRes as any).lots || []);
     } catch (e) { console.error(e); }
-    if (isQCOrAdmin) {
+    if (isQCOrAdmin || isEIA) {
       try {
         const ncrRes = await clamflowAPI.listNCRs();
         setNcrs(Array.isArray(ncrRes) ? ncrRes : []);
       } catch (e) { console.error(e); }
     }
     setLoading(false);
-  }, [isQCOrAdmin]);
+  }, [isQCOrAdmin, isEIA]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -228,7 +228,6 @@ export default function CompliancePage() {
           }`}>
           Production Records
         </button>
-        {!isEIA && (
           <button
             onClick={() => setTab('ncr')}
             className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center gap-1 ${
@@ -241,7 +240,6 @@ export default function CompliancePage() {
               </span>
             )}
           </button>
-        )}
       </div>
 
       {/* Production Records tab */}
@@ -275,7 +273,7 @@ export default function CompliancePage() {
       )}
 
       {/* NCR Register tab */}
-      {tab === 'ncr' && !isEIA && (
+      {tab === 'ncr' && (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-xs text-gray-500 uppercase">

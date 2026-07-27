@@ -255,46 +255,47 @@ export default function RecordDetailPage({
             <span className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded">Read Only</span>
           </div>
           {record ? (
-            <dl className="divide-y divide-gray-100 text-sm">
-              {Object.entries(record)
-                .filter(([k]) => !['id', 'createdBy', 'updatedAt'].includes(k))
-                .map(([key, value]) => (
-                  <div key={key} className="grid grid-cols-2 py-2.5 gap-4">
-                    <dt className="text-xs text-gray-500 uppercase tracking-wide self-start pt-0.5">
-                      {key.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').trim()}
-                    </dt>
-                    <dd className="text-gray-800 break-words">
-                      {value === null || value === undefined
-                        ? <span className="text-gray-300">—</span>
-                        : typeof value === 'boolean'
-                          ? (
-                            <span className={value ? 'text-green-600 font-medium' : 'text-red-500'}>
-                              {value ? '✓ Yes' : '✗ No'}
-                            </span>
-                          )
-                          : typeof value === 'object'
+            <>
+              <dl className="divide-y divide-gray-100 text-sm">
+                {Object.entries(record)
+                  .filter(([k]) => !['id', 'createdBy', 'updatedAt'].includes(k))
+                  .map(([key, value]) => (
+                    <div key={key} className="grid grid-cols-2 py-2.5 gap-4">
+                      <dt className="text-xs text-gray-500 uppercase tracking-wide self-start pt-0.5">
+                        {key.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').trim()}
+                      </dt>
+                      <dd className="text-gray-800 break-words">
+                        {value === null || value === undefined
+                          ? <span className="text-gray-300">—</span>
+                          : typeof value === 'boolean'
                             ? (
-                              <pre className="text-xs text-gray-600 whitespace-pre-wrap">
-                                {JSON.stringify(value, null, 2)}
-                              </pre>
+                              <span className={value ? 'text-green-600 font-medium' : 'text-red-500'}>
+                                {value ? '✓ Yes' : '✗ No'}
+                              </span>
                             )
-                            : (() => {
-                                // Detect ISO date strings and format them for display
-                                if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value)) {
-                                  return new Date(value).toLocaleString('en-IN', {
-                                    day: '2-digit', month: 'short', year: 'numeric',
-                                    hour: '2-digit', minute: '2-digit', hour12: true
-                                  });
-                                }
-                                return String(value);
-                              })()}
-                    </dd>
-                  </div>
-                ))}
-            </dl>
-            {params.record_type === 'lots' && record && (
-              <RelatedRecordsNav record={record} />
-            )}
+                            : typeof value === 'object'
+                              ? (
+                                <pre className="text-xs text-gray-600 whitespace-pre-wrap">
+                                  {JSON.stringify(value, null, 2)}
+                                </pre>
+                              )
+                              : (() => {
+                                  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value)) {
+                                    return new Date(value).toLocaleString('en-IN', {
+                                      day: '2-digit', month: 'short', year: 'numeric',
+                                      hour: '2-digit', minute: '2-digit', hour12: true
+                                    });
+                                  }
+                                  return String(value);
+                                })()}
+                      </dd>
+                    </div>
+                  ))}
+              </dl>
+              {params.record_type === 'lots' && record && (
+                <RelatedRecordsNav record={record} />
+              )}
+            </>
           ) : (
             <p className="text-gray-400 text-sm">Record not found or access denied.</p>
           )}
